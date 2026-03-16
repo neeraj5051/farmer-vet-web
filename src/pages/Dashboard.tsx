@@ -1,4 +1,4 @@
-import { Activity, AlertTriangle, ArrowUpRight, DollarSign, MessageSquare, Users, Video } from 'lucide-react';
+import { Activity, AlertTriangle, ArrowUpRight, DollarSign, MessageSquare, MonitorSmartphone, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Bar, BarChart, CartesianGrid, Cell, Legend, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { getAdminStats } from '../services/adminService';
@@ -119,7 +119,7 @@ const Dashboard = () => {
                 <StatCard
                     title="Active Consultations"
                     value={stats.consultation_metrics.ongoing}
-                    icon={Video}
+                    icon={MonitorSmartphone}
                     color="#f59e0b" // amber-500
                     subtext="Live sessions now"
                 />
