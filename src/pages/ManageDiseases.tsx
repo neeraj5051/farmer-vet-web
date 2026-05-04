@@ -1,7 +1,7 @@
 import { Edit2, Plus, Trash2, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import type { Disease } from '../services/diseaseService';
-import { createDisease, deleteDisease, getDiseases, updateDisease } from '../services/diseaseService';
+import React, { useEffect, useState } from 'react';
+import { createDisease, deleteDisease, getDiseases, updateDisease, getDiseaseGroups, createDiseaseGroup, deleteDiseaseGroup, updateDiseaseGroup } from '../services/diseaseService';
+import type { Disease, DiseaseGroup } from '../services/diseaseService';
 
 const ManageDiseases = () => {
     const [diseases, setDiseases] = useState<Disease[]>([]);
@@ -9,6 +9,10 @@ const ManageDiseases = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingDisease, setEditingDisease] = useState<Disease | null>(null);
     const [viewingDisease, setViewingDisease] = useState<Disease | null>(null);
+    const [groups, setGroups] = useState<DiseaseGroup[]>([]);
+    const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
+    const [editingGroup, setEditingGroup] = useState<DiseaseGroup | null>(null);
+    const [groupFormData, setGroupFormData] = useState({ name: '', description: '', icon_emoji: '' });
 
     // Form State
     const [formData, setFormData] = useState({
@@ -24,12 +28,23 @@ const ManageDiseases = () => {
         pathogen_type: 'Virus',
         pathogen_name: '',
         severity_level: 1,
-        image_path: ''
+        image_path: '',
+        group_id: ''
     });
 
     useEffect(() => {
         fetchDiseases();
+        fetchGroups();
     }, []);
+
+    const fetchGroups = async () => {
+        try {
+            const data = await getDiseaseGroups();
+            setGroups(data);
+        } catch (error) {
+            console.error("Failed to fetch groups", error);
+        }
+    };
 
     const fetchDiseases = async () => {
         try {
@@ -60,12 +75,40 @@ const ManageDiseases = () => {
             } else {
                 await createDisease(payload);
             }
-            setIsModalOpen(false);
+            setIsModalOpen(false); // Restore this to close modal after save
             fetchDiseases();
             resetForm();
         } catch (error) {
             console.error("Failed to save disease", error);
             alert("Failed to save disease");
+        }
+    };
+
+    const handleGroupSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            if (editingGroup) {
+                await updateDiseaseGroup(editingGroup.id, groupFormData);
+            } else {
+                await createDiseaseGroup(groupFormData);
+            }
+            setIsGroupModalOpen(false);
+            fetchGroups();
+            setGroupFormData({ name: '', description: '', icon_emoji: '' });
+            setEditingGroup(null);
+        } catch (error) {
+            console.error("Failed to save group", error);
+            alert("Failed to save group");
+        }
+    };
+
+    const handleDeleteGroup = async (id: string) => {
+        if (!confirm("Are you sure? This will not delete diseases in this group.")) return;
+        try {
+            await deleteDiseaseGroup(id);
+            fetchGroups();
+        } catch (error) {
+            console.error("Failed to delete group", error);
         }
     };
 
@@ -94,7 +137,8 @@ const ManageDiseases = () => {
             pathogen_type: disease.pathogen_type || '',
             pathogen_name: disease.pathogen_name || '',
             severity_level: disease.severity_level || 1,
-            image_path: disease.image_path || ''
+            image_path: disease.image_path || '',
+            group_id: disease.group_id || ''
         });
         setIsModalOpen(true);
     };
@@ -114,7 +158,8 @@ const ManageDiseases = () => {
             pathogen_type: 'Virus',
             pathogen_name: '',
             severity_level: 1,
-            image_path: ''
+            image_path: '',
+            group_id: ''
         });
     };
 
@@ -127,13 +172,21 @@ const ManageDiseases = () => {
                     <h1 className="text-3xl font-bold text-gray-800">Disease Management</h1>
                     <p className="text-gray-500 mt-1">Manage veterinary disease database.</p>
                 </div>
-                <button
-                    onClick={() => { resetForm(); setIsModalOpen(true); }}
-                    className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
-                >
-                    <Plus size={20} className="mr-2" />
-                    Add Disease
-                </button>
+                <div className="flex space-x-2">
+                    <button
+                        onClick={() => { setEditingGroup(null); setGroupFormData({ name: '', description: '', icon_emoji: '' }); setIsGroupModalOpen(true); }}
+                        className="flex items-center px-4 py-2 border border-emerald-600 text-emerald-600 rounded-lg hover:bg-emerald-50 transition-colors"
+                    >
+                        Manage Groups
+                    </button>
+                    <button
+                        onClick={() => { resetForm(); setIsModalOpen(true); }}
+                        className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                    >
+                        <Plus size={20} className="mr-2" />
+                        Add Disease
+                    </button>
+                </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -157,7 +210,10 @@ const ManageDiseases = () => {
                             >
                                 <td className="px-6 py-4">
                                     <div className="font-medium text-gray-800">{disease.name}</div>
-                                    <div className="text-xs text-gray-400 line-clamp-1 max-w-xs">{disease.description}</div>
+                                    <div className="text-xs text-gray-400 line-clamp-1 max-w-xs">
+                                        {disease.group?.name && <span className="font-bold text-emerald-600 mr-2">[{disease.group.name}]</span>}
+                                        {disease.description}
+                                    </div>
                                 </td>
                                 <td className="px-6 py-4">
                                     <span className="inline-block px-2 py-0.5 bg-blue-50 text-blue-700 text-xs rounded-full font-medium">
@@ -229,7 +285,20 @@ const ManageDiseases = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Group</label>
+                                    <select
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                                        value={formData.group_id}
+                                        onChange={(e) => setFormData({ ...formData, group_id: e.target.value })}
+                                    >
+                                        <option value="">No Group</option>
+                                        {groups.map(g => (
+                                            <option key={g.id} value={g.id}>{g.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category (Legacy)</label>
                                     <input
                                         type="text"
                                         className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none"
@@ -469,6 +538,54 @@ const ManageDiseases = () => {
                             >
                                 Close
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Group Management Modal */}
+            {isGroupModalOpen && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
+                            <h3 className="text-lg font-bold text-gray-800">Manage Disease Groups</h3>
+                            <button onClick={() => setIsGroupModalOpen(false)} className="text-gray-400 hover:text-gray-600">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <div className="p-6">
+                            <form onSubmit={handleGroupSubmit} className="space-y-4 mb-8">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Group Name</label>
+                                    <input 
+                                        type="text" 
+                                        required
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                                        value={groupFormData.name}
+                                        onChange={(e) => setGroupFormData({...groupFormData, name: e.target.value})}
+                                    />
+                                </div>
+                                <div className="flex justify-end space-x-2">
+                                    <button type="button" onClick={() => {setEditingGroup(null); setGroupFormData({name:'', description:'', icon_emoji:''})}} className="text-sm text-gray-500">Clear</button>
+                                    <button type="submit" className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm">
+                                        {editingGroup ? 'Update' : 'Add Group'}
+                                    </button>
+                                </div>
+                            </form>
+
+                            <div className="space-y-2">
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Existing Groups</h4>
+                                {groups.map(g => (
+                                    <div key={g.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                                        <span className="font-medium text-gray-700">{g.name}</span>
+                                        <div className="flex space-x-2">
+                                            <button onClick={() => {setEditingGroup(g); setGroupFormData({name:g.name, description:g.description||'', icon_emoji:g.icon_emoji||''})}} className="text-emerald-600"><Edit2 size={16}/></button>
+                                            <button onClick={() => handleDeleteGroup(g.id)} className="text-red-500"><Trash2 size={16}/></button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </div>
                 </div>
