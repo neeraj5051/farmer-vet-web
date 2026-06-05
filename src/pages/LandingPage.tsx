@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Phone, 
   UserCheck, 
@@ -18,9 +18,49 @@ import {
 } from 'lucide-react';
 import logoImg from '../assets/humal-logo.jpeg';
 import './LandingPage.css';
+import { getDiseases, getDiseaseGroups } from '../services/diseaseService';
 
 const LandingPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [diseaseCategories, setDiseaseCategories] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const [diseasesData, groupsData] = await Promise.all([
+          getDiseases(),
+          getDiseaseGroups()
+        ]);
+
+        const mapped = groupsData.map(group => {
+          const count = diseasesData.filter(d => d.group_id === group.id).length;
+          return {
+            id: group.id,
+            name: group.name,
+            name_hi: group.name_hi,
+            count: `${count} Conditions`
+          };
+        });
+
+        // Sort alphabetically by name
+        mapped.sort((a, b) => a.name.localeCompare(b.name));
+        setDiseaseCategories(mapped);
+      } catch (error) {
+        console.error("Failed to load disease groups dynamically:", error);
+        // Fallback to wireframe values
+        setDiseaseCategories([
+          { name: "Hoof & Limb Disorders", count: "12 Conditions" },
+          { name: "Udder & Teat Conditions", count: "8 Conditions" },
+          { name: "Digestive Disorders", count: "15 Conditions" },
+          { name: "Respiratory Conditions", count: "9 Conditions" },
+          { name: "Metabolic Diseases", count: "7 Conditions" },
+          { name: "Reproductive Conditions", count: "11 Conditions" }
+        ]);
+      }
+    };
+
+    fetchCategories();
+  }, []);
 
   const services = [
     {
@@ -43,15 +83,6 @@ const LandingPage = () => {
       title: "Vaccination",
       description: "Protect your livestock against deadly diseases through timely vaccination."
     }
-  ];
-
-  const diseaseCategories = [
-    { name: "Hoof & Limb Disorders", count: "12 Conditions" },
-    { name: "Udder & Teat Conditions", count: "8 Conditions" },
-    { name: "Digestive Disorders", count: "15 Conditions" },
-    { name: "Respiratory Conditions", count: "9 Conditions" },
-    { name: "Metabolic Diseases", count: "7 Conditions" },
-    { name: "Reproductive Conditions", count: "11 Conditions" }
   ];
 
   return (
