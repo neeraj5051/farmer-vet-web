@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import ManageDiseases from './pages/ManageDiseases';
 import ManageFees from './pages/ManageFees';
 import UsersPage from './pages/Users';
+import LandingPage from './pages/LandingPage';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
@@ -18,7 +19,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
   }
 
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   return children;
@@ -33,7 +34,7 @@ const PublicRoute = ({ children }: { children: React.ReactElement }) => {
   }
 
   if (token) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin" replace />;
   }
 
   return children;
@@ -42,13 +43,18 @@ const PublicRoute = ({ children }: { children: React.ReactElement }) => {
 const AppRoutes = () => {
   return (
     <Routes>
-      <Route path="/login" element={
+      {/* Public Landing Page */}
+      <Route path="/" element={<LandingPage />} />
+
+      {/* Public Admin Login Route */}
+      <Route path="/admin/login" element={
         <PublicRoute>
           <Login />
         </PublicRoute>
       } />
 
-      <Route path="/" element={
+      {/* Protected Admin routes nested under /admin */}
+      <Route path="/admin" element={
         <ProtectedRoute>
           <DashboardLayout />
         </ProtectedRoute>
@@ -59,6 +65,9 @@ const AppRoutes = () => {
         <Route path="fees" element={<ManageFees />} />
         <Route path="diseases" element={<ManageDiseases />} />
       </Route>
+
+      {/* Fallback to Landing Page */}
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

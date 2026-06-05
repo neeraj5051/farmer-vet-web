@@ -13,23 +13,23 @@ const DashboardLayout = () => {
                     <h2>Humal Admin</h2>
                 </div>
                 <nav className="sidebar-nav">
-                    <NavLink to="/" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} end>
+                    <NavLink to="/admin" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`} end>
                         <LayoutDashboard size={20} />
                         <span>Dashboard</span>
                     </NavLink>
-                    <NavLink to="/financials" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <NavLink to="/admin/financials" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                         <IndianRupee size={20} />
                         <span>Financials</span>
                     </NavLink>
-                    <NavLink to="/users" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <NavLink to="/admin/users" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                         <Users size={20} />
                         <span>Users</span>
                     </NavLink>
-                    <NavLink to="/fees" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <NavLink to="/admin/fees" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                         <IndianRupee size={20} />
                         <span>Fees</span>
                     </NavLink>
-                    <NavLink to="/diseases" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
+                    <NavLink to="/admin/diseases" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                         <Stethoscope size={20} />
                         <span>Diseases</span>
                     </NavLink>

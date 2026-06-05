@@ -87,11 +87,7 @@ const Dashboard = () => {
         { name: 'Chat Messages', value: stats.call_chat_metrics.chat_messages_count, fill: '#ec4899' },
     ];
 
-    const userGrowthData = [
-        { name: 'Today', users: stats.users.new_registrations.today.total },
-        { name: '7 Days', users: stats.users.new_registrations.last_7d.total },
-        { name: '30 Days', users: stats.users.new_registrations.last_30d.total },
-    ];
+
 
     const statusData = [
         { name: 'Completed', value: stats.consultation_metrics.completed, color: '#10b981' },
@@ -150,7 +146,7 @@ const Dashboard = () => {
                             <BarChart data={consultationData}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af' }} />
-                                <YAxis yAxisId="left" orientation="left" stroke="#10b981" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af' }} prefix="₹" />
+                                <YAxis yAxisId="left" orientation="left" stroke="#10b981" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af' }} tickFormatter={(value) => `₹${value}`} />
                                 <YAxis yAxisId="right" orientation="right" stroke="#6366f1" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af' }} />
                                 <Tooltip
                                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
