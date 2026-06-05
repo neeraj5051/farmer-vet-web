@@ -76,7 +76,7 @@ const Login = () => {
                     <button
                         type="submit"
                         disabled={loading}
-                        className="btn-primary"
+                        className="login-submit-btn"
                     >
                         {loading ? <Loader2 className="animate-spin" size={20} /> : 'Sign In'}
                     </button>
