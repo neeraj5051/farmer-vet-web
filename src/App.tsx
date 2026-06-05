@@ -9,6 +9,14 @@ import ManageDiseases from './pages/ManageDiseases';
 import ManageFees from './pages/ManageFees';
 import UsersPage from './pages/Users';
 import LandingPage from './pages/LandingPage';
+import ManageArticles from './pages/ManageArticles';
+import Consultations from './pages/Consultations';
+import PaymentsPage from './pages/PaymentsPage';
+import SupportTickets from './pages/SupportTickets';
+import ServicesManagement from './pages/ServicesManagement';
+import VaccinationPage from './pages/VaccinationPage';
+import ReportsPage from './pages/ReportsPage';
+import VaccineManagement from './pages/VaccineManagement';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
@@ -64,6 +72,14 @@ const AppRoutes = () => {
         <Route path="users" element={<UsersPage />} />
         <Route path="fees" element={<ManageFees />} />
         <Route path="diseases" element={<ManageDiseases />} />
+        <Route path="blogs" element={<ManageArticles />} />
+        <Route path="consultations" element={<Consultations />} />
+        <Route path="payments" element={<PaymentsPage />} />
+        <Route path="support" element={<SupportTickets />} />
+        <Route path="services" element={<ServicesManagement />} />
+        <Route path="vaccination" element={<VaccinationPage />} />
+        <Route path="reports" element={<ReportsPage />} />
+        <Route path="vaccines" element={<VaccineManagement />} />
       </Route>
 
       {/* Fallback to Landing Page */}

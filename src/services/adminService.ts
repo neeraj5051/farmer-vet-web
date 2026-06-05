@@ -31,6 +31,16 @@ export const blockUser = async (userId: string, isActive: boolean) => {
     return response.data;
 };
 
+export const updateVetProfile = async (vetId: string, data: Record<string, any>) => {
+    const response = await api.put(`/admin/vets/${vetId}`, data);
+    return response.data;
+};
+
+export const updateFarmerProfile = async (farmerId: string, data: Record<string, any>) => {
+    const response = await api.put(`/admin/farmers/${farmerId}`, data);
+    return response.data;
+};
+
 export const getAdminStats = async () => {
     const response = await api.get('/admin/stats');
     return response.data;

@@ -1,6 +1,7 @@
-import { Ban, Check, Loader2, UserCheck, Users, X } from 'lucide-react';
+import { Ban, Check, Loader2, UserCheck, Users, X, Edit } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { approveVet, blockUser, getFarmers, getVets } from '../services/adminService';
+import { approveVet, blockUser, getFarmers, getVets, updateVetProfile, updateFarmerProfile } from '../services/adminService';
+import './AdminPages.css';
 
 const UsersPage = () => {
     const [activeTab, setActiveTab] = useState<'vets' | 'farmers'>('vets');
@@ -9,6 +10,66 @@ const UsersPage = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedUser, setSelectedUser] = useState<any>(null);
+    const [editingUser, setEditingUser] = useState<any>(null);
+    const [editForm, setEditForm] = useState<any>({});
+    const [saving, setSaving] = useState(false);
+
+    const startEdit = (user: any) => {
+        setEditingUser(user);
+        if (activeTab === 'vets') {
+            setEditForm({
+                first_name: user.first_name || '',
+                last_name: user.last_name || '',
+                phone: user.phone || '',
+                qualification: user.qualification || '',
+                specialization: user.specialization || '',
+                years_of_experience: user.years_of_experience || 0,
+                license_number: user.license_number || '',
+                registration_state: user.registration_state || '',
+                base_location: user.base_location || '',
+                is_active: user.is_active ?? true
+            });
+        } else {
+            setEditForm({
+                first_name: user.first_name || '',
+                last_name: user.last_name || '',
+                phone: user.phone || '',
+                alternate_phone: user.alternate_phone || '',
+                preferred_language: user.preferred_language || 'en',
+                village: user.village || '',
+                district: user.district || '',
+                state: user.state || '',
+                pincode: user.pincode || '',
+                is_active: user.is_active ?? true
+            });
+        }
+    };
+
+    const handleSaveEdit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editForm.first_name?.trim()) {
+            alert('First Name is required');
+            return;
+        }
+        setSaving(true);
+        try {
+            if (activeTab === 'vets') {
+                await updateVetProfile(editingUser.id, {
+                    ...editForm,
+                    years_of_experience: Number(editForm.years_of_experience)
+                });
+            } else {
+                await updateFarmerProfile(editingUser.id, editForm);
+            }
+            alert('Profile updated successfully');
+            setEditingUser(null);
+            fetchData();
+        } catch (error: any) {
+            alert(error?.response?.data?.detail || 'Failed to update profile');
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const fetchData = async () => {
         setLoading(true);
@@ -59,17 +120,8 @@ const UsersPage = () => {
     const TabButton = ({ id, label, icon: Icon }: any) => (
         <button
             onClick={() => { setActiveTab(id); setSearchTerm(''); }}
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.75rem 1.5rem',
-                backgroundColor: activeTab === id ? '#dcfce7' : 'transparent',
-                color: activeTab === id ? '#166534' : '#6b7280',
-                borderBottom: activeTab === id ? '2px solid #16a34a' : '2px solid transparent',
-                borderRadius: '0.5rem 0.5rem 0 0',
-                fontWeight: 600
-            }}
+            className={`ap-tab ${activeTab === id ? 'active' : ''}`}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}
         >
             <Icon size={18} />
             {label}
@@ -77,100 +129,100 @@ const UsersPage = () => {
     );
 
     return (
-        <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                <h1 className="text-2xl font-bold text-gray-800" style={{ fontSize: '1.5rem', fontWeight: 'bold', color: '#1f2937' }}>User Management</h1>
-                <input
-                    type="text"
-                    placeholder="Search by name or phone..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                        padding: '0.5rem 1rem',
-                        borderRadius: '0.375rem',
-                        border: '1px solid #d1d5db',
-                        width: '300px'
-                    }}
-                />
+        <div className="ap-page">
+            <div className="ap-header">
+                <div>
+                    <h1 className="ap-title">User Management</h1>
+                    <p className="ap-subtitle">Manage and verify platform veterinarians and farmers.</p>
+                </div>
+                <div className="ap-search-wrap" style={{ maxWidth: '300px' }}>
+                    <input
+                        type="text"
+                        placeholder="Search by name or phone..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="ap-search-input"
+                    />
+                </div>
             </div>
 
-            <div style={{ borderBottom: '1px solid #e5e7eb', display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="ap-tabs">
                 <TabButton id="vets" label="Veterinarians" icon={UserCheck} />
                 <TabButton id="farmers" label="Farmers" icon={Users} />
             </div>
 
             {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-                    <Loader2 className="animate-spin" size={32} color="#16a34a" />
+                <div className="ap-loading">
+                    <Loader2 className="ap-spin" size={32} color="#16a34a" />
+                    <p>Loading users...</p>
                 </div>
             ) : (
-                <div style={{ background: 'white', borderRadius: '0.5rem', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                <div className="ap-table-wrap">
+                    <table className="ap-table">
+                        <thead>
                             <tr>
-                                <th style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Name</th>
-                                <th style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Phone</th>
-                                <th style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Status</th>
-                                <th style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Actions</th>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: 'right' }}>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {filteredUsers.map((user) => (
-                                <tr key={user.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                    <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#111827', fontWeight: 500 }}>
+                                <tr key={user.id} className="ap-row">
+                                    <td className="ap-cell-bold">
                                         {user.first_name} {user.last_name}
                                     </td>
-                                    <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                                    <td style={{ color: 'var(--text-secondary)' }}>
                                         {user.phone}
                                     </td>
-                                    <td style={{ padding: '1rem' }}>
+                                    <td>
                                         {activeTab === 'vets' ? (
-                                            <span style={{
-                                                padding: '0.25rem 0.5rem',
-                                                borderRadius: '9999px',
-                                                fontSize: '0.75rem',
-                                                fontWeight: 600,
-                                                backgroundColor: user.verification_status === 'verified' ? '#d1fae5' : user.verification_status === 'rejected' ? '#fee2e2' : '#fef3c7',
-                                                color: user.verification_status === 'verified' ? '#065f46' : user.verification_status === 'rejected' ? '#991b1b' : '#92400e'
+                                            <span className="ap-badge" style={{
+                                                backgroundColor: user.verification_status === 'verified' ? 'var(--accent-green-glow)' : user.verification_status === 'rejected' ? 'rgba(220, 38, 38, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                                                color: user.verification_status === 'verified' ? 'var(--accent-green)' : user.verification_status === 'rejected' ? '#f87171' : '#fde68a',
+                                                border: user.verification_status === 'verified' ? '1px solid rgba(16, 185, 129, 0.2)' : user.verification_status === 'rejected' ? '1px solid rgba(220, 38, 38, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)'
                                             }}>
                                                 {user.verification_status}
                                             </span>
                                         ) : (
-                                            <span style={{
-                                                padding: '0.25rem 0.5rem',
-                                                borderRadius: '9999px',
-                                                fontSize: '0.75rem',
-                                                fontWeight: 600,
-                                                backgroundColor: user.is_active ? '#d1fae5' : '#fee2e2',
-                                                color: user.is_active ? '#065f46' : '#991b1b'
+                                            <span className="ap-badge" style={{
+                                                backgroundColor: user.is_active ? 'var(--accent-green-glow)' : 'rgba(220, 38, 38, 0.12)',
+                                                color: user.is_active ? 'var(--accent-green)' : '#f87171',
+                                                border: user.is_active ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(220, 38, 38, 0.2)'
                                             }}>
                                                 {user.is_active ? 'Active' : 'Blocked'}
                                             </span>
                                         )}
                                     </td>
-                                    <td style={{ padding: '1rem', display: 'flex', gap: '0.5rem' }}>
-                                        <button onClick={() => setSelectedUser(user)} style={{ padding: '0.25rem 0.5rem', backgroundColor: '#3b82f6', color: 'white', border: 'none', borderRadius: '4px' }} title="View Details">
-                                            Info
-                                        </button>
-                                        {activeTab === 'vets' && user.verification_status === 'pending' && (
-                                            <>
-                                                <button onClick={() => handleApprove(user.id, 'verified')} style={{ padding: '0.25rem 0.5rem', backgroundColor: '#16a34a', color: 'white', border: 'none', borderRadius: '4px' }} title="Approve">
-                                                    <Check size={16} />
-                                                </button>
-                                                <button onClick={() => handleApprove(user.id, 'rejected')} style={{ padding: '0.25rem 0.5rem', backgroundColor: '#dc2626', color: 'white', border: 'none', borderRadius: '4px' }} title="Reject">
-                                                    <X size={16} />
-                                                </button>
-                                            </>
-                                        )}
-                                        <button onClick={() => handleBlock(user.id, user.is_active)} style={{ padding: '0.25rem 0.5rem', backgroundColor: user.is_active ? '#ef4444' : '#22c55e', color: 'white', border: 'none', borderRadius: '4px' }} title={user.is_active ? "Block" : "Activate"}>
-                                            <Ban size={16} />
-                                        </button>
+                                    <td style={{ textAlign: 'right' }}>
+                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                            <button onClick={() => setSelectedUser(user)} className="ap-btn-sm ap-btn-info" title="View Details">
+                                                Info
+                                            </button>
+                                            <button onClick={() => startEdit(user)} className="ap-btn-sm ap-btn-warning" title="Edit Profile">
+                                                <Edit size={14} /> Edit
+                                            </button>
+                                            {activeTab === 'vets' && user.verification_status === 'pending' && (
+                                                <>
+                                                    <button onClick={() => handleApprove(user.id, 'verified')} className="ap-btn-sm ap-btn-primary" title="Approve">
+                                                        <Check size={16} />
+                                                    </button>
+                                                    <button onClick={() => handleApprove(user.id, 'rejected')} className="ap-btn-sm ap-btn-danger" title="Reject">
+                                                        <X size={16} />
+                                                    </button>
+                                                </>
+                                            )}
+                                            <button onClick={() => handleBlock(user.id, user.is_active)} className="ap-btn-sm ap-btn-outline" style={{ color: user.is_active ? '#f87171' : 'var(--accent-green)' }} title={user.is_active ? "Block" : "Activate"}>
+                                                <Ban size={14} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
                             {filteredUsers.length === 0 && (
                                 <tr>
-                                    <td colSpan={4} style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>
+                                    <td colSpan={4} className="ap-empty">
                                         No users found
                                     </td>
                                 </tr>
@@ -180,59 +232,253 @@ const UsersPage = () => {
                 </div>
             )}
 
+            {/* Info Modal */}
             {selectedUser && (
-                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                    <div style={{ background: 'white', padding: '2rem', borderRadius: '0.5rem', width: '90%', maxWidth: '500px', maxHeight: '90vh', overflowY: 'auto' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                            <h2 style={{ fontSize: '1.25rem', fontWeight: 600 }}>User Details</h2>
-                            <button onClick={() => setSelectedUser(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
-                                <X size={24} color="#6b7280" />
+                <div className="ap-modal-backdrop" onClick={() => setSelectedUser(null)}>
+                    <div className="ap-modal" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
+                        <div className="ap-modal-header">
+                            <h2>User Details</h2>
+                            <button className="ap-modal-close" onClick={() => setSelectedUser(null)}>
+                                <X size={16} />
                             </button>
                         </div>
+                        <div className="ap-modal-body">
+                            <div className="ap-detail-grid">
+                                <div className="ap-detail-row">
+                                    <span>ID</span>
+                                    <strong style={{ fontSize: '0.8rem', fontFamily: 'monospace' }}>{selectedUser.id}</strong>
+                                </div>
+                                <div className="ap-detail-row">
+                                    <span>Name</span>
+                                    <strong>{selectedUser.first_name} {selectedUser.last_name}</strong>
+                                </div>
+                                <div className="ap-detail-row">
+                                    <span>Phone</span>
+                                    <strong>{selectedUser.phone}</strong>
+                                </div>
+                                <div className="ap-detail-row">
+                                    <span>Joined</span>
+                                    <strong>{new Date(selectedUser.created_at).toLocaleDateString()}</strong>
+                                </div>
 
-                        <div style={{ marginBottom: '1rem' }}>
-                            <strong>ID:</strong> <span style={{ color: '#4b5563', fontSize: '0.875rem' }}>{selectedUser.id}</span>
-                        </div>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <strong>Name:</strong> {selectedUser.first_name} {selectedUser.last_name}
-                        </div>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <strong>Phone:</strong> {selectedUser.phone}
-                        </div>
-                        <div style={{ marginBottom: '1rem' }}>
-                            <strong>Joined:</strong> {new Date(selectedUser.created_at).toLocaleDateString()}
-                        </div>
+                                {activeTab === 'vets' && (
+                                    <>
+                                        <div className="ap-detail-row"><span>Qualification</span><strong>{selectedUser.qualification || 'N/A'}</strong></div>
+                                        <div className="ap-detail-row"><span>Specialization</span><strong>{selectedUser.specialization || 'N/A'}</strong></div>
+                                        <div className="ap-detail-row"><span>Experience</span><strong>{selectedUser.years_of_experience || 0} years</strong></div>
+                                        <div className="ap-detail-row"><span>License</span><strong>{selectedUser.license_number || 'N/A'}</strong></div>
+                                        <div className="ap-detail-row"><span>Location</span><strong>{selectedUser.base_location || 'N/A'}</strong></div>
+                                        <div className="ap-detail-row"><span>Commission</span><strong>{selectedUser.commission_rate}%</strong></div>
+                                    </>
+                                )}
 
-                        {activeTab === 'vets' && (
-                            <>
-                                <div style={{ borderTop: '1px solid #e5e7eb', margin: '1rem 0' }}></div>
-                                <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Profile</h3>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>Qualification:</strong> {selectedUser.qualification || 'N/A'}</div>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>Specialization:</strong> {selectedUser.specialization || 'N/A'}</div>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>Experience:</strong> {selectedUser.years_of_experience || 0} years</div>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>License:</strong> {selectedUser.license_number || 'N/A'}</div>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>Location:</strong> {selectedUser.base_location || 'N/A'}</div>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>Commission:</strong> {selectedUser.commission_rate}%</div>
-                            </>
-                        )}
-
-                        {activeTab === 'farmers' && (
-                            <>
-                                <div style={{ borderTop: '1px solid #e5e7eb', margin: '1rem 0' }}></div>
-                                <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>Farm Details</h3>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>Village:</strong> {selectedUser.village || 'N/A'}</div>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>District:</strong> {selectedUser.district || 'N/A'}</div>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>State:</strong> {selectedUser.state || 'N/A'}</div>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>Pincode:</strong> {selectedUser.pincode || 'N/A'}</div>
-                                <div style={{ marginBottom: '0.5rem' }}><strong>Language:</strong> {selectedUser.preferred_language || 'N/A'}</div>
-                            </>
-                        )}
-
-                        <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'flex-end' }}>
-                            <button onClick={() => setSelectedUser(null)} style={{ padding: '0.5rem 1rem', backgroundColor: '#e5e7eb', borderRadius: '0.25rem', border: 'none', fontWeight: 500 }}>
+                                {activeTab === 'farmers' && (
+                                    <>
+                                        <div className="ap-detail-row"><span>Village</span><strong>{selectedUser.village || 'N/A'}</strong></div>
+                                        <div className="ap-detail-row"><span>District</span><strong>{selectedUser.district || 'N/A'}</strong></div>
+                                        <div className="ap-detail-row"><span>State</span><strong>{selectedUser.state || 'N/A'}</strong></div>
+                                        <div className="ap-detail-row"><span>Pincode</span><strong>{selectedUser.pincode || 'N/A'}</strong></div>
+                                        <div className="ap-detail-row"><span>Language</span><strong>{selectedUser.preferred_language || 'N/A'}</strong></div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                        <div className="ap-modal-footer">
+                            <button onClick={() => setSelectedUser(null)} className="ap-btn-sm ap-btn-outline" style={{ padding: '0.5rem 1.25rem' }}>
                                 Close
                             </button>
                         </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Modal */}
+            {editingUser && (
+                <div className="ap-modal-backdrop" onClick={() => setEditingUser(null)}>
+                    <div className="ap-modal" style={{ maxWidth: '600px' }} onClick={e => e.stopPropagation()}>
+                        <div className="ap-modal-header">
+                            <h2>Edit {activeTab === 'vets' ? 'Veterinarian' : 'Farmer'} Profile</h2>
+                            <button className="ap-modal-close" onClick={() => setEditingUser(null)}><X size={16} /></button>
+                        </div>
+                        <form onSubmit={handleSaveEdit}>
+                            <div className="ap-modal-body">
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                    <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                        <label className="ap-label">First Name *</label>
+                                        <input
+                                            className="ap-input"
+                                            required
+                                            value={editForm.first_name || ''}
+                                            onChange={e => setEditForm({ ...editForm, first_name: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                        <label className="ap-label">Last Name</label>
+                                        <input
+                                            className="ap-input"
+                                            value={editForm.last_name || ''}
+                                            onChange={e => setEditForm({ ...editForm, last_name: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="ap-form-group">
+                                    <label className="ap-label">Phone *</label>
+                                    <input
+                                        className="ap-input"
+                                        required
+                                        value={editForm.phone || ''}
+                                        onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                                    />
+                                </div>
+
+                                {activeTab === 'vets' ? (
+                                    <>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">Qualification</label>
+                                                <input
+                                                    className="ap-input"
+                                                    value={editForm.qualification || ''}
+                                                    onChange={e => setEditForm({ ...editForm, qualification: e.target.value })}
+                                                    placeholder="e.g. BVSc & AH"
+                                                />
+                                            </div>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">Specialization</label>
+                                                <input
+                                                    className="ap-input"
+                                                    value={editForm.specialization || ''}
+                                                    onChange={e => setEditForm({ ...editForm, specialization: e.target.value })}
+                                                    placeholder="e.g. Surgery, General"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">Years of Experience</label>
+                                                <input
+                                                    type="number"
+                                                    className="ap-input"
+                                                    value={editForm.years_of_experience ?? 0}
+                                                    onChange={e => setEditForm({ ...editForm, years_of_experience: parseInt(e.target.value) || 0 })}
+                                                />
+                                            </div>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">License Number</label>
+                                                <input
+                                                    className="ap-input"
+                                                    value={editForm.license_number || ''}
+                                                    onChange={e => setEditForm({ ...editForm, license_number: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">Registration State</label>
+                                                <input
+                                                    className="ap-input"
+                                                    value={editForm.registration_state || ''}
+                                                    onChange={e => setEditForm({ ...editForm, registration_state: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">Base Location</label>
+                                                <input
+                                                    className="ap-input"
+                                                    value={editForm.base_location || ''}
+                                                    onChange={e => setEditForm({ ...editForm, base_location: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">Alternate Phone</label>
+                                                <input
+                                                    className="ap-input"
+                                                    value={editForm.alternate_phone || ''}
+                                                    onChange={e => setEditForm({ ...editForm, alternate_phone: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">Preferred Language</label>
+                                                <select
+                                                    className="ap-form-select"
+                                                    value={editForm.preferred_language || 'en'}
+                                                    onChange={e => setEditForm({ ...editForm, preferred_language: e.target.value })}
+                                                >
+                                                    <option value="en">English</option>
+                                                    <option value="hi">Hindi</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">Village</label>
+                                                <input
+                                                    className="ap-input"
+                                                    value={editForm.village || ''}
+                                                    onChange={e => setEditForm({ ...editForm, village: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">District</label>
+                                                <input
+                                                    className="ap-input"
+                                                    value={editForm.district || ''}
+                                                    onChange={e => setEditForm({ ...editForm, district: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">State</label>
+                                                <input
+                                                    className="ap-input"
+                                                    value={editForm.state || ''}
+                                                    onChange={e => setEditForm({ ...editForm, state: e.target.value })}
+                                                />
+                                            </div>
+                                            <div className="ap-form-group" style={{ marginBottom: 0 }}>
+                                                <label className="ap-label">Pincode</label>
+                                                <input
+                                                    className="ap-input"
+                                                    value={editForm.pincode || ''}
+                                                    onChange={e => setEditForm({ ...editForm, pincode: e.target.value })}
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+
+                                <div className="ap-switch-row" style={{ borderTop: '1px solid var(--border-glass)', paddingTop: '1rem', marginTop: '1rem' }}>
+                                    <span className="ap-label" style={{ marginBottom: 0 }}>Account Active / Enabled</span>
+                                    <label className="ap-switch">
+                                        <input
+                                            type="checkbox"
+                                            checked={editForm.is_active ?? true}
+                                            onChange={e => setEditForm({ ...editForm, is_active: e.target.checked })}
+                                        />
+                                        <span className="ap-switch-slider" />
+                                    </label>
+                                </div>
+                            </div>
+                            <div className="ap-modal-footer">
+                                <button type="button" className="ap-btn-sm ap-btn-outline" onClick={() => setEditingUser(null)}>
+                                    Cancel
+                                </button>
+                                <button type="submit" className="ap-btn-sm ap-btn-primary" disabled={saving}>
+                                    {saving ? 'Saving...' : 'Save Changes'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}

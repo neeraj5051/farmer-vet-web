@@ -13,7 +13,9 @@ export interface Disease {
     symptoms: string[];
     symptoms_hi?: string[];
     causes: string[];
+    causes_hi?: string[];
     treatments: string[];
+    treatments_hi?: string[];
     pathogen_type: string;
     pathogen_name: string;
     severity_level: number;
@@ -39,21 +41,28 @@ export interface DiseaseGroup {
 
 export interface DiseaseGroupCreate {
     name: string;
+    name_hi?: string;
     description?: string;
+    description_hi?: string;
     icon_emoji?: string;
     image_path?: string;
 }
 
 export interface DiseaseCreate {
     name: string;
+    name_hi?: string;
     category: string;
     description: string;
+    description_hi?: string;
     body_system: string;
     disease_type: string;
     species: string;
     symptoms: string[];
+    symptoms_hi?: string[];
     causes: string[];
+    causes_hi?: string[];
     treatments: string[];
+    treatments_hi?: string[];
     pathogen_type: string;
     pathogen_name: string;
     severity_level: number;
@@ -63,14 +72,19 @@ export interface DiseaseCreate {
 
 export interface DiseaseUpdate {
     name?: string;
+    name_hi?: string;
     category?: string;
     description?: string;
+    description_hi?: string;
     body_system?: string;
     disease_type?: string;
     species?: string;
     symptoms?: string[];
+    symptoms_hi?: string[];
     causes?: string[];
+    causes_hi?: string[];
     treatments?: string[];
+    treatments_hi?: string[];
     pathogen_type?: string;
     pathogen_name?: string;
     severity_level?: number;
@@ -82,8 +96,11 @@ export interface DiseaseUpdate {
 const sanitizeDisease = (d: Disease): Disease => ({
     ...d,
     symptoms: d.symptoms || [],
+    symptoms_hi: d.symptoms_hi || [],
     causes: d.causes || [],
-    treatments: d.treatments || []
+    causes_hi: d.causes_hi || [],
+    treatments: d.treatments || [],
+    treatments_hi: d.treatments_hi || []
 });
 
 export const getDiseases = async (): Promise<Disease[]> => {

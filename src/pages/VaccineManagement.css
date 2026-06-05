@@ -1,0 +1,239 @@
+/* VaccineManagement.css - Premium Glassmorphic Redesign */
+
+/* ── Card Grid ────────────────────────────────────────────────────────────── */
+.vm-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.25rem;
+}
+
+.vm-card {
+    background: var(--bg-card);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.875rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+}
+
+.vm-card:hover {
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+    border-color: var(--accent-green);
+    transform: translateY(-4px);
+}
+
+.vm-card--inactive {
+    opacity: 0.55;
+    border-color: var(--border-glass);
+}
+
+.vm-card--inactive:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+    opacity: 0.8;
+}
+
+.vm-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.875rem;
+}
+
+.vm-card-icon {
+    font-size: 2.25rem;
+    line-height: 1;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.1));
+}
+
+.vm-card-title-block {
+    flex: 1;
+    min-width: 0;
+}
+
+.vm-card-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 0.25rem 0;
+    line-height: 1.3;
+    word-break: break-word;
+}
+
+.vm-card-name-hi {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    opacity: 0.8;
+    font-style: italic;
+    margin: 0;
+}
+
+.vm-card-status {
+    flex-shrink: 0;
+}
+
+/* ── Pills ────────────────────────────────────────────────────────────────── */
+.vm-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.vm-pill {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 99px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.vm-pill--cat {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: rgba(99, 102, 241, 0.2);
+    color: #c7d2fe;
+}
+
+.vm-pill--animal {
+    background: var(--accent-green-glow);
+    border-color: rgba(16, 185, 129, 0.2);
+    color: #a7f3d0;
+}
+
+.vm-pill--price {
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(245, 158, 11, 0.2);
+    color: #fde68a;
+}
+
+/* ── Card meta ────────────────────────────────────────────────────────────── */
+.vm-card-meta {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin: 0;
+    line-height: 1.4;
+}
+
+.vm-card-meta strong {
+    color: var(--text-primary);
+}
+
+.vm-card-desc {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    opacity: 0.85;
+    margin: 0;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ── Card Actions ─────────────────────────────────────────────────────────── */
+.vm-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: auto;
+    padding-top: 0.875rem;
+    border-top: 1px solid var(--border-glass);
+}
+
+.vm-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    flex: 1;
+    justify-content: center;
+    font-size: 0.78rem !important;
+}
+
+/* ── Modal sizing ─────────────────────────────────────────────────────────── */
+.vm-modal {
+    max-width: 680px !important;
+    max-height: 92vh;
+}
+
+/* ── View modal sections ──────────────────────────────────────────────────── */
+.vm-view-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.vm-section {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    padding: 1.125rem 1.25rem;
+}
+
+.vm-section-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    margin-bottom: 0.875rem;
+    opacity: 0.8;
+}
+
+.vm-text-block {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.6;
+    margin: 0 0 0.5rem 0;
+}
+
+.vm-text-hi {
+    color: var(--text-secondary);
+    opacity: 0.8;
+    font-style: italic;
+    font-size: 0.85rem;
+}
+
+/* ── Form layout ──────────────────────────────────────────────────────────── */
+.vm-form-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.vm-form-section {
+    border: 1px solid var(--border-glass);
+    border-radius: 16px;
+    padding: 1.25rem;
+    background: rgba(0, 0, 0, 0.15);
+}
+
+.vm-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* ── Input error state ────────────────────────────────────────────────────── */
+.ap-input--error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+.vm-error {
+    display: block;
+    font-size: 0.75rem;
+    color: #f87171;
+    margin-top: 0.35rem;
+    font-weight: 600;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    .vm-grid { grid-template-columns: 1fr; }
+    .vm-form-row { grid-template-columns: 1fr; }
+    .vm-modal { max-width: 100% !important; }
+}

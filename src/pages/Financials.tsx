@@ -1,6 +1,7 @@
-import { ArrowDownLeft, ArrowUpRight, Loader2 } from 'lucide-react';
+import { ArrowDownLeft, ArrowUpRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { getPayments, getPayouts } from '../services/adminService';
+import './AdminPages.css';
 
 const Financials = () => {
     const [activeTab, setActiveTab] = useState<'payments' | 'payouts'>('payments');
@@ -30,92 +31,84 @@ const Financials = () => {
     const TabButton = ({ id, label, icon: Icon }: any) => (
         <button
             onClick={() => setActiveTab(id)}
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-                padding: '0.75rem 1.5rem',
-                backgroundColor: activeTab === id ? '#dcfce7' : 'transparent',
-                color: activeTab === id ? '#166534' : '#6b7280',
-                borderBottom: activeTab === id ? '2px solid #16a34a' : '2px solid transparent',
-                borderRadius: '0.5rem 0.5rem 0 0',
-                fontWeight: 600
-            }}
+            className={`ap-tab ${activeTab === id ? 'active' : ''}`}
+            style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}
         >
-            <Icon size={18} />
+            <Icon size={16} />
             {label}
         </button>
     );
 
     return (
-        <div>
-            <h1 className="text-2xl font-bold text-gray-800 mb-6" style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1.5rem', color: '#1f2937' }}>Financial Management</h1>
+        <div className="ap-page">
+            <div className="ap-header">
+                <div>
+                    <h1 className="ap-title">Financial Management</h1>
+                    <p className="ap-subtitle">Track payments received and payouts made to vets.</p>
+                </div>
+            </div>
 
-            <div style={{ borderBottom: '1px solid #e5e7eb', display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
+            <div className="ap-tabs">
                 <TabButton id="payments" label="Received Payments" icon={ArrowDownLeft} />
                 <TabButton id="payouts" label="Vet Payouts" icon={ArrowUpRight} />
             </div>
 
             {loading ? (
-                <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
-                    <Loader2 className="animate-spin" size={32} color="#16a34a" />
+                <div className="ap-loading">
+                    <div className="ap-spin">⏳</div>
+                    <p>Loading financials...</p>
                 </div>
             ) : (
-                <div style={{ background: 'white', borderRadius: '0.5rem', border: '1px solid #e5e7eb', overflow: 'hidden' }}>
-                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                        <thead style={{ backgroundColor: '#f9fafb', borderBottom: '1px solid #e5e7eb' }}>
+                <div className="ap-table-wrap">
+                    <table className="ap-table">
+                        <thead>
                             <tr>
-                                <th style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Date</th>
-                                <th style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>
-                                    {activeTab === 'payments' ? 'Payer' : 'Recipient (Vet)'}
-                                </th>
-                                <th style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Amount</th>
-                                <th style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Status</th>
+                                <th>Date</th>
+                                <th>{activeTab === 'payments' ? 'Payer' : 'Recipient (Vet)'}</th>
+                                <th>Amount</th>
+                                <th>Status</th>
                                 {activeTab === 'payments' && (
-                                    <th style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Breakdown</th>
+                                    <th>Breakdown</th>
                                 )}
-                                <th style={{ padding: '0.75rem 1rem', fontSize: '0.75rem', fontWeight: 600, color: '#6b7280', textTransform: 'uppercase' }}>Transaction ID</th>
+                                <th>Transaction ID</th>
                             </tr>
                         </thead>
                         <tbody>
                             {(activeTab === 'payments' ? payments : payouts).map((item) => (
-                                <tr key={item.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                                    <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#374151' }}>
+                                <tr key={item.id} className="ap-row">
+                                    <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
                                         {new Date(item.created_at).toLocaleDateString()} <br />
-                                        <small style={{ color: '#9ca3af' }}>{new Date(item.created_at).toLocaleTimeString()}</small>
+                                        <small style={{ color: 'rgba(255, 255, 255, 0.4)' }}>{new Date(item.created_at).toLocaleTimeString()}</small>
                                     </td>
-                                    <td style={{ padding: '1rem', fontSize: '0.875rem', color: '#111827', fontWeight: 500 }}>
+                                    <td className="ap-cell-bold">
                                         {activeTab === 'payments' ? item.payer_name : `Dr. ${item.vet_name}`}
                                     </td>
-                                    <td style={{ padding: '1rem', fontSize: '0.875rem', fontWeight: 600, color: activeTab === 'payments' ? '#059669' : '#dc2626' }}>
-                                        {activeTab === 'payments' ? '+' : '-'} ₹{item.amount.toFixed(2)}
+                                    <td className="ap-cell-bold" style={{ color: activeTab === 'payments' ? 'var(--accent-green)' : '#f87171' }}>
+                                        {activeTab === 'payments' ? '+' : '-'} ₹{item.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </td>
-                                    <td style={{ padding: '1rem' }}>
-                                        <span style={{
-                                            padding: '0.25rem 0.5rem',
-                                            borderRadius: '9999px',
-                                            fontSize: '0.75rem',
-                                            fontWeight: 600,
-                                            backgroundColor: (item.status === 'COMPLETED' || item.status === 'PROCESSED') ? '#d1fae5' : '#fef3c7',
-                                            color: (item.status === 'COMPLETED' || item.status === 'PROCESSED') ? '#065f46' : '#92400e'
+                                    <td>
+                                        <span className="ap-badge" style={{
+                                            backgroundColor: (item.status === 'COMPLETED' || item.status === 'PROCESSED') ? 'var(--accent-green-glow)' : 'rgba(245, 158, 11, 0.12)',
+                                            color: (item.status === 'COMPLETED' || item.status === 'PROCESSED') ? 'var(--accent-green)' : '#fde68a',
+                                            border: (item.status === 'COMPLETED' || item.status === 'PROCESSED') ? '1px solid rgba(16, 185, 129, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)'
                                         }}>
                                             {item.status}
                                         </span>
                                     </td>
                                     {activeTab === 'payments' && (
-                                        <td style={{ padding: '1rem', fontSize: '0.75rem', color: '#6b7280' }}>
-                                            Vet: ₹{item.vet_share?.toFixed(1)} <br />
-                                            Plat: ₹{item.platform_share?.toFixed(1)}
+                                        <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                                            Vet: ₹{item.vet_share?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} <br />
+                                            Plat: ₹{item.platform_share?.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
                                         </td>
                                     )}
-                                    <td style={{ padding: '1rem', fontSize: '0.75rem', color: '#6b7280', fontFamily: 'monospace' }}>
-                                        {item.transaction_id || '-'}
+                                    <td style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontFamily: 'monospace', opacity: 0.8 }}>
+                                        {item.transaction_id || '—'}
                                     </td>
                                 </tr>
                             ))}
                             {(activeTab === 'payments' ? payments : payouts).length === 0 && (
                                 <tr>
-                                    <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>
+                                    <td colSpan={activeTab === 'payments' ? 6 : 5} className="ap-empty">
                                         No data found
                                     </td>
                                 </tr>

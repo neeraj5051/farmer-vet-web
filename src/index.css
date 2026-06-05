@@ -1,12 +1,26 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
 
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: 'Outfit', 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  color-scheme: light;
-  color: #213547;
-  background-color: #ffffff;
+  color-scheme: dark;
+  
+  /* Redesign Theme Custom Colors */
+  --bg-primary: #090d16;
+  --bg-card: rgba(17, 24, 39, 0.65);
+  --border-glass: rgba(255, 255, 255, 0.08);
+  --text-primary: #ffffff;
+  --text-secondary: #9ca3af;
+  --accent-green: #10b981;
+  --accent-green-glow: rgba(16, 185, 129, 0.15);
+  --accent-blue: #6366f1;
+  --accent-purple: #8b5cf6;
+  --accent-orange: #f97316;
+
+  color: var(--text-primary);
+  background-color: var(--bg-primary);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -17,6 +31,8 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 button {
