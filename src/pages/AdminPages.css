@@ -413,6 +413,7 @@
     justify-content: center;
     color: var(--text-secondary);
     transition: background 0.15s, color 0.15s;
+    padding: 0;
 }
 
 .ap-modal-close:hover { 
@@ -515,6 +516,7 @@
 
 .ap-switch {
     position: relative;
+    display: inline-block;
     width: 46px;
     height: 26px;
 }

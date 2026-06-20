@@ -17,6 +17,7 @@ import {
     getVaccines,
     updateVaccine,
 } from '../services/vaccineService';
+import { uploadAdminImage } from '../services/uploadService';
 import './AdminPages.css';
 import './VaccineManagement.css';
 
@@ -48,6 +49,7 @@ const VaccineManagement = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [categoryFilter, setCategoryFilter] = useState('all');
@@ -55,6 +57,7 @@ const VaccineManagement = () => {
 
     const [modalMode, setModalMode] = useState<ModalMode>(null);
     const [selectedVaccine, setSelectedVaccine] = useState<Vaccine | null>(null);
+    const [vaccineToDelete, setVaccineToDelete] = useState<Vaccine | null>(null);
     const [form, setForm] = useState<Partial<Vaccine>>(emptyForm());
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
@@ -130,10 +133,15 @@ const VaccineManagement = () => {
     };
 
     // ── Delete ─────────────────────────────────────────────────────────────────
-    const handleDelete = async (v: Vaccine) => {
-        if (!window.confirm(`Delete vaccine "${v.name}"? This cannot be undone.`)) return;
+    const handleDeleteClick = (v: Vaccine) => {
+        setVaccineToDelete(v);
+    };
+
+    const confirmDelete = async () => {
+        if (!vaccineToDelete) return;
         try {
-            await deleteVaccine(v.id);
+            await deleteVaccine(vaccineToDelete.id);
+            setVaccineToDelete(null);
             fetchData();
         } catch (err: any) {
             alert(err?.response?.data?.detail || 'Failed to delete vaccine');
@@ -154,6 +162,21 @@ const VaccineManagement = () => {
     const setField = (key: keyof Vaccine, value: any) => {
         setForm(f => ({ ...f, [key]: value }));
         if (formErrors[key]) setFormErrors(e => { const n = { ...e }; delete n[key]; return n; });
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setUploadingImage(true);
+            const url = await uploadAdminImage(file, 'vaccines');
+            setField('image_url', url);
+        } catch (err: any) {
+            alert(err?.response?.data?.detail || 'Failed to upload image');
+        } finally {
+            setUploadingImage(false);
+        }
     };
 
     // ── Filter ─────────────────────────────────────────────────────────────────
@@ -308,12 +331,38 @@ const VaccineManagement = () => {
                                 <button className="ap-btn-sm ap-btn-primary vm-action-btn" onClick={() => openEdit(v)}>
                                     <PenLine size={13} /> Edit
                                 </button>
-                                <button className="ap-btn-sm ap-btn-danger vm-action-btn" onClick={() => handleDelete(v)}>
+                                <button className="ap-btn-sm ap-btn-danger vm-action-btn" onClick={() => handleDeleteClick(v)}>
                                     <Trash2 size={13} /> Delete
                                 </button>
                             </div>
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* ── Delete Confirmation Modal ─────────────────────────────────────── */}
+            {vaccineToDelete && (
+                <div className="ap-modal-backdrop" onClick={() => setVaccineToDelete(null)}>
+                    <div className="ap-modal vm-modal" style={{ maxWidth: '400px' }} onClick={e => e.stopPropagation()}>
+                        <div className="ap-modal-header" style={{ borderBottom: 'none', paddingBottom: 0 }}>
+                            <h2 style={{ color: '#dc2626' }}>Confirm Deletion</h2>
+                            <button className="ap-modal-close" onClick={() => setVaccineToDelete(null)}><X size={16} /></button>
+                        </div>
+                        <div className="ap-modal-body" style={{ padding: '1rem 1.5rem 1.5rem' }}>
+                            <p style={{ margin: 0, color: '#4b5563', lineHeight: 1.5 }}>
+                                Are you sure you want to delete the vaccine <strong>"{vaccineToDelete.name}"</strong>? 
+                                This action cannot be undone.
+                            </p>
+                        </div>
+                        <div className="ap-modal-footer" style={{ borderTop: 'none', justifyContent: 'flex-end', paddingTop: 0 }}>
+                            <button className="ap-btn-sm ap-btn-outline" style={{ padding: '0.5rem 1rem' }} onClick={() => setVaccineToDelete(null)}>
+                                Cancel
+                            </button>
+                            <button className="ap-btn-sm ap-btn-danger" style={{ padding: '0.5rem 1.5rem' }} onClick={confirmDelete}>
+                                Delete
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 
@@ -484,8 +533,32 @@ const VaccineManagement = () => {
                                         <textarea className="ap-textarea" value={form.key_notes_hi || ''} onChange={e => setField('key_notes_hi', e.target.value)} placeholder="हिंदी में महत्वपूर्ण टिप्पणी..." rows={3} />
                                     </div>
                                     <div className="ap-form-group">
-                                        <label className="ap-label">Image URL</label>
-                                        <input className="ap-input" value={form.image_url || ''} onChange={e => setField('image_url', e.target.value)} placeholder="https://..." />
+                                        <label className="ap-label">Image Upload</label>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                onChange={handleImageUpload} 
+                                                style={{ display: 'none' }} 
+                                                id="vaccine-image-upload" 
+                                                disabled={uploadingImage}
+                                            />
+                                            <label htmlFor="vaccine-image-upload" className="ap-btn-sm ap-btn-outline" style={{ cursor: 'pointer', opacity: uploadingImage ? 0.5 : 1, margin: 0, padding: '0.5rem 1rem' }}>
+                                                {uploadingImage ? 'Uploading...' : 'Choose Image'}
+                                            </label>
+                                            {form.image_url && (
+                                                <div style={{ position: 'relative' }}>
+                                                    <img src={form.image_url} alt="Preview" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', border: '1px solid #374151' }} />
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => setField('image_url', '')}
+                                                        style={{ position: 'absolute', top: -8, right: -8, background: '#ef4444', color: 'white', borderRadius: '50%', width: 20, height: 20, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, lineHeight: 1 }}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 

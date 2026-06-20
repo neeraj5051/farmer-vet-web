@@ -11,6 +11,8 @@ import {
     updateDiseaseGroup 
 } from '../services/diseaseService';
 import type { Disease, DiseaseGroup } from '../services/diseaseService';
+import { uploadAdminImage } from '../services/uploadService';
+import './AdminPages.css';
 
 const ManageDiseases = () => {
     // Navigation / Listing states
@@ -19,6 +21,8 @@ const ManageDiseases = () => {
     const [groups, setGroups] = useState<DiseaseGroup[]>([]);
     const [loading, setLoading] = useState(true);
     const [diseaseSearch, setDiseaseSearch] = useState('');
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [uploadingGroupImage, setUploadingGroupImage] = useState(false);
 
     // Modals visibility
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -150,6 +154,34 @@ const ManageDiseases = () => {
         } catch (error) {
             console.error("Failed to save disease group:", error);
             alert("Failed to save disease category.");
+        }
+    };
+
+    const handleDiseaseImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setUploadingImage(true);
+            const url = await uploadAdminImage(file, 'diseases');
+            setFormData(prev => ({ ...prev, image_path: url }));
+        } catch (err: any) {
+            alert(err?.response?.data?.detail || 'Failed to upload image');
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
+    const handleGroupImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            setUploadingGroupImage(true);
+            const url = await uploadAdminImage(file, 'diseases_groups');
+            setGroupFormData(prev => ({ ...prev, image_path: url }));
+        } catch (err: any) {
+            alert(err?.response?.data?.detail || 'Failed to upload image');
+        } finally {
+            setUploadingGroupImage(false);
         }
     };
 
@@ -295,24 +327,24 @@ const ManageDiseases = () => {
     }
 
     return (
-        <div className="p-8 bg-gray-50 min-h-screen">
+        <div className="ap-page p-8 min-h-screen">
             {/* Page Header */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
+            <div className="ap-header">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-800">Disease Directory</h1>
-                    <p className="text-gray-500 mt-1">Manage clinical conditions, categories, symptoms, and treatments for livestock.</p>
+                    <h1 className="ap-title">Disease Directory</h1>
+                    <p className="ap-subtitle">Manage clinical conditions, categories, symptoms, and treatments for livestock.</p>
                 </div>
                 <div className="flex gap-3">
                     <button
                         onClick={() => { resetGroupForm(); setGroupModalTab('en'); setIsGroupModalOpen(true); }}
-                        className="flex items-center px-4 py-2 border border-emerald-600 text-emerald-600 font-medium rounded-lg hover:bg-emerald-50 transition-all cursor-pointer"
+                        className="ap-add-btn" style={{ background: 'transparent', color: 'var(--accent-green)', border: '1px solid var(--accent-green)' }}
                     >
                         <Plus size={18} className="mr-2" />
                         New Category Group
                     </button>
                     <button
                         onClick={() => { resetForm(); setModalTab('en'); setIsModalOpen(true); }}
-                        className="flex items-center px-4 py-2 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 shadow-sm transition-all cursor-pointer"
+                        className="ap-add-btn"
                     >
                         <Plus size={18} className="mr-2" />
                         Add Condition
@@ -321,27 +353,19 @@ const ManageDiseases = () => {
             </div>
 
             {/* Top Navigation Tabs */}
-            <div className="flex border-b border-gray-200 mb-6 bg-white px-4 pt-2 rounded-t-xl">
+            <div className="ap-tabs">
                 <button
                     onClick={() => setActiveTab('diseases')}
-                    className={`flex items-center px-4 py-3 font-semibold text-sm border-b-2 cursor-pointer transition-all ${
-                        activeTab === 'diseases' 
-                            ? 'border-emerald-600 text-emerald-600' 
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`ap-tab ${activeTab === 'diseases' ? 'active' : ''}`}
                 >
-                    <BookOpen size={16} className="mr-2" />
+                    <BookOpen size={16} className="mr-2 inline" />
                     Diseases ({diseases.length})
                 </button>
                 <button
                     onClick={() => setActiveTab('groups')}
-                    className={`flex items-center px-4 py-3 font-semibold text-sm border-b-2 cursor-pointer transition-all ${
-                        activeTab === 'groups' 
-                            ? 'border-emerald-600 text-emerald-600' 
-                            : 'border-transparent text-gray-500 hover:text-gray-700'
-                    }`}
+                    className={`ap-tab ${activeTab === 'groups' ? 'active' : ''}`}
                 >
-                    <Layers size={16} className="mr-2" />
+                    <Layers size={16} className="mr-2 inline" />
                     Category Groups ({groups.length})
                 </button>
             </div>
@@ -350,95 +374,97 @@ const ManageDiseases = () => {
             {activeTab === 'diseases' && (
                 <div className="space-y-4">
                     {/* Search bar */}
-                    <div className="flex max-w-md bg-white border border-gray-200 rounded-lg px-3.5 py-2 items-center focus-within:ring-2 focus-within:ring-emerald-500 focus-within:border-emerald-500">
-                        <Search size={18} className="text-gray-400 mr-2" />
-                        <input
-                            type="text"
-                            placeholder="Search by name, pathogen, category..."
-                            value={diseaseSearch}
-                            onChange={(e) => setDiseaseSearch(e.target.value)}
-                            className="outline-none w-full text-sm text-gray-700"
-                        />
+                    <div className="ap-filters-bar">
+                        <div className="ap-search-wrap">
+                            <Search size={18} color="#9ca3af" />
+                            <input
+                                type="text"
+                                placeholder="Search by name, pathogen, category..."
+                                value={diseaseSearch}
+                                onChange={(e) => setDiseaseSearch(e.target.value)}
+                                className="ap-search-input"
+                            />
+                        </div>
                     </div>
 
                     {/* Diseases Table */}
-                    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <table className="w-full text-left border-collapse">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                    <div className="ap-table-wrap">
+                        <table className="ap-table">
+                            <thead>
                                 <tr>
-                                    <th className="px-6 py-4 font-semibold text-gray-700 text-sm">Disease Name</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700 text-sm">Category Group</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700 text-sm">Pathogen Type</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700 text-sm">Bilingual Status</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700 text-sm">Severity</th>
-                                    <th className="px-6 py-4 font-semibold text-gray-700 text-sm text-right">Actions</th>
+                                    <th>Disease Name</th>
+                                    <th>Category Group</th>
+                                    <th>Pathogen Type</th>
+                                    <th>Bilingual Status</th>
+                                    <th>Severity</th>
+                                    <th className="text-right">Actions</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-100">
+                            <tbody>
                                 {filteredDiseases.map((disease) => (
                                     <tr
                                         key={disease.id}
-                                        className="hover:bg-gray-50/80 transition-colors cursor-pointer"
+                                        className="ap-row cursor-pointer"
                                         onClick={() => {
                                             setViewingDisease(disease);
                                             setDetailLang(disease.description_hi && !disease.description ? 'hi' : 'en');
                                         }}
                                     >
-                                        <td className="px-6 py-4">
-                                            <div className="font-bold text-gray-800">{disease.name}</div>
+                                        <td>
+                                            <div className="ap-cell-bold">{disease.name}</div>
                                             {disease.name_hi && (
-                                                <div className="text-xs text-gray-500 font-medium">{disease.name_hi}</div>
+                                                <div className="text-xs text-gray-400 font-medium">{disease.name_hi}</div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4 text-sm font-medium text-gray-600">
+                                        <td>
                                             {disease.group?.name ? (
-                                                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-100 text-xs font-semibold">
+                                                <span className="ap-badge" style={{ background: '#d1fae5', color: '#065f46', whiteSpace: 'nowrap' }}>
                                                     {disease.group.name}
                                                 </span>
                                             ) : (
                                                 <span className="text-gray-400 italic text-xs">Unassociated</span>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td>
                                             {disease.pathogen_type ? (
-                                                <span className={`inline-flex px-2 py-0.5 text-xs font-semibold rounded-full border ${getPathogenColor(disease.pathogen_type)}`}>
+                                                <span className="ap-badge" style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)' }}>
                                                     {disease.pathogen_type}
                                                 </span>
                                             ) : (
                                                 <span className="text-gray-400 italic text-xs">-</span>
                                             )}
                                             {disease.pathogen_name && (
-                                                <div className="text-xs text-gray-400 font-medium italic mt-0.5">{disease.pathogen_name}</div>
+                                                <div className="text-xs text-gray-400 font-medium italic mt-1">{disease.pathogen_name}</div>
                                             )}
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td>
                                             <div className="flex gap-1.5">
-                                                <span className="px-1.5 py-0.5 bg-green-50 text-green-700 border border-green-200 rounded text-[10px] font-bold">EN</span>
+                                                <span className="ap-badge" style={{ background: '#d1fae5', color: '#065f46' }}>EN</span>
                                                 {disease.description_hi ? (
-                                                    <span className="px-1.5 py-0.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded text-[10px] font-bold">HI</span>
+                                                    <span className="ap-badge" style={{ background: '#d1fae5', color: '#065f46' }}>HI</span>
                                                 ) : (
-                                                    <span className="px-1.5 py-0.5 bg-yellow-50 text-yellow-600 border border-yellow-200 rounded text-[10px] font-bold" title="Hindi description missing">HI Missing</span>
+                                                    <span className="ap-badge" style={{ background: '#fef3c7', color: '#92400e' }} title="Hindi description missing">HI Missing</span>
                                                 )}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
+                                        <td>
                                             <div className="flex">
                                                 {[...Array(5)].map((_, i) => (
-                                                    <div key={i} className={`w-2 h-2 rounded-full mx-0.5 ${i < disease.severity_level ? 'bg-red-500' : 'bg-gray-200'}`} />
+                                                    <div key={i} className={`w-2 h-2 rounded-full mx-0.5 ${i < disease.severity_level ? 'bg-red-500' : 'bg-gray-600'}`} />
                                                 ))}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 text-right space-x-2" onClick={(e) => e.stopPropagation()}>
+                                        <td className="text-right space-x-2" onClick={(e) => e.stopPropagation()}>
                                             <button
                                                 onClick={() => openEditDiseaseModal(disease)}
-                                                className="text-gray-400 hover:text-emerald-600 transition-colors p-1"
+                                                className="ap-btn-sm ap-btn-outline"
                                                 title="Edit Disease"
                                             >
                                                 <Edit2 size={16} />
                                             </button>
                                             <button
                                                 onClick={() => handleDeleteDisease(disease.id)}
-                                                className="text-gray-400 hover:text-red-600 transition-colors p-1"
+                                                className="ap-btn-sm ap-btn-danger"
                                                 title="Delete Disease"
                                             >
                                                 <Trash2 size={16} />
@@ -448,7 +474,7 @@ const ManageDiseases = () => {
                                 ))}
                                 {filteredDiseases.length === 0 && (
                                     <tr>
-                                        <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
+                                        <td colSpan={6} className="ap-empty">
                                             No disease conditions found matching "{diseaseSearch}".
                                         </td>
                                     </tr>
@@ -461,48 +487,48 @@ const ManageDiseases = () => {
 
             {/* GROUPS TAB CONTENT */}
             {activeTab === 'groups' && (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="ap-stats-grid">
                     {groups.map((group) => {
                         const associatedCount = diseases.filter(d => d.group_id === group.id).length;
                         return (
-                            <div key={group.id} className="bg-white rounded-xl shadow-sm border border-gray-200/80 p-5 flex flex-col justify-between hover:shadow-md transition-all">
+                            <div key={group.id} className="ap-expand-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                                 <div>
                                     <div className="flex justify-between items-start mb-3">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-xl">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-xl shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
                                                 {group.icon_emoji || '🐄'}
                                             </div>
                                             <div>
-                                                <h4 className="font-bold text-gray-800 text-lg">{group.name}</h4>
+                                                <h4 className="ap-cell-bold">{group.name}</h4>
                                                 {group.name_hi && (
-                                                    <span className="text-xs text-gray-500 font-medium block">{group.name_hi}</span>
+                                                    <span className="text-xs text-gray-400 font-medium block">{group.name_hi}</span>
                                                 )}
                                             </div>
                                         </div>
-                                        <span className="text-xs font-bold bg-gray-100 text-gray-700 px-2 py-0.5 rounded-full">
+                                        <span className="ap-badge" style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)' }}>
                                             {associatedCount} {associatedCount === 1 ? 'Condition' : 'Conditions'}
                                         </span>
                                     </div>
-                                    <p className="text-gray-600 text-sm line-clamp-2 mt-2 leading-relaxed">
+                                    <p className="text-sm line-clamp-2 mt-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
                                         {group.description || 'No description provided.'}
                                     </p>
                                     {group.description_hi && (
-                                        <p className="text-gray-400 text-xs italic line-clamp-1 mt-1 font-medium">
+                                        <p className="text-xs italic line-clamp-1 mt-1 font-medium" style={{ color: 'var(--text-secondary)', opacity: 0.7 }}>
                                             {group.description_hi}
                                         </p>
                                     )}
                                 </div>
-                                <div className="flex justify-end gap-3 border-t border-gray-100 pt-4 mt-4">
+                                <div className="flex justify-end gap-3 pt-4 mt-4" style={{ borderTop: '1px solid var(--border-glass)' }}>
                                     <button
                                         onClick={() => openEditGroupModal(group)}
-                                        className="text-sm font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+                                        className="ap-btn-sm ap-btn-outline"
                                     >
                                         <Edit2 size={14} />
                                         Edit
                                     </button>
                                     <button
                                         onClick={() => handleDeleteGroup(group.id)}
-                                        className="text-sm font-semibold text-red-500 hover:text-red-600 flex items-center gap-1.5 transition-colors cursor-pointer"
+                                        className="ap-btn-sm ap-btn-danger"
                                     >
                                         <Trash2 size={14} />
                                         Delete
@@ -512,7 +538,7 @@ const ManageDiseases = () => {
                         );
                     })}
                     {groups.length === 0 && (
-                        <div className="col-span-full bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center text-gray-400">
+                        <div className="col-span-full ap-empty ap-expand-card">
                             No category groups defined yet.
                         </div>
                     )}
@@ -521,20 +547,20 @@ const ManageDiseases = () => {
 
             {/* DISEASE CREATE/EDIT MODAL */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 my-8">
+                <div className="ap-modal-backdrop">
+                    <div className="ap-modal w-full max-w-2xl" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
                         {/* Modal Header */}
-                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
-                            <h3 className="text-lg font-bold text-gray-800">
+                        <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
+                            <h3 className="ap-title text-lg">
                                 {editingDisease ? 'Edit Disease Condition' : 'Add New Disease Condition'}
                             </h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+                            <button onClick={() => setIsModalOpen(false)} className="ap-modal-close">
                                 <X size={20} />
                             </button>
                         </div>
 
                         {/* Internal Language Pills (Tabs) */}
-                        <div className="flex bg-gray-50 border-b border-gray-100 px-6">
+                        <div className="flex border-b px-6" style={{ background: 'rgba(0,0,0,0.2)', borderColor: 'var(--border-glass)' }}>
                             <button
                                 type="button"
                                 onClick={() => setModalTab('en')}
@@ -562,7 +588,7 @@ const ManageDiseases = () => {
                         </div>
 
                         {/* Modal Form */}
-                        <form onSubmit={handleDiseaseSubmit} className="p-6 space-y-4 max-h-[calc(100vh-220px)] overflow-y-auto">
+                        <form onSubmit={handleDiseaseSubmit} className="ap-modal-body space-y-4 overflow-y-auto">
                             {/* TAB 1: ENGLISH DETAILS */}
                             {modalTab === 'en' && (
                                 <div className="space-y-4">
@@ -573,7 +599,7 @@ const ManageDiseases = () => {
                                                 type="text"
                                                 required
                                                 placeholder="e.g. Foot and Mouth Disease"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="ap-input"
                                                 value={formData.name}
                                                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                                             />
@@ -582,7 +608,7 @@ const ManageDiseases = () => {
                                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Category Group *</label>
                                             <select
                                                 required
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="ap-input"
                                                 value={formData.group_id}
                                                 onChange={(e) => setFormData({ ...formData, group_id: e.target.value })}
                                             >
@@ -601,7 +627,7 @@ const ManageDiseases = () => {
                                                 type="text"
                                                 required
                                                 placeholder="e.g. Cattle, Buffalo"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="ap-input"
                                                 value={formData.species}
                                                 onChange={(e) => setFormData({ ...formData, species: e.target.value })}
                                             />
@@ -611,7 +637,7 @@ const ManageDiseases = () => {
                                             <input
                                                 type="text"
                                                 placeholder="e.g. Respiratory, Integumentary"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="ap-input"
                                                 value={formData.body_system}
                                                 onChange={(e) => setFormData({ ...formData, body_system: e.target.value })}
                                             />
@@ -621,7 +647,7 @@ const ManageDiseases = () => {
                                             <input
                                                 type="text"
                                                 placeholder="e.g. Infectious, Zoonotic"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="ap-input"
                                                 value={formData.disease_type}
                                                 onChange={(e) => setFormData({ ...formData, disease_type: e.target.value })}
                                             />
@@ -632,7 +658,7 @@ const ManageDiseases = () => {
                                         <div>
                                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Pathogen Type *</label>
                                             <select
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="ap-input"
                                                 value={formData.pathogen_type}
                                                 onChange={(e) => setFormData({ ...formData, pathogen_type: e.target.value })}
                                             >
@@ -648,7 +674,7 @@ const ManageDiseases = () => {
                                             <input
                                                 type="text"
                                                 placeholder="e.g. Aphthovirus, Brucella abortus"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="ap-input"
                                                 value={formData.pathogen_name}
                                                 onChange={(e) => setFormData({ ...formData, pathogen_name: e.target.value })}
                                             />
@@ -662,20 +688,38 @@ const ManageDiseases = () => {
                                                 type="number"
                                                 min="1"
                                                 max="5"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                                className="ap-input"
                                                 value={formData.severity_level}
                                                 onChange={(e) => setFormData({ ...formData, severity_level: Number(e.target.value) })}
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Image URL / Emoji Icon</label>
-                                            <input
-                                                type="text"
-                                                placeholder="🔴 or https://domain.com/image.jpg"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
-                                                value={formData.image_path}
-                                                onChange={(e) => setFormData({ ...formData, image_path: e.target.value })}
-                                            />
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Image Upload</label>
+                                            <div className="flex items-center gap-3">
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*" 
+                                                    onChange={handleDiseaseImageUpload} 
+                                                    style={{ display: 'none' }} 
+                                                    id="disease-image-upload" 
+                                                    disabled={uploadingImage}
+                                                />
+                                                <label htmlFor="disease-image-upload" className="px-3 py-2 border border-emerald-600 text-emerald-600 font-medium rounded-lg hover:bg-emerald-50 transition-all cursor-pointer text-sm">
+                                                    {uploadingImage ? 'Uploading...' : 'Choose Image'}
+                                                </label>
+                                                {formData.image_path && (
+                                                    <div className="relative">
+                                                        <img src={formData.image_path} alt="Preview" className="w-10 h-10 rounded object-cover border border-gray-300" />
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => setFormData({ ...formData, image_path: '' })}
+                                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs border-none cursor-pointer"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -685,7 +729,7 @@ const ManageDiseases = () => {
                                             required
                                             rows={3}
                                             placeholder="Write clinical description in English..."
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-textarea"
                                             value={formData.description}
                                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         />
@@ -697,7 +741,7 @@ const ManageDiseases = () => {
                                             required
                                             rows={2}
                                             placeholder="High fever, drooling, blisters on hooves"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-textarea"
                                             value={formData.symptoms}
                                             onChange={(e) => setFormData({ ...formData, symptoms: e.target.value })}
                                         />
@@ -709,7 +753,7 @@ const ManageDiseases = () => {
                                             required
                                             rows={2}
                                             placeholder="Direct contact, contaminated water, airborne droplets"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-textarea"
                                             value={formData.causes}
                                             onChange={(e) => setFormData({ ...formData, causes: e.target.value })}
                                         />
@@ -721,7 +765,7 @@ const ManageDiseases = () => {
                                             required
                                             rows={2}
                                             placeholder="Supportive therapy, clean water, isolate animal"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-textarea"
                                             value={formData.treatments}
                                             onChange={(e) => setFormData({ ...formData, treatments: e.target.value })}
                                         />
@@ -744,7 +788,7 @@ const ManageDiseases = () => {
                                         <input
                                             type="text"
                                             placeholder="खुरपका और मुंहपका रोग"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-input"
                                             value={formData.name_hi}
                                             onChange={(e) => setFormData({ ...formData, name_hi: e.target.value })}
                                         />
@@ -755,7 +799,7 @@ const ManageDiseases = () => {
                                         <textarea
                                             rows={3}
                                             placeholder="इस रोग का मुख्य कारण अति संक्रामक विषाणु है जो पशुओं में तेजी से फैलता है..."
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-textarea"
                                             value={formData.description_hi}
                                             onChange={(e) => setFormData({ ...formData, description_hi: e.target.value })}
                                         />
@@ -766,7 +810,7 @@ const ManageDiseases = () => {
                                         <textarea
                                             rows={2}
                                             placeholder="तेज बुखार, मुंह से लार टपकना, थन और खुरों पर छाले"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-textarea"
                                             value={formData.symptoms_hi}
                                             onChange={(e) => setFormData({ ...formData, symptoms_hi: e.target.value })}
                                         />
@@ -777,7 +821,7 @@ const ManageDiseases = () => {
                                         <textarea
                                             rows={2}
                                             placeholder="प्रत्यक्ष संपर्क, दूषित पानी और हवा, संक्रमित पशु के संपर्क में आना"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-textarea"
                                             value={formData.causes_hi}
                                             onChange={(e) => setFormData({ ...formData, causes_hi: e.target.value })}
                                         />
@@ -788,7 +832,7 @@ const ManageDiseases = () => {
                                         <textarea
                                             rows={2}
                                             placeholder="संक्रमित पशु को अलग रखना, खुरों को एंटीसेप्टिक से धोना, सहायक चिकित्सा"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-textarea"
                                             value={formData.treatments_hi}
                                             onChange={(e) => setFormData({ ...formData, treatments_hi: e.target.value })}
                                         />
@@ -797,17 +841,17 @@ const ManageDiseases = () => {
                             )}
 
                             {/* Form CTAs */}
-                            <div className="pt-4 flex justify-end gap-3 sticky bottom-0 bg-white border-t border-gray-100 mt-4 py-2">
+                            <div className="ap-modal-footer mt-4">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-all cursor-pointer font-medium"
+                                    className="ap-btn-sm ap-btn-outline"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-5 py-2 text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 shadow-sm transition-all cursor-pointer font-medium"
+                                    className="ap-btn-sm ap-btn-primary"
                                 >
                                     {editingDisease ? 'Update Disease' : 'Create Disease'}
                                 </button>
@@ -819,25 +863,25 @@ const ManageDiseases = () => {
 
             {/* DISEASE DETAIL VIEW MODAL */}
             {viewingDisease && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl overflow-hidden animate-in fade-in zoom-in duration-200 my-8">
+                <div className="ap-modal-backdrop">
+                    <div className="ap-modal w-full max-w-3xl" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
                         {/* Detail Header */}
-                        <div className="flex justify-between items-start p-8 border-b border-gray-100 sticky top-0 bg-white z-10">
+                        <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
                             <div>
-                                <h3 className="text-2xl font-bold text-gray-800">
+                                <h3 className="ap-title text-xl mb-2">
                                     {detailLang === 'hi' && viewingDisease.name_hi 
                                         ? viewingDisease.name_hi 
                                         : viewingDisease.name}
                                 </h3>
                                 <div className="flex flex-wrap gap-2 mt-2">
-                                    <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded-full uppercase">
+                                    <span className="ap-badge" style={{ background: 'rgba(59, 130, 246, 0.2)', color: '#93c5fd' }}>
                                         {viewingDisease.category}
                                     </span>
-                                    <span className="px-2.5 py-0.5 bg-gray-100 text-gray-800 text-xs font-bold rounded-full uppercase">
+                                    <span className="ap-badge" style={{ background: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)' }}>
                                         {viewingDisease.species}
                                     </span>
                                     {viewingDisease.group && (
-                                        <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-800 text-xs font-bold rounded-full uppercase">
+                                        <span className="ap-badge" style={{ background: 'rgba(16, 185, 129, 0.2)', color: '#6ee7b7' }}>
                                             {viewingDisease.group.name}
                                         </span>
                                     )}
@@ -846,16 +890,16 @@ const ManageDiseases = () => {
                             <div className="flex items-center gap-3">
                                 {/* Language toggle in detail view */}
                                 {(viewingDisease.description_hi || viewingDisease.symptoms_hi || viewingDisease.treatments_hi) && (
-                                    <div className="flex bg-gray-100 p-0.5 rounded-lg border">
+                                    <div className="flex p-0.5 rounded-lg border" style={{ background: 'rgba(0,0,0,0.2)', borderColor: 'var(--border-glass)' }}>
                                         <button 
                                             onClick={() => setDetailLang('en')}
-                                            className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${detailLang === 'en' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${detailLang === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}
                                         >
                                             English
                                         </button>
                                         <button 
                                             onClick={() => setDetailLang('hi')}
-                                            className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${detailLang === 'hi' ? 'bg-white text-emerald-700 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                                            className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all cursor-pointer ${detailLang === 'hi' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-gray-200'}`}
                                         >
                                             हिंदी
                                         </button>
@@ -863,7 +907,7 @@ const ManageDiseases = () => {
                                 )}
                                 <button 
                                     onClick={() => setViewingDisease(null)} 
-                                    className="text-gray-400 hover:text-gray-600 transition-colors p-2 hover:bg-gray-100 rounded-full cursor-pointer"
+                                    className="ap-modal-close"
                                 >
                                     <X size={20} />
                                 </button>
@@ -871,11 +915,11 @@ const ManageDiseases = () => {
                         </div>
 
                         {/* Detail Content */}
-                        <div className="p-8 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+                        <div className="ap-modal-body p-8 space-y-6 overflow-y-auto">
                             {/* Excerpt/Description */}
                             <section>
-                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Description</h4>
-                                <p className="text-gray-700 leading-relaxed text-base">
+                                <h4 className="text-xs font-bold uppercase tracking-wider mb-2" style={{ color: 'var(--text-secondary)' }}>Description</h4>
+                                <p className="leading-relaxed text-sm" style={{ color: 'var(--text-primary)' }}>
                                     {detailLang === 'hi' && viewingDisease.description_hi 
                                         ? viewingDisease.description_hi 
                                         : viewingDisease.description}
@@ -884,30 +928,30 @@ const ManageDiseases = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Details Card */}
-                                <section className="bg-gray-50 p-5 rounded-xl border border-gray-200">
-                                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3.5">Core Specifications</h4>
+                                <section className="p-5 rounded-xl border" style={{ background: 'rgba(0,0,0,0.2)', borderColor: 'var(--border-glass)' }}>
+                                    <h4 className="text-xs font-bold uppercase tracking-wider mb-3.5" style={{ color: 'var(--text-secondary)' }}>Core Specifications</h4>
                                     <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between border-b border-gray-200/50 pb-2">
-                                            <span className="text-gray-500">Affected Body System</span>
-                                            <span className="font-semibold text-gray-800">{viewingDisease.body_system || '-'}</span>
+                                        <div className="flex flex-col sm:flex-row justify-between border-b pb-2 gap-2" style={{ borderColor: 'var(--border-glass)' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Affected Body System</span>
+                                            <span className="font-semibold text-right" style={{ color: 'var(--text-primary)' }}>{viewingDisease.body_system || '-'}</span>
                                         </div>
-                                        <div className="flex justify-between border-b border-gray-200/50 pb-2">
-                                            <span className="text-gray-500">Classification Type</span>
-                                            <span className="font-semibold text-gray-800">{viewingDisease.disease_type || '-'}</span>
+                                        <div className="flex flex-col sm:flex-row justify-between border-b pb-2 gap-2" style={{ borderColor: 'var(--border-glass)' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Classification Type</span>
+                                            <span className="font-semibold text-right" style={{ color: 'var(--text-primary)' }}>{viewingDisease.disease_type || '-'}</span>
                                         </div>
-                                        <div className="flex justify-between border-b border-gray-200/50 pb-2">
-                                            <span className="text-gray-500">Pathogen Agent</span>
-                                            <span className="font-semibold text-gray-800">
+                                        <div className="flex flex-col sm:flex-row justify-between border-b pb-2 gap-2" style={{ borderColor: 'var(--border-glass)' }}>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Pathogen Agent</span>
+                                            <span className="font-semibold text-right" style={{ color: 'var(--text-primary)' }}>
                                                 {viewingDisease.pathogen_name || '-'} {viewingDisease.pathogen_type && `(${viewingDisease.pathogen_type})`}
                                             </span>
                                         </div>
                                         <div className="flex justify-between items-center pt-1">
-                                            <span className="text-gray-500">Severity Rating</span>
+                                            <span style={{ color: 'var(--text-secondary)' }}>Severity Rating</span>
                                             <div className="flex space-x-1">
                                                 {[...Array(5)].map((_, i) => (
                                                     <div
                                                         key={i}
-                                                        className={`w-2.5 h-2.5 rounded-full ${i < viewingDisease.severity_level ? 'bg-red-500' : 'bg-gray-200'}`}
+                                                        className={`w-2.5 h-2.5 rounded-full ${i < viewingDisease.severity_level ? 'bg-red-500' : 'bg-gray-600'}`}
                                                     />
                                                 ))}
                                             </div>
@@ -916,20 +960,20 @@ const ManageDiseases = () => {
                                 </section>
 
                                 {/* Symptoms Column */}
-                                <section className="bg-emerald-50/50 p-5 rounded-xl border border-emerald-100">
-                                    <h4 className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3.5 flex items-center">
-                                        <CheckCircle size={14} className="mr-1.5 text-emerald-600" />
+                                <section className="p-5 rounded-xl border" style={{ background: 'rgba(16, 185, 129, 0.05)', borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+                                    <h4 className="text-xs font-bold uppercase tracking-wider mb-3.5 flex items-center" style={{ color: '#34d399' }}>
+                                        <CheckCircle size={14} className="mr-1.5" />
                                         Symptoms & Clinical Signs
                                     </h4>
                                     <ul className="space-y-2 text-sm">
                                         {((detailLang === 'hi' && viewingDisease.symptoms_hi ? viewingDisease.symptoms_hi : viewingDisease.symptoms) || []).map((s, i) => (
-                                            <li key={i} className="flex items-start text-emerald-800">
-                                                <span className="text-emerald-500 mr-2 font-bold">•</span>
+                                            <li key={i} className="flex items-start" style={{ color: '#a7f3d0' }}>
+                                                <span className="mr-2 font-bold" style={{ color: '#10b981' }}>•</span>
                                                 <span>{s}</span>
                                             </li>
                                         ))}
                                         {(!viewingDisease.symptoms || viewingDisease.symptoms.length === 0) && (
-                                            <li className="text-gray-400 italic">No symptoms specified.</li>
+                                            <li className="italic" style={{ color: 'var(--text-secondary)' }}>No symptoms specified.</li>
                                         )}
                                     </ul>
                                 </section>
@@ -937,49 +981,49 @@ const ManageDiseases = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Causes Column */}
-                                <section className="bg-orange-50/50 p-5 rounded-xl border border-orange-100">
-                                    <h4 className="text-xs font-bold text-orange-700 uppercase tracking-wider mb-3.5 flex items-center">
-                                        <AlertCircle size={14} className="mr-1.5 text-orange-600" />
+                                <section className="p-5 rounded-xl border" style={{ background: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.2)' }}>
+                                    <h4 className="text-xs font-bold uppercase tracking-wider mb-3.5 flex items-center" style={{ color: '#fbbf24' }}>
+                                        <AlertCircle size={14} className="mr-1.5" />
                                         Causes & Transmission
                                     </h4>
                                     <ul className="space-y-2 text-sm">
                                         {((detailLang === 'hi' && viewingDisease.causes_hi ? viewingDisease.causes_hi : viewingDisease.causes) || []).map((c, i) => (
-                                            <li key={i} className="flex items-start text-orange-800">
-                                                <span className="text-orange-400 mr-2 font-bold">•</span>
+                                            <li key={i} className="flex items-start" style={{ color: '#fde68a' }}>
+                                                <span className="mr-2 font-bold" style={{ color: '#f59e0b' }}>•</span>
                                                 <span>{c}</span>
                                             </li>
                                         ))}
                                         {(!viewingDisease.causes || viewingDisease.causes.length === 0) && (
-                                            <li className="text-gray-400 italic">No cause details specified.</li>
+                                            <li className="italic" style={{ color: 'var(--text-secondary)' }}>No cause details specified.</li>
                                         )}
                                     </ul>
                                 </section>
 
                                 {/* Treatments Column */}
-                                <section className="bg-blue-50/50 p-5 rounded-xl border border-blue-100">
-                                    <h4 className="text-xs font-bold text-blue-700 uppercase tracking-wider mb-3.5 flex items-center">
-                                        <Stethoscope size={14} className="mr-1.5 text-blue-600" />
+                                <section className="p-5 rounded-xl border" style={{ background: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' }}>
+                                    <h4 className="text-xs font-bold uppercase tracking-wider mb-3.5 flex items-center" style={{ color: '#60a5fa' }}>
+                                        <Stethoscope size={14} className="mr-1.5" />
                                         Treatments & Control
                                     </h4>
                                     <ul className="space-y-2 text-sm">
                                         {((detailLang === 'hi' && viewingDisease.treatments_hi ? viewingDisease.treatments_hi : viewingDisease.treatments) || []).map((t, i) => (
-                                            <li key={i} className="flex items-start text-blue-800">
-                                                <span className="text-blue-400 mr-2 font-bold">•</span>
+                                            <li key={i} className="flex items-start" style={{ color: '#bfdbfe' }}>
+                                                <span className="mr-2 font-bold" style={{ color: '#3b82f6' }}>•</span>
                                                 <span>{t}</span>
                                             </li>
                                         ))}
                                         {(!viewingDisease.treatments || viewingDisease.treatments.length === 0) && (
-                                            <li className="text-gray-400 italic">No treatments specified.</li>
+                                            <li className="italic" style={{ color: 'var(--text-secondary)' }}>No treatments specified.</li>
                                         )}
                                     </ul>
                                 </section>
                             </div>
                         </div>
 
-                        <div className="p-6 border-t border-gray-100 flex justify-end bg-gray-50">
+                        <div className="ap-modal-footer flex justify-end">
                             <button
                                 onClick={() => setViewingDisease(null)}
-                                className="px-6 py-2 bg-gray-800 text-white font-bold rounded-lg hover:bg-gray-900 transition-colors cursor-pointer"
+                                className="ap-btn-sm ap-btn-outline"
                             >
                                 Close Details
                             </button>
@@ -990,20 +1034,20 @@ const ManageDiseases = () => {
 
             {/* DISEASE GROUP / CATEGORY EDIT/CREATE MODAL */}
             {isGroupModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="ap-modal-backdrop">
+                    <div className="ap-modal w-full max-w-md">
                         {/* Group Modal Header */}
-                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
-                            <h3 className="text-lg font-bold text-gray-800">
+                        <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
+                            <h3 className="ap-title text-lg">
                                 {editingGroup ? 'Edit Category Group' : 'Add Category Group'}
                             </h3>
-                            <button onClick={() => setIsGroupModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+                            <button onClick={() => setIsGroupModalOpen(false)} className="ap-modal-close">
                                 <X size={20} />
                             </button>
                         </div>
 
                         {/* Internal Language Pills */}
-                        <div className="flex bg-gray-50 border-b border-gray-100 px-6">
+                        <div className="flex border-b px-6" style={{ background: 'rgba(0,0,0,0.2)', borderColor: 'var(--border-glass)' }}>
                             <button
                                 type="button"
                                 onClick={() => setGroupModalTab('en')}
@@ -1028,7 +1072,7 @@ const ManageDiseases = () => {
                             </button>
                         </div>
 
-                        <form onSubmit={handleGroupSubmit} className="p-6 space-y-4">
+                        <form onSubmit={handleGroupSubmit} className="ap-modal-body space-y-4">
                             {/* TAB 1: GROUP ENGLISH DETAILS */}
                             {groupModalTab === 'en' && (
                                 <div className="space-y-4">
@@ -1038,7 +1082,7 @@ const ManageDiseases = () => {
                                             type="text"
                                             required
                                             placeholder="e.g. Digestive Disorders"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-input"
                                             value={groupFormData.name}
                                             onChange={(e) => setGroupFormData({ ...groupFormData, name: e.target.value })}
                                         />
@@ -1049,20 +1093,38 @@ const ManageDiseases = () => {
                                             <input
                                                 type="text"
                                                 placeholder="e.g. 🥛, 🦠, 🦵"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-center text-lg"
+                                                className="ap-input text-center text-lg"
                                                 value={groupFormData.icon_emoji}
                                                 onChange={(e) => setGroupFormData({ ...groupFormData, icon_emoji: e.target.value })}
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Image Path / URL</label>
-                                            <input
-                                                type="text"
-                                                placeholder="/images/hoof.png"
-                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500 text-xs"
-                                                value={groupFormData.image_path}
-                                                onChange={(e) => setGroupFormData({ ...groupFormData, image_path: e.target.value })}
-                                            />
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Image Upload</label>
+                                            <div className="flex items-center gap-3">
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*" 
+                                                    onChange={handleGroupImageUpload} 
+                                                    style={{ display: 'none' }} 
+                                                    id="group-image-upload" 
+                                                    disabled={uploadingGroupImage}
+                                                />
+                                                <label htmlFor="group-image-upload" className="px-3 py-2 border border-emerald-600 text-emerald-600 font-medium rounded-lg hover:bg-emerald-50 transition-all cursor-pointer text-sm">
+                                                    {uploadingGroupImage ? 'Uploading...' : 'Choose Image'}
+                                                </label>
+                                                {groupFormData.image_path && (
+                                                    <div className="relative">
+                                                        <img src={groupFormData.image_path} alt="Preview" className="w-10 h-10 rounded object-cover border border-gray-300" />
+                                                        <button 
+                                                            type="button"
+                                                            onClick={() => setGroupFormData({ ...groupFormData, image_path: '' })}
+                                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs border-none cursor-pointer"
+                                                        >
+                                                            ×
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                     <div>
@@ -1070,7 +1132,7 @@ const ManageDiseases = () => {
                                         <textarea
                                             rows={3}
                                             placeholder="Description of the category..."
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-textarea"
                                             value={groupFormData.description}
                                             onChange={(e) => setGroupFormData({ ...groupFormData, description: e.target.value })}
                                         />
@@ -1086,7 +1148,7 @@ const ManageDiseases = () => {
                                         <input
                                             type="text"
                                             placeholder="पाचन संबंधी विकार"
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-input"
                                             value={groupFormData.name_hi}
                                             onChange={(e) => setGroupFormData({ ...groupFormData, name_hi: e.target.value })}
                                         />
@@ -1096,7 +1158,7 @@ const ManageDiseases = () => {
                                         <textarea
                                             rows={3}
                                             placeholder="इस श्रेणी में पशुओं के पाचन तंत्र से जुड़े रोगों की जानकारी है..."
-                                            className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none resize-none focus:ring-2 focus:ring-emerald-500"
+                                            className="ap-textarea"
                                             value={groupFormData.description_hi}
                                             onChange={(e) => setGroupFormData({ ...groupFormData, description_hi: e.target.value })}
                                         />
@@ -1105,17 +1167,17 @@ const ManageDiseases = () => {
                             )}
 
                             {/* Group Modal CTAs */}
-                            <div className="pt-4 flex justify-end gap-3 border-t border-gray-100 mt-4">
+                            <div className="ap-modal-footer mt-4">
                                 <button
                                     type="button"
                                     onClick={() => setIsGroupModalOpen(false)}
-                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors cursor-pointer text-sm font-medium"
+                                    className="ap-btn-sm ap-btn-outline"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors cursor-pointer text-sm font-medium"
+                                    className="ap-btn-sm ap-btn-primary"
                                 >
                                     {editingGroup ? 'Update Category' : 'Create Category'}
                                 </button>

@@ -2,12 +2,14 @@ import { Edit2, Plus, Trash2, X, Newspaper, Eye, EyeOff } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import type { Article, ArticleCreateInput, ArticleUpdateInput } from '../services/articleService';
 import { getAllArticlesAdmin, createArticle, updateArticle, deleteArticle } from '../services/articleService';
+import { uploadAdminImage } from '../services/uploadService';
 
 const ManageArticles = () => {
     const [articles, setArticles] = useState<Article[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingArticle, setEditingArticle] = useState<Article | null>(null);
+    const [uploadingImage, setUploadingImage] = useState(false);
 
     // Form State
     const [formData, setFormData] = useState<ArticleCreateInput>({
@@ -64,6 +66,21 @@ const ManageArticles = () => {
         } catch (error) {
             console.error("Failed to save article", error);
             alert("Failed to save article configuration");
+        }
+    };
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        try {
+            setUploadingImage(true);
+            const url = await uploadAdminImage(file, 'articles');
+            setFormData(prev => ({ ...prev, image_url: url }));
+        } catch (err: any) {
+            alert(err?.response?.data?.detail || 'Failed to upload image');
+        } finally {
+            setUploadingImage(false);
         }
     };
 
@@ -195,59 +212,61 @@ const ManageArticles = () => {
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in duration-200 my-8">
-                        <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100">
-                            <h3 className="text-lg font-bold text-gray-800">
+                <div className="ap-modal-backdrop">
+                    <div className="ap-modal w-full max-w-2xl" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                        <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
+                            <h3 className="ap-title text-lg">
                                 {editingArticle ? 'Edit Article' : 'New Pashu Gyan Article'}
                             </h3>
-                            <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                            <button onClick={() => setIsModalOpen(false)} className="ap-modal-close">
                                 <X size={20} />
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[calc(100vh-160px)] overflow-y-auto">
+                        <form onSubmit={handleSubmit} className="ap-modal-body space-y-4 overflow-y-auto">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
+                                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Category *</label>
                                     <input
                                         type="text"
                                         required
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                        className="ap-input"
                                         placeholder="e.g. Nutrition, Disease Prevention"
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                     />
                                 </div>
                                 <div className="flex items-center pt-6">
-                                    <input
-                                        type="checkbox"
-                                        id="is_published"
-                                        className="w-4 h-4 text-emerald-600 border-gray-300 rounded focus:ring-emerald-500"
-                                        checked={formData.is_published}
-                                        onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
-                                    />
-                                    <label htmlFor="is_published" className="ml-2 text-sm text-gray-700 font-medium">Publish Immediately</label>
+                                    <label className="ap-switch">
+                                        <input
+                                            type="checkbox"
+                                            id="is_published"
+                                            checked={formData.is_published}
+                                            onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
+                                        />
+                                        <span className="ap-switch-slider"></span>
+                                    </label>
+                                    <label htmlFor="is_published" className="ml-3 text-sm font-medium cursor-pointer" style={{ color: 'var(--text-primary)' }}>Publish Immediately</label>
                                 </div>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Title (English) *</label>
+                                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Title (English) *</label>
                                     <input
                                         type="text"
                                         required
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                        className="ap-input"
                                         placeholder="Enter English title"
                                         value={formData.title}
                                         onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">Title (Hindi)</label>
+                                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Title (Hindi)</label>
                                     <input
                                         type="text"
-                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
+                                        className="ap-input"
                                         placeholder="हिंदी शीर्षक दर्ज करें"
                                         value={formData.title_hi}
                                         onChange={(e) => setFormData({ ...formData, title_hi: e.target.value })}
@@ -256,27 +275,39 @@ const ManageArticles = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all"
-                                    placeholder="https://images.unsplash.com/... (leave blank for default)"
-                                    value={formData.image_url}
-                                    onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-                                />
-                                {formData.image_url && (
-                                    <div className="mt-2">
-                                        <p className="text-xs text-gray-400 mb-1">Image Preview:</p>
-                                        <img src={formData.image_url} alt="Preview" className="w-full h-32 object-cover rounded-lg border" />
-                                    </div>
-                                )}
+                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Image Upload</label>
+                                <div className="flex items-center gap-3">
+                                    <input 
+                                        type="file" 
+                                        accept="image/*" 
+                                        onChange={handleImageUpload} 
+                                        style={{ display: 'none' }} 
+                                        id="article-image-upload" 
+                                        disabled={uploadingImage}
+                                    />
+                                    <label htmlFor="article-image-upload" className="ap-btn-sm ap-btn-outline cursor-pointer">
+                                        {uploadingImage ? 'Uploading...' : 'Choose Image'}
+                                    </label>
+                                    {formData.image_url && (
+                                        <div className="relative">
+                                            <img src={formData.image_url} alt="Preview" className="w-12 h-12 rounded object-cover border" style={{ borderColor: 'var(--border-glass)' }} />
+                                            <button 
+                                                type="button"
+                                                onClick={() => setFormData({ ...formData, image_url: '' })}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs border-none cursor-pointer"
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Content (English) *</label>
+                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Content (English) *</label>
                                 <textarea
                                     required
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                                    className="ap-textarea"
                                     rows={6}
                                     placeholder="Write English blog content here... Use newlines to separate paragraphs or lists starting with •"
                                     value={formData.content}
@@ -285,9 +316,9 @@ const ManageArticles = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Content (Hindi)</label>
+                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Content (Hindi)</label>
                                 <textarea
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none"
+                                    className="ap-textarea"
                                     rows={6}
                                     placeholder="हिंदी ब्लॉग सामग्री यहाँ लिखें..."
                                     value={formData.content_hi}
@@ -295,17 +326,17 @@ const ManageArticles = () => {
                                 />
                             </div>
 
-                            <div className="pt-4 flex justify-end space-x-3 border-t border-gray-100">
+                            <div className="ap-modal-footer mt-4">
                                 <button
                                     type="button"
                                     onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                                    className="ap-btn-sm ap-btn-outline"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-4 py-2 text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 transition-colors"
+                                    className="ap-btn-sm ap-btn-primary"
                                 >
                                     {editingArticle ? 'Update Article' : 'Create Article'}
                                 </button>
