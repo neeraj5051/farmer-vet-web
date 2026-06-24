@@ -19,12 +19,26 @@
   --accent-purple: #8b5cf6;
   --accent-orange: #f97316;
 
-  color: var(--text-primary);
-  background-color: var(--bg-primary);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  --glass-white: rgba(255, 255, 255, 0.05);
+  --glass-black: rgba(0, 0, 0, 0.15);
+}
+
+:root.light-mode {
+  color-scheme: light;
+  
+  --bg-primary: #f1f5f9;
+  --bg-card: rgba(255, 255, 255, 0.9);
+  --border-glass: rgba(0, 0, 0, 0.08);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent-green: #059669;
+  --accent-green-glow: rgba(5, 150, 105, 0.15);
+  --accent-blue: #4f46e5;
+  --accent-purple: #7c3aed;
+  --accent-orange: #ea580c;
+
+  --glass-white: rgba(0, 0, 0, 0.05); /* Inverts white glass to black glass */
+  --glass-black: rgba(255, 255, 255, 0.5); /* Inverts black glass to white glass */
 }
 
 body {
@@ -33,6 +47,10 @@ body {
   min-height: 100vh;
   background-color: var(--bg-primary);
   color: var(--text-primary);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 button {

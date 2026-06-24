@@ -125,83 +125,84 @@ const ManageArticles = () => {
     if (loading) return <div className="flex justify-center items-center h-screen">Loading articles...</div>;
 
     return (
-        <div className="p-8 bg-gray-50 min-h-screen">
-            <div className="flex justify-between items-center mb-8">
+        <div className="ap-page p-8 min-h-screen">
+            <div className="ap-header">
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-800">Pashu Gyan (Articles)</h1>
-                    <p className="text-gray-500 mt-1">Create, edit, and publish blogs and advisory articles for farmers.</p>
+                    <h1 className="ap-title">Pashu Gyan (Articles)</h1>
+                    <p className="ap-subtitle">Create, edit, and publish blogs and advisory articles for farmers.</p>
                 </div>
                 <button
                     onClick={() => { resetForm(); setIsModalOpen(true); }}
-                    className="flex items-center px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+                    className="ap-add-btn"
                 >
-                    <Plus size={20} className="mr-2" />
+                    <Plus size={18} className="mr-2" />
                     New Article
                 </button>
             </div>
 
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50 border-b border-gray-200">
+            <div className="ap-table-wrap">
+                <table className="ap-table">
+                    <thead>
                         <tr>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Image</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Title</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Category</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Status</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700">Date</th>
-                            <th className="px-6 py-4 font-semibold text-gray-700 text-right">Actions</th>
+                            <th>Image</th>
+                            <th>Title</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                            <th className="text-right">Actions</th>
                         </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody>
                         {articles.map((article) => (
-                            <tr key={article.id} className="hover:bg-gray-50 transition-colors">
-                                <td className="px-6 py-4">
+                            <tr key={article.id} className="ap-row">
+                                <td>
                                     {article.image_url ? (
                                         <img src={article.image_url} alt={article.title} className="w-12 h-12 object-cover rounded-lg" />
                                     ) : (
-                                        <div className="w-12 h-12 bg-gray-100 flex items-center justify-center rounded-lg text-gray-400">
+                                        <div className="w-12 h-12 flex items-center justify-center rounded-lg text-gray-400" style={{ background: 'rgba(255,255,255,0.05)' }}>
                                             <Newspaper size={20} />
                                         </div>
                                     )}
                                 </td>
-                                <td className="px-6 py-4 font-medium text-gray-800">
-                                    <div className="font-semibold">{article.title}</div>
-                                    {article.title_hi && <div className="text-xs text-gray-500 font-normal">{article.title_hi}</div>}
+                                <td>
+                                    <div className="ap-cell-bold">{article.title}</div>
+                                    {article.title_hi && <div className="text-xs text-gray-400 font-medium">{article.title_hi}</div>}
                                 </td>
-                                <td className="px-6 py-4">
-                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800">
+                                <td>
+                                    <span className="ap-badge" style={{ background: '#d1fae5', color: '#065f46', whiteSpace: 'nowrap' }}>
                                         {article.category}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${article.is_published ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                        }`}>
-                                        {article.is_published ? <Eye size={12} className="mr-1" /> : <EyeOff size={12} className="mr-1" />}
+                                <td>
+                                    <span className="ap-badge" style={{ background: article.is_published ? '#d1fae5' : '#fef3c7', color: article.is_published ? '#065f46' : '#92400e' }}>
+                                        {article.is_published ? <Eye size={12} className="mr-1 inline" /> : <EyeOff size={12} className="mr-1 inline" />}
                                         {article.is_published ? 'Published' : 'Draft'}
                                     </span>
                                 </td>
-                                <td className="px-6 py-4 text-gray-500 text-sm">
+                                <td className="text-gray-400 text-sm">
                                     {new Date(article.created_at).toLocaleDateString()}
                                 </td>
-                                <td className="px-6 py-4 text-right space-x-2">
+                                <td className="text-right space-x-2">
                                     <button
                                         onClick={() => openEditModal(article)}
-                                        className="text-gray-400 hover:text-emerald-600 transition-colors"
+                                        className="ap-btn-sm ap-btn-outline"
+                                        title="Edit Article"
                                     >
-                                        <Edit2 size={18} />
+                                        <Edit2 size={16} />
                                     </button>
                                     <button
                                         onClick={() => handleDelete(article.id)}
-                                        className="text-gray-400 hover:text-red-500 transition-colors"
+                                        className="ap-btn-sm ap-btn-danger"
+                                        title="Delete Article"
                                     >
-                                        <Trash2 size={18} />
+                                        <Trash2 size={16} />
                                     </button>
                                 </td>
                             </tr>
                         ))}
                         {articles.length === 0 && (
                             <tr>
-                                <td colSpan={6} className="px-6 py-8 text-center text-gray-400">
+                                <td colSpan={6} className="ap-empty">
                                     No articles found. Create one to get started!
                                 </td>
                             </tr>
@@ -226,7 +227,7 @@ const ManageArticles = () => {
                         <form onSubmit={handleSubmit} className="ap-modal-body space-y-4 overflow-y-auto">
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Category *</label>
+                                    <label className="ap-label">Category *</label>
                                     <input
                                         type="text"
                                         required
@@ -252,7 +253,7 @@ const ManageArticles = () => {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Title (English) *</label>
+                                    <label className="ap-label">Title (English) *</label>
                                     <input
                                         type="text"
                                         required
@@ -263,7 +264,7 @@ const ManageArticles = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Title (Hindi)</label>
+                                    <label className="ap-label">Title (Hindi)</label>
                                     <input
                                         type="text"
                                         className="ap-input"
@@ -275,7 +276,7 @@ const ManageArticles = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Image Upload</label>
+                                <label className="ap-label">Image Upload</label>
                                 <div className="flex items-center gap-3">
                                     <input 
                                         type="file" 
@@ -304,7 +305,7 @@ const ManageArticles = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Content (English) *</label>
+                                <label className="ap-label">Content (English) *</label>
                                 <textarea
                                     required
                                     className="ap-textarea"
@@ -316,7 +317,7 @@ const ManageArticles = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Content (Hindi)</label>
+                                <label className="ap-label">Content (Hindi)</label>
                                 <textarea
                                     className="ap-textarea"
                                     rows={6}

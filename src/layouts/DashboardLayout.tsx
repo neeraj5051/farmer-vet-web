@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 import './DashboardLayout.css';
 
 const NAV_SECTIONS = [
@@ -65,6 +67,24 @@ const NAV_SECTIONS = [
 
 const DashboardLayout = () => {
     const { logout, user } = useAuth();
+    
+    // Theme state
+    const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+        return (localStorage.getItem('theme') as 'dark' | 'light') || 'dark';
+    });
+
+    useEffect(() => {
+        if (theme === 'light') {
+            document.documentElement.classList.add('light-mode');
+        } else {
+            document.documentElement.classList.remove('light-mode');
+        }
+        localStorage.setItem('theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    };
 
     return (
         <div className="layout-container">
@@ -94,6 +114,14 @@ const DashboardLayout = () => {
                     ))}
                 </nav>
                 <div className="sidebar-footer">
+                    <button 
+                        onClick={toggleTheme} 
+                        className="logout-btn" 
+                        style={{ marginBottom: '10px', background: 'var(--glass-white)' }}
+                    >
+                        {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+                        <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+                    </button>
                     <button onClick={logout} className="logout-btn">
                         <LogOut size={18} />
                         <span>Logout</span>
