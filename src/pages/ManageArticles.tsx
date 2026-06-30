@@ -10,6 +10,7 @@ const ManageArticles = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingArticle, setEditingArticle] = useState<Article | null>(null);
     const [uploadingImage, setUploadingImage] = useState(false);
+    const [viewerImage, setViewerImage] = useState<string | null>(null);
 
     // Form State
     const [formData, setFormData] = useState<ArticleCreateInput>({
@@ -291,7 +292,13 @@ const ManageArticles = () => {
                                     </label>
                                     {formData.image_url && (
                                         <div className="relative mt-2">
-                                            <img src={formData.image_url} alt="Preview" className="w-full max-w-sm h-48 rounded-lg object-cover border" style={{ borderColor: 'var(--border-glass)' }} />
+                                            <img 
+                                                src={formData.image_url} 
+                                                alt="Preview" 
+                                                className="w-full max-w-sm h-48 rounded-lg object-cover border cursor-pointer hover:opacity-90 transition-opacity" 
+                                                style={{ borderColor: 'var(--border-glass)' }} 
+                                                onClick={() => setViewerImage(formData.image_url || null)}
+                                            />
                                             <button 
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, image_url: '' })}
@@ -345,6 +352,27 @@ const ManageArticles = () => {
                             </div>
                         </form>
                     </div>
+                </div>
+            )}
+
+            {/* Full Screen Image Viewer Modal */}
+            {viewerImage && (
+                <div 
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-90 p-4"
+                    onClick={() => setViewerImage(null)}
+                >
+                    <button 
+                        className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
+                        onClick={() => setViewerImage(null)}
+                    >
+                        <X size={32} />
+                    </button>
+                    <img 
+                        src={viewerImage} 
+                        alt="Full screen preview" 
+                        className="max-w-full max-h-full object-contain"
+                        onClick={(e) => e.stopPropagation()} 
+                    />
                 </div>
             )}
         </div>
