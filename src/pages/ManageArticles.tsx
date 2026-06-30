@@ -276,8 +276,8 @@ const ManageArticles = () => {
                             </div>
 
                             <div>
-                                <label className="ap-label">Image Upload</label>
-                                <div className="flex items-center gap-3">
+                                <label className="ap-label mb-2 block">Image Upload</label>
+                                <div className="flex flex-col gap-3 items-start">
                                     <input 
                                         type="file" 
                                         accept="image/*" 
@@ -290,12 +290,13 @@ const ManageArticles = () => {
                                         {uploadingImage ? 'Uploading...' : 'Choose Image'}
                                     </label>
                                     {formData.image_url && (
-                                        <div className="relative">
-                                            <img src={formData.image_url} alt="Preview" className="w-12 h-12 rounded object-cover border" style={{ borderColor: 'var(--border-glass)' }} />
+                                        <div className="relative mt-2">
+                                            <img src={formData.image_url} alt="Preview" className="w-full max-w-sm h-48 rounded-lg object-cover border" style={{ borderColor: 'var(--border-glass)' }} />
                                             <button 
                                                 type="button"
                                                 onClick={() => setFormData({ ...formData, image_url: '' })}
-                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs border-none cursor-pointer"
+                                                className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold border-none cursor-pointer shadow-lg hover:bg-red-600 transition-colors"
+                                                title="Remove Image"
                                             >
                                                 ×
                                             </button>

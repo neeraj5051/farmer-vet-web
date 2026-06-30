@@ -5,11 +5,7 @@ export const uploadAdminImage = async (file: File, folder: string = 'admin_uploa
     formData.append('file', file);
     formData.append('folder', folder);
 
-    const response = await api.post('/upload/admin-image', formData, {
-        headers: {
-            'Content-Type': 'multipart/form-data',
-        },
-    });
+    const response = await api.post('/upload/admin-image', formData);
 
     return response.data.url;
 };
