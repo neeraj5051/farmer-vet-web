@@ -60,6 +60,7 @@ const VaccineManagement = () => {
     const [vaccineToDelete, setVaccineToDelete] = useState<Vaccine | null>(null);
     const [form, setForm] = useState<Partial<Vaccine>>(emptyForm());
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    const [viewerImage, setViewerImage] = useState<string | null>(null);
 
     const fetchData = async () => {
         try {
@@ -533,31 +534,58 @@ const VaccineManagement = () => {
                                         <textarea className="ap-textarea" value={form.key_notes_hi || ''} onChange={e => setField('key_notes_hi', e.target.value)} placeholder="हिंदी में महत्वपूर्ण टिप्पणी..." rows={3} />
                                     </div>
                                     <div className="ap-form-group">
-                                        <label className="ap-label">Image Upload</label>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: '0.5rem' }}>
-                                            <input 
-                                                type="file" 
-                                                accept="image/*" 
-                                                onChange={handleImageUpload} 
-                                                style={{ display: 'none' }} 
-                                                id="vaccine-image-upload" 
-                                                disabled={uploadingImage}
-                                            />
-                                            <label htmlFor="vaccine-image-upload" className="ap-btn-sm ap-btn-outline" style={{ cursor: 'pointer', opacity: uploadingImage ? 0.5 : 1, margin: 0, padding: '0.5rem 1rem' }}>
-                                                {uploadingImage ? 'Uploading...' : 'Choose Image'}
-                                            </label>
+                                        <label className="ap-label mb-2 block">Image Upload</label>
+                                        <div className="flex flex-wrap items-center gap-4">
                                             {form.image_url && (
-                                                <div style={{ position: 'relative' }}>
-                                                    <img src={form.image_url} alt="Preview" style={{ width: 44, height: 44, borderRadius: 8, objectFit: 'cover', border: '1px solid #374151' }} />
+                                                <div className="relative group">
+                                                    <img 
+                                                        src={form.image_url} 
+                                                        alt="Preview" 
+                                                        className="w-32 h-32 rounded-lg object-cover border cursor-pointer transition-opacity hover:opacity-90" 
+                                                        style={{ borderColor: 'var(--border-glass)' }} 
+                                                        onClick={() => setViewerImage(form.image_url || null)}
+                                                    />
                                                     <button 
                                                         type="button"
-                                                        onClick={() => setField('image_url', '')}
-                                                        style={{ position: 'absolute', top: -8, right: -8, background: '#ef4444', color: 'white', borderRadius: '50%', width: 20, height: 20, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, lineHeight: 1 }}
+                                                        onClick={() => {
+                                                            if (window.confirm("Are you sure you want to remove this image?")) {
+                                                                setField('image_url', '');
+                                                            }
+                                                        }}
+                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold border-none cursor-pointer shadow-lg hover:bg-red-600 transition-colors"
+                                                        title="Remove Image"
                                                     >
-                                                        ×
+                                                        <X size={14} />
                                                     </button>
                                                 </div>
                                             )}
+                                            <div className="flex flex-col items-start gap-2">
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*" 
+                                                    onChange={handleImageUpload} 
+                                                    style={{ display: 'none' }} 
+                                                    id="vaccine-image-upload" 
+                                                    disabled={uploadingImage}
+                                                />
+                                                <label 
+                                                    htmlFor="vaccine-image-upload" 
+                                                    className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors"
+                                                    style={{ 
+                                                        borderColor: 'var(--border-glass)',
+                                                        background: 'rgba(255,255,255,0.02)'
+                                                    }}
+                                                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                                >
+                                                    <div className="flex flex-col items-center justify-center p-2 text-center">
+                                                        <Plus size={24} className="mb-2 text-gray-400" />
+                                                        <span className="text-xs text-gray-400">
+                                                            {uploadingImage ? 'Uploading...' : form.image_url ? 'Change Image' : 'Upload Image'}
+                                                        </span>
+                                                    </div>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -584,6 +612,26 @@ const VaccineManagement = () => {
                             </button>
                         </div>
                     </div>
+                </div>
+            )}
+            {/* Full Screen Image Viewer Modal */}
+            {viewerImage && (
+                <div 
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90 p-4"
+                    onClick={() => setViewerImage(null)}
+                >
+                    <button 
+                        className="absolute top-4 right-4 text-white hover:text-gray-300"
+                        onClick={() => setViewerImage(null)}
+                    >
+                        <X size={32} />
+                    </button>
+                    <img 
+                        src={viewerImage} 
+                        alt="Full screen preview" 
+                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                        onClick={(e) => e.stopPropagation()} 
+                    />
                 </div>
             )}
         </div>

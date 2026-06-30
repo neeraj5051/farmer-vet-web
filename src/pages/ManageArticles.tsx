@@ -278,37 +278,57 @@ const ManageArticles = () => {
 
                             <div>
                                 <label className="ap-label mb-2 block">Image Upload</label>
-                                <div className="flex flex-col gap-3 items-start">
-                                    <input 
-                                        type="file" 
-                                        accept="image/*" 
-                                        onChange={handleImageUpload} 
-                                        style={{ display: 'none' }} 
-                                        id="article-image-upload" 
-                                        disabled={uploadingImage}
-                                    />
-                                    <label htmlFor="article-image-upload" className="ap-btn-sm ap-btn-outline cursor-pointer">
-                                        {uploadingImage ? 'Uploading...' : 'Choose Image'}
-                                    </label>
+                                <div className="flex flex-wrap items-center gap-4">
                                     {formData.image_url && (
-                                        <div className="relative mt-2">
+                                        <div className="relative group">
                                             <img 
                                                 src={formData.image_url} 
                                                 alt="Preview" 
-                                                className="w-full max-w-sm h-48 rounded-lg object-cover border cursor-pointer hover:opacity-90 transition-opacity" 
+                                                className="w-32 h-32 rounded-lg object-cover border cursor-pointer transition-opacity hover:opacity-90" 
                                                 style={{ borderColor: 'var(--border-glass)' }} 
                                                 onClick={() => setViewerImage(formData.image_url || null)}
                                             />
                                             <button 
                                                 type="button"
-                                                onClick={() => setFormData({ ...formData, image_url: '' })}
-                                                className="absolute -top-3 -right-3 bg-red-500 text-white rounded-full w-7 h-7 flex items-center justify-center text-sm font-bold border-none cursor-pointer shadow-lg hover:bg-red-600 transition-colors"
+                                                onClick={() => {
+                                                    if (window.confirm("Are you sure you want to remove this image?")) {
+                                                        setFormData({ ...formData, image_url: '' });
+                                                    }
+                                                }}
+                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold border-none cursor-pointer shadow-lg hover:bg-red-600 transition-colors"
                                                 title="Remove Image"
                                             >
-                                                ×
+                                                <X size={14} />
                                             </button>
                                         </div>
                                     )}
+                                    <div className="flex flex-col items-start gap-2">
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            onChange={handleImageUpload} 
+                                            style={{ display: 'none' }} 
+                                            id="article-image-upload" 
+                                            disabled={uploadingImage}
+                                        />
+                                        <label 
+                                            htmlFor="article-image-upload" 
+                                            className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors"
+                                            style={{ 
+                                                borderColor: 'var(--border-glass)',
+                                                background: 'rgba(255,255,255,0.02)'
+                                            }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                        >
+                                            <div className="flex flex-col items-center justify-center p-2 text-center">
+                                                <Plus size={24} className="mb-2 text-gray-400" />
+                                                <span className="text-xs text-gray-400">
+                                                    {uploadingImage ? 'Uploading...' : formData.image_url ? 'Change Image' : 'Upload Image'}
+                                                </span>
+                                            </div>
+                                        </label>
+                                    </div>
                                 </div>
                             </div>
 
@@ -358,7 +378,7 @@ const ManageArticles = () => {
             {/* Full Screen Image Viewer Modal */}
             {viewerImage && (
                 <div 
-                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-90 p-4"
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90 p-4"
                     onClick={() => setViewerImage(null)}
                 >
                     <button 

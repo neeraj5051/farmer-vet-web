@@ -60,6 +60,7 @@ const AppRoutes = () => {
           <Login />
         </PublicRoute>
       } />
+      <Route path="/login" element={<Navigate to="/admin/login" replace />} />
 
       {/* Protected Admin routes nested under /admin */}
       <Route path="/admin" element={

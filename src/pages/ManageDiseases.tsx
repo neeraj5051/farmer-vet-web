@@ -37,6 +37,7 @@ const ManageDiseases = () => {
     const [modalTab, setModalTab] = useState<'en' | 'hi'>('en');
     const [groupModalTab, setGroupModalTab] = useState<'en' | 'hi'>('en');
     const [detailLang, setDetailLang] = useState<'en' | 'hi'>('en');
+    const [viewerImage, setViewerImage] = useState<string | null>(null);
 
     // Forms Form States
     const [formData, setFormData] = useState({
@@ -675,9 +676,35 @@ const ManageDiseases = () => {
                                                 onChange={(e) => setFormData({ ...formData, severity_level: Number(e.target.value) })}
                                             />
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Image Upload</label>
-                                            <div className="flex items-center gap-3">
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Image Upload</label>
+                                        <div className="flex flex-wrap items-center gap-4">
+                                            {formData.image_path && (
+                                                <div className="relative group">
+                                                    <img 
+                                                        src={formData.image_path} 
+                                                        alt="Preview" 
+                                                        className="w-32 h-32 rounded-lg object-cover border cursor-pointer transition-opacity hover:opacity-90" 
+                                                        style={{ borderColor: 'var(--border-glass)' }} 
+                                                        onClick={() => setViewerImage(formData.image_path || null)}
+                                                    />
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (window.confirm("Are you sure you want to remove this image?")) {
+                                                                setFormData({ ...formData, image_path: '' });
+                                                            }
+                                                        }}
+                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold border-none cursor-pointer shadow-lg hover:bg-red-600 transition-colors"
+                                                        title="Remove Image"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <div className="flex flex-col items-start gap-2">
                                                 <input 
                                                     type="file" 
                                                     accept="image/*" 
@@ -686,21 +713,23 @@ const ManageDiseases = () => {
                                                     id="disease-image-upload" 
                                                     disabled={uploadingImage}
                                                 />
-                                                <label htmlFor="disease-image-upload" className="px-3 py-2 border border-emerald-600 text-emerald-600 font-medium rounded-lg hover:bg-emerald-50 transition-all cursor-pointer text-sm">
-                                                    {uploadingImage ? 'Uploading...' : 'Choose Image'}
-                                                </label>
-                                                {formData.image_path && (
-                                                    <div className="relative">
-                                                        <img src={formData.image_path} alt="Preview" className="w-10 h-10 rounded object-cover border border-gray-300" />
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => setFormData({ ...formData, image_path: '' })}
-                                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs border-none cursor-pointer"
-                                                        >
-                                                            ×
-                                                        </button>
+                                                <label 
+                                                    htmlFor="disease-image-upload" 
+                                                    className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors"
+                                                    style={{ 
+                                                        borderColor: 'var(--border-glass)',
+                                                        background: 'rgba(255,255,255,0.02)'
+                                                    }}
+                                                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                                >
+                                                    <div className="flex flex-col items-center justify-center p-2 text-center">
+                                                        <Plus size={24} className="mb-2 text-gray-400" />
+                                                        <span className="text-xs text-gray-400">
+                                                            {uploadingImage ? 'Uploading...' : formData.image_path ? 'Change Image' : 'Upload Image'}
+                                                        </span>
                                                     </div>
-                                                )}
+                                                </label>
                                             </div>
                                         </div>
                                     </div>
@@ -1080,9 +1109,34 @@ const ManageDiseases = () => {
                                                 onChange={(e) => setGroupFormData({ ...groupFormData, icon_emoji: e.target.value })}
                                             />
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Image Upload</label>
-                                            <div className="flex items-center gap-3">
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Image Upload</label>
+                                        <div className="flex flex-wrap items-center gap-4">
+                                            {groupFormData.image_path && (
+                                                <div className="relative group">
+                                                    <img 
+                                                        src={groupFormData.image_path} 
+                                                        alt="Preview" 
+                                                        className="w-32 h-32 rounded-lg object-cover border cursor-pointer transition-opacity hover:opacity-90" 
+                                                        style={{ borderColor: 'var(--border-glass)' }} 
+                                                        onClick={() => setViewerImage(groupFormData.image_path || null)}
+                                                    />
+                                                    <button 
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (window.confirm("Are you sure you want to remove this image?")) {
+                                                                setGroupFormData({ ...groupFormData, image_path: '' });
+                                                            }
+                                                        }}
+                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold border-none cursor-pointer shadow-lg hover:bg-red-600 transition-colors"
+                                                        title="Remove Image"
+                                                    >
+                                                        <X size={14} />
+                                                    </button>
+                                                </div>
+                                            )}
+                                            <div className="flex flex-col items-start gap-2">
                                                 <input 
                                                     type="file" 
                                                     accept="image/*" 
@@ -1091,21 +1145,23 @@ const ManageDiseases = () => {
                                                     id="group-image-upload" 
                                                     disabled={uploadingGroupImage}
                                                 />
-                                                <label htmlFor="group-image-upload" className="px-3 py-2 border border-emerald-600 text-emerald-600 font-medium rounded-lg hover:bg-emerald-50 transition-all cursor-pointer text-sm">
-                                                    {uploadingGroupImage ? 'Uploading...' : 'Choose Image'}
-                                                </label>
-                                                {groupFormData.image_path && (
-                                                    <div className="relative">
-                                                        <img src={groupFormData.image_path} alt="Preview" className="w-10 h-10 rounded object-cover border border-gray-300" />
-                                                        <button 
-                                                            type="button"
-                                                            onClick={() => setGroupFormData({ ...groupFormData, image_path: '' })}
-                                                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs border-none cursor-pointer"
-                                                        >
-                                                            ×
-                                                        </button>
+                                                <label 
+                                                    htmlFor="group-image-upload" 
+                                                    className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors"
+                                                    style={{ 
+                                                        borderColor: 'var(--border-glass)',
+                                                        background: 'rgba(255,255,255,0.02)'
+                                                    }}
+                                                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+                                                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                                                >
+                                                    <div className="flex flex-col items-center justify-center p-2 text-center">
+                                                        <Plus size={24} className="mb-2 text-gray-400" />
+                                                        <span className="text-xs text-gray-400">
+                                                            {uploadingGroupImage ? 'Uploading...' : groupFormData.image_path ? 'Change Image' : 'Upload Image'}
+                                                        </span>
                                                     </div>
-                                                )}
+                                                </label>
                                             </div>
                                         </div>
                                     </div>
@@ -1166,6 +1222,26 @@ const ManageDiseases = () => {
                             </div>
                         </form>
                     </div>
+                </div>
+            )}
+            {/* Full Screen Image Viewer Modal */}
+            {viewerImage && (
+                <div 
+                    className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-90 p-4"
+                    onClick={() => setViewerImage(null)}
+                >
+                    <button 
+                        className="absolute top-4 right-4 text-white hover:text-gray-300"
+                        onClick={() => setViewerImage(null)}
+                    >
+                        <X size={32} />
+                    </button>
+                    <img 
+                        src={viewerImage} 
+                        alt="Full screen preview" 
+                        className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                        onClick={(e) => e.stopPropagation()} 
+                    />
                 </div>
             )}
         </div>

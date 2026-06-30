@@ -374,7 +374,7 @@
 }
 
 .ap-modal {
-    background: #0f172a;
+    background: var(--bg-primary);
     border: 1px solid var(--border-glass);
     border-radius: 24px;
     width: 100%;
@@ -401,7 +401,7 @@
 }
 
 .ap-modal-close {
-    background: rgba(255, 255, 255, 0.05);
+    background: var(--glass-white);
     border: none;
     width: 36px;
     height: 36px;
@@ -417,7 +417,7 @@
 }
 
 .ap-modal-close:hover { 
-    background: rgba(255, 255, 255, 0.1); 
+    background: var(--border-glass); 
     color: var(--text-primary);
 }
 
@@ -431,7 +431,7 @@
     display: flex;
     gap: 0.875rem;
     justify-content: flex-end;
-    background: rgba(0, 0, 0, 0.15);
+    background: var(--glass-black);
 }
 
 .ap-detail-badge-row {
@@ -452,7 +452,7 @@
     justify-content: space-between;
     align-items: center;
     padding: 0.65rem 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid var(--border-glass);
     font-size: 0.9rem;
     gap: 1.25rem;
 }
@@ -488,7 +488,7 @@
     border-radius: 12px;
     font-size: 0.9rem;
     color: var(--text-primary);
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--glass-black);
     outline: none;
     transition: all 0.2s;
     box-sizing: border-box;
@@ -496,8 +496,8 @@
 
 .ap-input:focus, .ap-textarea:focus, .ap-form-select:focus {
     border-color: var(--accent-green);
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-    background: rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 0 3px var(--accent-green-glow);
+    background: var(--bg-card);
 }
 
 .ap-textarea {
