@@ -116,17 +116,21 @@ const DashboardLayout = () => {
                 <div className="sidebar-footer">
                     <button 
                         onClick={toggleTheme} 
-                        className="logout-btn" 
-                        style={{ marginBottom: '10px', background: 'var(--glass-white)' }}
+                        className="nav-item" 
+                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left' }}
                     >
                         {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
                         <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
                     </button>
-                    <button onClick={logout} className="logout-btn">
+                    <button 
+                        onClick={logout} 
+                        className="nav-item"
+                        style={{ width: '100%', border: 'none', background: 'transparent', cursor: 'pointer', textAlign: 'left', color: '#f87171' }}
+                    >
                         <LogOut size={18} />
                         <span>Logout</span>
                     </button>
-                    <div className="user-info">
+                    <div className="user-info" style={{ marginTop: '0.5rem' }}>
                         <small>{user?.phone_number}</small>
                     </div>
                 </div>

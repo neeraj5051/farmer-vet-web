@@ -219,7 +219,7 @@ const VaccineManagement = () => {
                     <h1 className="ap-title">Vaccine Management</h1>
                     <p className="ap-subtitle">{filtered.length} of {vaccines.length} vaccines</p>
                 </div>
-                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
                     <button className="ap-refresh-btn" onClick={handleRefresh} disabled={refreshing}>
                         <RefreshCw size={16} className={refreshing ? 'ap-spin' : ''} />
                         Refresh

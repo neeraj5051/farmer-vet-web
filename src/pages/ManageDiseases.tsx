@@ -187,7 +187,7 @@ const ManageDiseases = () => {
     };
 
     const handleDeleteDisease = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this disease condition? This action cannot be undone.")) return;
+        if (!confirm("Are you sure you want to delete this disease? This action cannot be undone.")) return;
         try {
             await deleteDisease(id);
             loadData();
@@ -315,9 +315,9 @@ const ManageDiseases = () => {
             <div className="ap-header">
                 <div>
                     <h1 className="ap-title">Disease Directory</h1>
-                    <p className="ap-subtitle">Manage clinical conditions, categories, symptoms, and treatments for livestock.</p>
+                    <p className="ap-subtitle">Manage diseases, categories, symptoms, and treatments for livestock.</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-wrap gap-3">
                     <button
                         onClick={() => { resetGroupForm(); setGroupModalTab('en'); setIsGroupModalOpen(true); }}
                         className="ap-add-btn" style={{ background: 'transparent', color: 'var(--accent-green)', border: '1px solid var(--accent-green)' }}
@@ -330,7 +330,7 @@ const ManageDiseases = () => {
                         className="ap-add-btn"
                     >
                         <Plus size={18} className="mr-2" />
-                        Add Condition
+                        Add Disease
                     </button>
                 </div>
             </div>
@@ -458,7 +458,7 @@ const ManageDiseases = () => {
                                 {filteredDiseases.length === 0 && (
                                     <tr>
                                         <td colSpan={6} className="ap-empty">
-                                            No disease conditions found matching "{diseaseSearch}".
+                                            No diseases found matching "{diseaseSearch}".
                                         </td>
                                     </tr>
                                 )}
@@ -489,7 +489,7 @@ const ManageDiseases = () => {
                                             </div>
                                         </div>
                                         <span className="ap-badge" style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)' }}>
-                                            {associatedCount} {associatedCount === 1 ? 'Condition' : 'Conditions'}
+                                            {associatedCount} {associatedCount === 1 ? 'Disease' : 'Diseases'}
                                         </span>
                                     </div>
                                     <p className="text-sm line-clamp-2 mt-2 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
@@ -535,7 +535,7 @@ const ManageDiseases = () => {
                         {/* Modal Header */}
                         <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
                             <h3 className="ap-title text-lg">
-                                {editingDisease ? 'Edit Disease Condition' : 'Add New Disease Condition'}
+                                {editingDisease ? 'Edit Disease' : 'Add New Disease'}
                             </h3>
                             <button onClick={() => setIsModalOpen(false)} className="ap-modal-close">
                                 <X size={20} />

@@ -97,19 +97,19 @@
 .vm-pill--cat {
     background: rgba(99, 102, 241, 0.12);
     border-color: rgba(99, 102, 241, 0.2);
-    color: #c7d2fe;
+    color: var(--accent-blue);
 }
 
 .vm-pill--animal {
     background: var(--accent-green-glow);
     border-color: rgba(16, 185, 129, 0.2);
-    color: #a7f3d0;
+    color: var(--accent-green);
 }
 
 .vm-pill--price {
     background: rgba(245, 158, 11, 0.12);
     border-color: rgba(245, 158, 11, 0.2);
-    color: #fde68a;
+    color: var(--accent-orange);
 }
 
 /* ── Card meta ────────────────────────────────────────────────────────────── */
@@ -168,7 +168,7 @@
 }
 
 .vm-section {
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--glass-white);
     border: 1px solid var(--border-glass);
     border-radius: 16px;
     padding: 1.125rem 1.25rem;
@@ -209,7 +209,7 @@
     border: 1px solid var(--border-glass);
     border-radius: 16px;
     padding: 1.25rem;
-    background: rgba(0, 0, 0, 0.15);
+    background: var(--glass-white);
 }
 
 .vm-form-row {
