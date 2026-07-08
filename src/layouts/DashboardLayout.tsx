@@ -97,7 +97,7 @@ const DashboardLayout = () => {
                 <div className="sidebar-header">
                     <div className="sidebar-logo">
                         <span className="sidebar-logo-icon">🐄</span>
-                        <h2>Humal Admin</h2>
+                        <h2>{user?.role === 'support_executive' ? 'Humal Support' : 'Humal Admin'}</h2>
                     </div>
                 </div>
                 <nav className="sidebar-nav">

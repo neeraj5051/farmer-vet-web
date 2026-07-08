@@ -19,6 +19,14 @@ const Login = () => {
         setError('');
         try {
             await auth.login(phone, password);
+            const savedUserStr = localStorage.getItem('user');
+            if (savedUserStr) {
+                const savedUser = JSON.parse(savedUserStr);
+                if (savedUser.role === 'support_executive') {
+                    navigate('/support');
+                    return;
+                }
+            }
             navigate('/admin');
         } catch (err: any) {
             console.error(err);

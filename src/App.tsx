@@ -42,6 +42,14 @@ const PublicRoute = ({ children }: { children: React.ReactElement }) => {
   }
 
   if (token) {
+    const userStr = localStorage.getItem('user');
+    let role = '';
+    if (userStr) {
+      try { role = JSON.parse(userStr).role; } catch (e) {}
+    }
+    if (role === 'support_executive') {
+      return <Navigate to="/support" replace />;
+    }
     return <Navigate to="/admin" replace />;
   }
 
@@ -81,6 +89,15 @@ const AppRoutes = () => {
         <Route path="vaccination" element={<VaccinationPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="vaccines" element={<VaccineManagement />} />
+      </Route>
+
+      {/* Protected Support Executive route */}
+      <Route path="/support" element={
+        <ProtectedRoute>
+          <DashboardLayout />
+        </ProtectedRoute>
+      }>
+        <Route index element={<SupportTickets />} />
       </Route>
 
       {/* Fallback to Landing Page */}
