@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle, Clock, Loader2, MessageSquare, RefreshCw, Search, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import type { SupportTicket } from '../services/supportService';
-import { getAllTickets, updateTicket } from '../services/supportService';
+import { getAllTickets, updateTicket, getBookingContext } from '../services/supportService';
 import './AdminPages.css';
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; label: string; icon: any }> = {
@@ -21,6 +21,9 @@ const SupportTickets = () => {
     const [updating, setUpdating] = useState(false);
     const [updateStatus, setUpdateStatus] = useState('');
     const [resolutionNotes, setResolutionNotes] = useState('');
+    const [viewMode, setViewMode] = useState<'ticket' | 'context'>('ticket');
+    const [bookingContext, setBookingContext] = useState<any>(null);
+    const [loadingContext, setLoadingContext] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -42,6 +45,24 @@ const SupportTickets = () => {
         setSelectedTicket(ticket);
         setUpdateStatus(ticket.status);
         setResolutionNotes(ticket.resolution_notes || '');
+        setViewMode('ticket');
+        setBookingContext(null);
+    };
+
+    const handleViewContext = async () => {
+        if (!selectedTicket?.booking_id) return;
+        setViewMode('context');
+        setLoadingContext(true);
+        try {
+            const data = await getBookingContext(selectedTicket.booking_id);
+            setBookingContext(data);
+        } catch (err) {
+            console.error(err);
+            alert('Failed to load booking context.');
+            setViewMode('ticket');
+        } finally {
+            setLoadingContext(false);
+        }
     };
 
     const handleUpdate = async () => {
@@ -212,53 +233,123 @@ const SupportTickets = () => {
                 <div className="ap-modal-backdrop" onClick={() => setSelectedTicket(null)}>
                     <div className="ap-modal" onClick={e => e.stopPropagation()}>
                         <div className="ap-modal-header">
-                            <h2>Manage Ticket</h2>
+                            <h2>{viewMode === 'ticket' ? 'Manage Ticket' : 'Booking Context'}</h2>
                             <button className="ap-modal-close" onClick={() => setSelectedTicket(null)}>✕</button>
                         </div>
                         <div className="ap-modal-body">
-                            <div className="ap-detail-grid" style={{ marginBottom: '1.25rem' }}>
-                                <div className="ap-detail-row"><span>Subject</span><strong>{selectedTicket.subject}</strong></div>
-                                <div className="ap-detail-row"><span>User</span><strong>{selectedTicket.user?.full_name || '—'} ({selectedTicket.user?.role_name})</strong></div>
-                                <div className="ap-detail-row"><span>Phone</span><strong>{selectedTicket.user?.phone || '—'}</strong></div>
-                                <div className="ap-detail-row"><span>Created</span><strong>{new Date(selectedTicket.created_at).toLocaleString()}</strong></div>
-                                {selectedTicket.booking_id && (
-                                    <div className="ap-detail-row"><span>Booking ID</span><code style={{ fontSize: '0.75rem' }}>{selectedTicket.booking_id}</code></div>
-                                )}
-                            </div>
+                            {viewMode === 'ticket' ? (
+                                <>
+                                    <div className="ap-detail-grid" style={{ marginBottom: '1.25rem' }}>
+                                        <div className="ap-detail-row"><span>Subject</span><strong>{selectedTicket.subject}</strong></div>
+                                        <div className="ap-detail-row"><span>User</span><strong>{selectedTicket.user?.full_name || '—'} ({selectedTicket.user?.role_name})</strong></div>
+                                        <div className="ap-detail-row"><span>Phone</span><strong>{selectedTicket.user?.phone || '—'}</strong></div>
+                                        <div className="ap-detail-row"><span>Created</span><strong>{new Date(selectedTicket.created_at).toLocaleString()}</strong></div>
+                                        {selectedTicket.booking_id && (
+                                            <div className="ap-detail-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span>Booking ID</span>
+                                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                                    <code style={{ fontSize: '0.75rem' }}>{selectedTicket.booking_id}</code>
+                                                    <button 
+                                                        className="ap-btn-sm" 
+                                                        style={{ background: '#e0e7ff', color: '#4338ca', border: 'none', padding: '4px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600 }}
+                                                        onClick={handleViewContext}
+                                                    >
+                                                        View Context
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
 
-                            <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '1rem', marginBottom: '1.25rem' }}>
-                                <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Description</div>
-                                <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151', lineHeight: 1.6 }}>{selectedTicket.description}</p>
-                            </div>
+                                    <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 10, padding: '1rem', marginBottom: '1.25rem' }}>
+                                        <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#6b7280', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Description</div>
+                                        <p style={{ margin: 0, fontSize: '0.875rem', color: '#374151', lineHeight: 1.6 }}>{selectedTicket.description}</p>
+                                    </div>
 
-                            <div className="ap-form-group">
-                                <label className="ap-label">Update Status</label>
-                                <select
-                                    value={updateStatus}
-                                    onChange={e => setUpdateStatus(e.target.value)}
-                                    className="ap-form-select"
-                                >
-                                    <option value="OPEN">Open</option>
-                                    <option value="IN_PROGRESS">In Progress</option>
-                                    <option value="RESOLVED">Resolved</option>
-                                    <option value="CLOSED">Closed</option>
-                                </select>
-                            </div>
+                                    <div className="ap-form-group">
+                                        <label className="ap-label">Update Status</label>
+                                        <select
+                                            value={updateStatus}
+                                            onChange={e => setUpdateStatus(e.target.value)}
+                                            className="ap-form-select"
+                                        >
+                                            <option value="OPEN">Open</option>
+                                            <option value="IN_PROGRESS">In Progress</option>
+                                            <option value="RESOLVED">Resolved</option>
+                                            <option value="CLOSED">Closed</option>
+                                        </select>
+                                    </div>
 
-                            <div className="ap-form-group">
-                                <label className="ap-label">Resolution Notes</label>
-                                <textarea
-                                    className="ap-textarea"
-                                    value={resolutionNotes}
-                                    onChange={e => setResolutionNotes(e.target.value)}
-                                    placeholder="Add resolution notes or follow-up message..."
-                                    rows={4}
-                                />
-                            </div>
+                                    <div className="ap-form-group">
+                                        <label className="ap-label">Resolution Notes</label>
+                                        <textarea
+                                            className="ap-textarea"
+                                            value={resolutionNotes}
+                                            onChange={e => setResolutionNotes(e.target.value)}
+                                            placeholder="Add resolution notes or follow-up message..."
+                                            rows={4}
+                                        />
+                                    </div>
 
-                            <button className="ap-save-btn" onClick={handleUpdate} disabled={updating}>
-                                {updating ? 'Saving...' : 'Save Changes'}
-                            </button>
+                                    <button className="ap-save-btn" onClick={handleUpdate} disabled={updating}>
+                                        {updating ? 'Saving...' : 'Save Changes'}
+                                    </button>
+                                </>
+                            ) : (
+                                <div className="ap-context-view">
+                                    <button 
+                                        onClick={() => setViewMode('ticket')} 
+                                        style={{ background: 'transparent', border: '1px solid #e5e7eb', borderRadius: '6px', padding: '6px 12px', fontSize: '0.875rem', cursor: 'pointer', marginBottom: '15px' }}
+                                    >
+                                        ← Back to Ticket
+                                    </button>
+                                    {loadingContext ? (
+                                        <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Loading Context...</div>
+                                    ) : bookingContext ? (
+                                        <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '10px' }}>
+                                            <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '10px' }}>Booking Details</h3>
+                                            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.875rem', border: '1px solid #e5e7eb' }}>
+                                                <div style={{ marginBottom: 6 }}><strong>Status:</strong> <span style={{ textTransform: 'capitalize' }}>{bookingContext.booking.status.toLowerCase()}</span></div>
+                                                <div style={{ marginBottom: 6 }}><strong>Date:</strong> {bookingContext.booking.booking_date} at {bookingContext.booking.booking_time}</div>
+                                                <div style={{ marginBottom: 6 }}><strong>Type:</strong> <span style={{ textTransform: 'capitalize' }}>{bookingContext.booking.consultation_type.toLowerCase()}</span></div>
+                                                {bookingContext.booking.problem_description && (
+                                                    <div style={{ marginTop: 8, fontStyle: 'italic', color: '#4b5563' }}>"{bookingContext.booking.problem_description}"</div>
+                                                )}
+                                            </div>
+
+                                            <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '10px' }}>Payment Info</h3>
+                                            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.875rem', border: '1px solid #e5e7eb' }}>
+                                                {bookingContext.payment ? (
+                                                    <>
+                                                        <div style={{ marginBottom: 6 }}><strong>Amount:</strong> ₹{bookingContext.payment.amount}</div>
+                                                        <div style={{ marginBottom: 6 }}><strong>Status:</strong> {bookingContext.payment.status}</div>
+                                                        <div><strong>Method:</strong> {bookingContext.payment.payment_method}</div>
+                                                    </>
+                                                ) : (
+                                                    <div style={{ color: '#6b7280' }}>No payment record found.</div>
+                                                )}
+                                            </div>
+
+                                            <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '10px' }}>Chat Log ({bookingContext.chat_messages.length})</h3>
+                                            <div style={{ background: '#f3f4f6', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                                {bookingContext.chat_messages.map((msg: any) => (
+                                                    <div key={msg.id} style={{ marginBottom: '10px', padding: '10px', background: 'white', borderRadius: '6px', border: '1px solid #e5e7eb' }}>
+                                                        <div style={{ fontSize: '0.75rem', color: '#6b7280', marginBottom: '4px', fontWeight: 600 }}>
+                                                            {msg.sender_id === bookingContext.booking.farmer_id ? 'Farmer' : 'Vet'} <span style={{ fontWeight: 400 }}>• {new Date(msg.created_at).toLocaleString()}</span>
+                                                        </div>
+                                                        <div style={{ fontSize: '0.875rem', color: '#111827' }}>
+                                                            {msg.message_type === 'TEXT' ? msg.content : <span style={{ fontStyle: 'italic', color: '#6b7280' }}>[{msg.message_type} Attachment: {msg.content}]</span>}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                                {bookingContext.chat_messages.length === 0 && <div style={{ fontSize: '0.875rem', color: '#6b7280', textAlign: 'center', padding: '10px' }}>No messages exchanged.</div>}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div style={{ color: '#ef4444', textAlign: 'center', padding: '1rem' }}>Failed to load context data.</div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

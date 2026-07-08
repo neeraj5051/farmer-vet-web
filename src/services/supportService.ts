@@ -32,3 +32,8 @@ export const updateTicket = async (ticketId: string, data: {
     const response = await api.put(`/support/${ticketId}`, data);
     return response.data;
 };
+
+export const getBookingContext = async (bookingId: string): Promise<any> => {
+    const response = await api.get(`/support/booking-context/${bookingId}`);
+    return response.data;
+};
