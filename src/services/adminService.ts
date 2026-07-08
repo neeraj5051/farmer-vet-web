@@ -45,3 +45,8 @@ export const getAdminStats = async () => {
     const response = await api.get('/admin/stats');
     return response.data;
 };
+
+export const markConsultationNoShow = async (bookingId: string, target: 'farmer' | 'vet', reason: string) => {
+    const response = await api.post(`/admin/consults/${bookingId}/mark-no-show`, { target, reason });
+    return response.data;
+};

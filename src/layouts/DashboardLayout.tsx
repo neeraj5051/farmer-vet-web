@@ -13,7 +13,7 @@ import {
     Users,
     Video,
 } from 'lucide-react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useEffect, useState } from 'react';
 import { Moon, Sun } from 'lucide-react';
@@ -67,6 +67,7 @@ const NAV_SECTIONS = [
 
 const DashboardLayout = () => {
     const { logout, user } = useAuth();
+    const location = useLocation();
     
     // Theme state
     const [theme, setTheme] = useState<'dark' | 'light'>(() => {
@@ -86,6 +87,10 @@ const DashboardLayout = () => {
         setTheme(prev => prev === 'dark' ? 'light' : 'dark');
     };
 
+    if (user?.role === 'support_executive' && !location.pathname.includes('/admin/support')) {
+        return <Navigate to="/admin/support" replace />;
+    }
+
     return (
         <div className="layout-container">
             <aside className="sidebar">
@@ -96,7 +101,12 @@ const DashboardLayout = () => {
                     </div>
                 </div>
                 <nav className="sidebar-nav">
-                    {NAV_SECTIONS.map(section => (
+                    {NAV_SECTIONS.filter(section => {
+                        if (user?.role === 'support_executive') {
+                            return section.label === 'Support';
+                        }
+                        return true;
+                    }).map(section => (
                         <div key={section.label} className="nav-section">
                             <div className="nav-section-label">{section.label}</div>
                             {section.items.map(item => (

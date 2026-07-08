@@ -470,25 +470,25 @@ const ManageDiseases = () => {
 
             {/* GROUPS TAB CONTENT */}
             {activeTab === 'groups' && (
-                <div className="ap-stats-grid">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5 mb-8">
                     {groups.map((group) => {
                         const associatedCount = diseases.filter(d => d.group_id === group.id).length;
                         return (
                             <div key={group.id} className="ap-expand-card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                                 <div>
-                                    <div className="flex justify-between items-start mb-3">
-                                        <div className="flex items-center gap-3">
+                                    <div className="flex flex-wrap justify-between items-start gap-2 mb-3">
+                                        <div className="flex items-start gap-3 flex-1 min-w-0">
                                             <div className="w-10 h-10 bg-emerald-50 rounded-lg flex items-center justify-center text-xl shrink-0" style={{ background: 'rgba(255,255,255,0.05)' }}>
                                                 {group.icon_emoji || '🐄'}
                                             </div>
-                                            <div>
-                                                <h4 className="ap-cell-bold">{group.name}</h4>
+                                            <div className="flex-1 min-w-0 pt-0.5">
+                                                <h4 className="ap-cell-bold leading-tight" style={{ wordBreak: 'break-word' }}>{group.name}</h4>
                                                 {group.name_hi && (
-                                                    <span className="text-xs text-gray-400 font-medium block">{group.name_hi}</span>
+                                                    <span className="text-xs text-gray-400 font-medium block mt-1 truncate">{group.name_hi}</span>
                                                 )}
                                             </div>
                                         </div>
-                                        <span className="ap-badge" style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)' }}>
+                                        <span className="ap-badge shrink-0" style={{ background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)' }}>
                                             {associatedCount} {associatedCount === 1 ? 'Disease' : 'Diseases'}
                                         </span>
                                     </div>

@@ -1,6 +1,7 @@
 import { Calendar, CheckCircle, Clock, Filter, Loader2, RefreshCw, Search, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { getConsultations } from '../services/consultationsService';
+import { markConsultationNoShow } from '../services/adminService';
 import './AdminPages.css';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
@@ -35,6 +36,25 @@ const Consultations = () => {
     const [typeFilter, setTypeFilter] = useState<string>('all');
     const [periodFilter, setPeriodFilter] = useState<string>('last_30d');
     const [selectedConsult, setSelectedConsult] = useState<any>(null);
+    const [actionLoading, setActionLoading] = useState(false);
+
+    const handleMarkNoShow = async (target: 'farmer' | 'vet') => {
+        if (!selectedConsult) return;
+        const reason = prompt(`Enter reason for marking as ${target} no-show:`);
+        if (!reason) return;
+
+        try {
+            setActionLoading(true);
+            await markConsultationNoShow(selectedConsult.id, target, reason);
+            alert(`Successfully marked as ${target} no-show.`);
+            setSelectedConsult(null);
+            fetchData();
+        } catch (err: any) {
+            alert(err.response?.data?.detail || 'Failed to mark no-show');
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     const fetchData = async () => {
         try {
@@ -283,6 +303,26 @@ const Consultations = () => {
                                             <div className="ap-detail-row"><span>Platform Revenue</span><strong style={{ color: '#7c3aed' }}>₹{c.platform_revenue || 0}</strong></div>
                                             {c.id && <div className="ap-detail-row"><span>Consult ID</span><code style={{ fontSize: '0.75rem' }}>{c.id}</code></div>}
                                         </div>
+                                        {['CONFIRMED', 'IN_PROGRESS', 'PENDING'].includes(c.status) && (
+                                            <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                                                <button 
+                                                    className="ap-btn-sm ap-btn-primary" 
+                                                    style={{ backgroundColor: '#dc2626' }}
+                                                    onClick={() => handleMarkNoShow('farmer')}
+                                                    disabled={actionLoading}
+                                                >
+                                                    Mark Farmer No-Show
+                                                </button>
+                                                <button 
+                                                    className="ap-btn-sm ap-btn-primary" 
+                                                    style={{ backgroundColor: '#dc2626' }}
+                                                    onClick={() => handleMarkNoShow('vet')}
+                                                    disabled={actionLoading}
+                                                >
+                                                    Mark Vet No-Show
+                                                </button>
+                                            </div>
+                                        )}
                                     </>
                                 );
                             })()}
