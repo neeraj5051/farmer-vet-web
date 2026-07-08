@@ -11,6 +11,21 @@ const STATUS_CONFIG: Record<string, { bg: string; text: string; label: string; i
     CLOSED: { bg: '#f3f4f6', text: '#6b7280', label: 'Closed', icon: XCircle },
 };
 
+const getBookingTypeInfo = (category?: string, type?: string) => {
+    const lowerCat = (category || '').toLowerCase();
+    const lowerType = (type || '').toLowerCase();
+    if (lowerCat.includes('ai') || lowerCat.includes('artificial')) {
+        return { label: 'AI / Insemination', icon: '🔬', color: '#7c3aed', bg: 'rgba(124, 58, 237, 0.15)' };
+    }
+    if (lowerCat.includes('vaccin') || lowerCat.includes('vacc')) {
+        return { label: 'Vaccination', icon: '💉', color: '#059669', bg: 'rgba(5, 150, 105, 0.15)' };
+    }
+    if (lowerType.includes('video') || lowerType.includes('phone') || lowerType.includes('online')) {
+        return { label: 'Online Consultation', icon: '📹', color: '#2563eb', bg: 'rgba(37, 99, 235, 0.15)' };
+    }
+    return { label: 'In-Person Visit', icon: '🏥', color: '#d97706', bg: 'rgba(217, 119, 6, 0.15)' };
+};
+
 const SupportTickets = () => {
     const [tickets, setTickets] = useState<SupportTicket[]>([]);
     const [loading, setLoading] = useState(true);
@@ -307,19 +322,106 @@ const SupportTickets = () => {
                                         <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>Loading Context...</div>
                                     ) : bookingContext ? (
                                         <div style={{ maxHeight: '60vh', overflowY: 'auto', paddingRight: '10px' }}>
-                                            <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '10px' }}>Booking Details</h3>
-                                            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.875rem', border: '1px solid #e5e7eb' }}>
-                                                <div style={{ marginBottom: 6 }}><strong>Status:</strong> <span style={{ textTransform: 'capitalize' }}>{bookingContext.booking.status.toLowerCase()}</span></div>
-                                                <div style={{ marginBottom: 6 }}><strong>Date:</strong> {bookingContext.booking.booking_date} at {bookingContext.booking.booking_time}</div>
-                                                <div style={{ marginBottom: 6 }}><strong>Service:</strong> <span style={{ textTransform: 'capitalize' }}>{bookingContext.booking.service_category?.toLowerCase() || 'Consultation'}</span></div>
-                                                <div style={{ marginBottom: 6 }}><strong>Type:</strong> <span style={{ textTransform: 'capitalize' }}>{bookingContext.booking.consultation_type.toLowerCase()}</span></div>
-                                                <div style={{ marginBottom: 6 }}><strong>Farmer:</strong> {bookingContext.booking.farmer_name} <span style={{ color: '#6b7280' }}>({bookingContext.booking.farmer_phone || 'No phone'})</span> {bookingContext.booking.is_farmer_joined ? <span style={{color: '#10b981', fontSize: '0.75rem', fontWeight: 600, marginLeft: 4}}>(Joined)</span> : <span style={{color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, marginLeft: 4}}>(Did Not Join)</span>}</div>
-                                                <div style={{ marginBottom: 6 }}><strong>Vet:</strong> {bookingContext.booking.vet_name} <span style={{ color: '#6b7280' }}>({bookingContext.booking.vet_phone || 'No phone'})</span> {bookingContext.booking.is_vet_joined ? <span style={{color: '#10b981', fontSize: '0.75rem', fontWeight: 600, marginLeft: 4}}>(Joined)</span> : <span style={{color: '#ef4444', fontSize: '0.75rem', fontWeight: 600, marginLeft: 4}}>(Did Not Join)</span>}</div>
-                                                <div style={{ marginBottom: 6 }}><strong>Call Duration:</strong> {bookingContext.booking.duration_minutes} mins</div>
-                                                {bookingContext.booking.problem_description && (
-                                                    <div style={{ marginTop: 8, fontStyle: 'italic', color: '#4b5563' }}>"{bookingContext.booking.problem_description}"</div>
-                                                )}
-                                            </div>
+                                            <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <span>Booking Details</span>
+                                                <span style={{
+                                                    fontSize: '0.75rem',
+                                                    padding: '4px 10px',
+                                                    borderRadius: '12px',
+                                                    background: bookingContext.booking.status === 'COMPLETED' ? '#d1fae5' : bookingContext.booking.status === 'CONFIRMED' ? '#fef3c7' : '#fee2e2',
+                                                    color: bookingContext.booking.status === 'COMPLETED' ? '#065f46' : bookingContext.booking.status === 'CONFIRMED' ? '#92400e' : '#991b1b',
+                                                    fontWeight: 700,
+                                                    textTransform: 'uppercase'
+                                                }}>
+                                                    {bookingContext.booking.status.toLowerCase().replace('_', ' ')}
+                                                </span>
+                                            </h3>
+                                            {(() => {
+                                                const typeInfo = getBookingTypeInfo(bookingContext.booking.service_category, bookingContext.booking.consultation_type);
+                                                const formatDuration = (mins: number) => {
+                                                    if (!mins || mins <= 0) return '0s';
+                                                    const m = Math.floor(mins);
+                                                    const s = Math.round((mins % 1) * 60);
+                                                    return `${m}m ${s}s`;
+                                                };
+                                                const isVaccine = bookingContext.booking.service_category === 'VACCINATION';
+                                                const isAI = bookingContext.booking.service_category === 'AI';
+                                                const subName = bookingContext.booking.vaccine_name || bookingContext.booking.variant_name || bookingContext.booking.disease_name;
+
+                                                return (
+                                                    <div style={{ background: '#f9fafb', padding: '16px', borderRadius: '12px', marginBottom: '20px', fontSize: '0.875rem', border: '1px solid #e5e7eb', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                                                        <div style={{ display: 'flex', gap: '8px', marginBottom: '12px', flexWrap: 'wrap' }}>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: typeInfo.bg, color: typeInfo.color, padding: '4px 10px', borderRadius: '8px', fontWeight: 600, fontSize: '0.78rem' }}>
+                                                                {typeInfo.icon} {typeInfo.label}
+                                                            </span>
+                                                            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: bookingContext.booking.consultation_type === 'visit' ? 'rgba(217, 119, 6, 0.1)' : 'rgba(37, 99, 235, 0.1)', color: bookingContext.booking.consultation_type === 'visit' ? '#d97706' : '#2563eb', padding: '4px 10px', borderRadius: '8px', fontWeight: 600, fontSize: '0.78rem' }}>
+                                                                {bookingContext.booking.consultation_type === 'visit' ? '🏥 In-Person' : '📹 Online'}
+                                                            </span>
+                                                        </div>
+
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #f3f4f6' }}>
+                                                            <div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Scheduled Date</div>
+                                                                <div style={{ fontWeight: 700, color: '#111827' }}>{bookingContext.booking.booking_date}</div>
+                                                            </div>
+                                                            <div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Scheduled Time</div>
+                                                                <div style={{ fontWeight: 700, color: '#111827' }}>{bookingContext.booking.booking_time?.substring(0, 5)} {bookingContext.booking.slot_duration ? `(${bookingContext.booking.slot_duration}m slot)` : ''}</div>
+                                                            </div>
+                                                        </div>
+
+                                                        {subName && (
+                                                            <div style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #f3f4f6' }}>
+                                                                <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>
+                                                                    {isVaccine ? '💉 Vaccine Name' : isAI ? '🔬 Breed / Variant' : '🩺 Condition'}
+                                                                </div>
+                                                                <div style={{ fontWeight: 700, color: typeInfo.color, fontSize: '0.95rem' }}>{subName}</div>
+                                                            </div>
+                                                        )}
+
+                                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #f3f4f6' }}>
+                                                            <div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Vet Arrival / Start</div>
+                                                                <div style={{ fontWeight: 700, color: '#111827' }}>
+                                                                    {bookingContext.booking.arrived_at ? new Date(bookingContext.booking.arrived_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                                                                </div>
+                                                            </div>
+                                                            <div>
+                                                                <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: '2px' }}>Session Duration</div>
+                                                                <div style={{ fontWeight: 700, color: '#111827' }}>{formatDuration(bookingContext.booking.duration_minutes)}</div>
+                                                            </div>
+                                                        </div>
+
+                                                        <div style={{ marginBottom: '12px' }}>
+                                                            <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px' }}>Participants</div>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <span>👨‍🌾 <strong>Farmer:</strong> {bookingContext.booking.farmer_name} <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>({bookingContext.booking.farmer_phone || 'No phone'})</span></span>
+                                                                    {bookingContext.booking.is_farmer_joined ? (
+                                                                        <span style={{ color: '#10b981', background: '#d1fae5', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>JOINED</span>
+                                                                    ) : (
+                                                                        <span style={{ color: '#ef4444', background: '#fee2e2', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>ABSENT</span>
+                                                                    )}
+                                                                </div>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                                    <span>🩺 <strong>Vet:</strong> {bookingContext.booking.vet_name} <span style={{ color: '#6b7280', fontSize: '0.8rem' }}>({bookingContext.booking.vet_phone || 'No phone'})</span></span>
+                                                                    {bookingContext.booking.is_vet_joined ? (
+                                                                        <span style={{ color: '#10b981', background: '#d1fae5', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>JOINED</span>
+                                                                    ) : (
+                                                                        <span style={{ color: '#ef4444', background: '#fee2e2', padding: '2px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 700 }}>ABSENT</span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {bookingContext.booking.problem_description && (
+                                                            <div style={{ marginTop: 12, padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', borderLeft: `3px solid ${typeInfo.color}`, fontStyle: 'italic', color: '#4b5563' }}>
+                                                                "{bookingContext.booking.problem_description}"
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })()}
 
                                             <h3 style={{ fontSize: '1rem', marginTop: 0, marginBottom: '10px' }}>Payment Info</h3>
                                             <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.875rem', border: '1px solid #e5e7eb' }}>
