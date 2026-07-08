@@ -311,6 +311,7 @@ const SupportTickets = () => {
                                             <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '8px', marginBottom: '20px', fontSize: '0.875rem', border: '1px solid #e5e7eb' }}>
                                                 <div style={{ marginBottom: 6 }}><strong>Status:</strong> <span style={{ textTransform: 'capitalize' }}>{bookingContext.booking.status.toLowerCase()}</span></div>
                                                 <div style={{ marginBottom: 6 }}><strong>Date:</strong> {bookingContext.booking.booking_date} at {bookingContext.booking.booking_time}</div>
+                                                <div style={{ marginBottom: 6 }}><strong>Service:</strong> <span style={{ textTransform: 'capitalize' }}>{bookingContext.booking.service_category?.toLowerCase() || 'Consultation'}</span></div>
                                                 <div style={{ marginBottom: 6 }}><strong>Type:</strong> <span style={{ textTransform: 'capitalize' }}>{bookingContext.booking.consultation_type.toLowerCase()}</span></div>
                                                 <div style={{ marginBottom: 6 }}><strong>Farmer:</strong> {bookingContext.booking.farmer_name} <span style={{ color: '#6b7280' }}>({bookingContext.booking.farmer_phone || 'No phone'})</span></div>
                                                 <div style={{ marginBottom: 6 }}><strong>Vet:</strong> {bookingContext.booking.vet_name} <span style={{ color: '#6b7280' }}>({bookingContext.booking.vet_phone || 'No phone'})</span></div>
