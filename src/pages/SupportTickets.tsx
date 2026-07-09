@@ -1,7 +1,7 @@
 import { AlertCircle, CheckCircle, Clock, Loader2, MessageSquare, RefreshCw, Search, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import type { SupportTicket } from '../services/supportService';
-import { getAllTickets, updateTicket, getBookingContext } from '../services/supportService';
+import type { SupportTicket, SupportMessage } from '../services/supportService';
+import { getAllTickets, updateTicket, getBookingContext, getSupportMessages, sendSupportMessage } from '../services/supportService';
 import './AdminPages.css';
 
 const STATUS_CONFIG: Record<string, { bg: string; text: string; label: string; icon: any }> = {
@@ -39,6 +39,9 @@ const SupportTickets = () => {
     const [viewMode, setViewMode] = useState<'ticket' | 'context'>('ticket');
     const [bookingContext, setBookingContext] = useState<any>(null);
     const [loadingContext, setLoadingContext] = useState(false);
+    const [messages, setMessages] = useState<SupportMessage[]>([]);
+    const [chatInput, setChatInput] = useState('');
+    const [sendingChat, setSendingChat] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -62,6 +65,31 @@ const SupportTickets = () => {
         setResolutionNotes(ticket.resolution_notes || '');
         setViewMode('ticket');
         setBookingContext(null);
+        setMessages([]);
+        fetchMessages(ticket.id);
+    };
+
+    const fetchMessages = async (ticketId: string) => {
+        try {
+            const msgs = await getSupportMessages(ticketId);
+            setMessages(msgs);
+        } catch (err) {
+            console.error('Error fetching messages:', err);
+        }
+    };
+
+    const handleSendChat = async () => {
+        if (!selectedTicket || !chatInput.trim()) return;
+        setSendingChat(true);
+        try {
+            const newMsg = await sendSupportMessage(selectedTicket.id, chatInput);
+            setMessages(prev => [...prev, newMsg]);
+            setChatInput('');
+        } catch (err) {
+            alert('Failed to send message');
+        } finally {
+            setSendingChat(false);
+        }
     };
 
     const handleViewContext = async () => {
@@ -297,14 +325,48 @@ const SupportTickets = () => {
                                     </div>
 
                                     <div className="ap-form-group">
-                                        <label className="ap-label">Resolution Notes</label>
-                                        <textarea
-                                            className="ap-textarea"
-                                            value={resolutionNotes}
-                                            onChange={e => setResolutionNotes(e.target.value)}
-                                            placeholder="Add resolution notes or follow-up message..."
-                                            rows={4}
-                                        />
+                                        <label className="ap-label">Live Chat with User</label>
+                                        <div style={{ background: '#f9fafb', border: '1px solid #e5e7eb', borderRadius: 8, padding: '1rem', marginBottom: '1rem', height: 250, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {messages.length === 0 ? (
+                                                <div style={{ margin: 'auto', color: '#9ca3af', fontSize: '0.875rem' }}>No messages yet.</div>
+                                            ) : (
+                                                messages.map(msg => {
+                                                    const isAdmin = msg.sender_role === 'admin' || msg.sender_role === 'support_executive';
+                                                    return (
+                                                        <div key={msg.id} style={{ 
+                                                            alignSelf: isAdmin ? 'flex-end' : 'flex-start',
+                                                            background: isAdmin ? '#dbeafe' : 'white',
+                                                            border: '1px solid',
+                                                            borderColor: isAdmin ? '#bfdbfe' : '#e5e7eb',
+                                                            padding: '8px 12px',
+                                                            borderRadius: '8px',
+                                                            maxWidth: '85%'
+                                                        }}>
+                                                            <div style={{ fontSize: '0.7rem', color: '#6b7280', marginBottom: 4 }}>
+                                                                {isAdmin ? msg.sender_name : 'Customer'} • {new Date(msg.created_at).toLocaleTimeString()}
+                                                            </div>
+                                                            <div style={{ fontSize: '0.875rem', color: '#111827' }}>
+                                                                {msg.message_type === 'TEXT' ? msg.content : `[${msg.message_type} Attachment]` }
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })
+                                            )}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <input 
+                                                type="text" 
+                                                className="ap-search-input" 
+                                                style={{ flex: 1 }} 
+                                                placeholder="Type your reply..."
+                                                value={chatInput}
+                                                onChange={e => setChatInput(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && handleSendChat()}
+                                            />
+                                            <button className="ap-btn-primary ap-btn-sm" onClick={handleSendChat} disabled={sendingChat || !chatInput.trim()}>
+                                                {sendingChat ? 'Sending...' : 'Send'}
+                                            </button>
+                                        </div>
                                     </div>
 
                                     <button className="ap-save-btn" onClick={handleUpdate} disabled={updating}>

@@ -37,3 +37,24 @@ export const getBookingContext = async (bookingId: string): Promise<any> => {
     const response = await api.get(`/support/booking-context/${bookingId}`);
     return response.data;
 };
+
+export interface SupportMessage {
+    id: string;
+    ticket_id: string;
+    sender_id: string;
+    content?: string;
+    message_type: 'TEXT' | 'IMAGE' | 'FILE' | 'VIDEO';
+    created_at: string;
+    sender_name?: string;
+    sender_role?: string;
+}
+
+export const getSupportMessages = async (ticketId: string): Promise<SupportMessage[]> => {
+    const response = await api.get(`/support/${ticketId}/messages`);
+    return response.data;
+};
+
+export const sendSupportMessage = async (ticketId: string, content: string, message_type: string = 'TEXT'): Promise<SupportMessage> => {
+    const response = await api.post(`/support/${ticketId}/messages`, { content, message_type });
+    return response.data;
+};
