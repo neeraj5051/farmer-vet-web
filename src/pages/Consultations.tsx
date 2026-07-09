@@ -1,6 +1,6 @@
 import { Calendar, CheckCircle, Clock, Filter, Loader2, RefreshCw, Search, XCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { getConsultations } from '../services/consultationsService';
+import { getConsultations, getConsultationDetail } from '../services/consultationsService';
 import { markConsultationNoShow } from '../services/adminService';
 import './AdminPages.css';
 
@@ -36,7 +36,23 @@ const Consultations = () => {
     const [typeFilter, setTypeFilter] = useState<string>('all');
     const [periodFilter, setPeriodFilter] = useState<string>('last_30d');
     const [selectedConsult, setSelectedConsult] = useState<any>(null);
+    const [selectedConsultDetail, setSelectedConsultDetail] = useState<any>(null);
+    const [loadingDetail, setLoadingDetail] = useState(false);
     const [actionLoading, setActionLoading] = useState(false);
+
+    const handleViewDetail = async (consult: any) => {
+        setSelectedConsult(consult);
+        setSelectedConsultDetail(null);
+        setLoadingDetail(true);
+        try {
+            const data = await getConsultationDetail(consult.id);
+            setSelectedConsultDetail(data);
+        } catch (err) {
+            console.error('Error fetching consultation details:', err);
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
 
     const handleMarkNoShow = async (target: 'farmer' | 'vet') => {
         if (!selectedConsult) return;
@@ -262,11 +278,11 @@ const Consultations = () => {
                                     </td>
                                     <td className="ap-cell-money">₹{c.total_paid || c.amount || 0}</td>
                                     <td className="ap-cell-money" style={{ color: '#7c3aed' }}>₹{c.platform_revenue || 0}</td>
-                                    <td>
-                                        <button className="ap-btn-sm ap-btn-primary" onClick={() => setSelectedConsult(c)}>
-                                            View
-                                        </button>
-                                    </td>
+                                     <td>
+                                         <button className="ap-btn-sm ap-btn-primary" onClick={() => handleViewDetail(c)}>
+                                             View
+                                         </button>
+                                     </td>
                                 </tr>
                             );
                         })}
@@ -283,49 +299,120 @@ const Consultations = () => {
                             <button className="ap-modal-close" onClick={() => setSelectedConsult(null)}>✕</button>
                         </div>
                         <div className="ap-modal-body">
-                            {(() => {
-                                const c = selectedConsult;
-                                const statusStyle = STATUS_COLORS[c.status] || { bg: '#f3f4f6', text: '#374151', label: c.status };
-                                const typeInfo = getTypeLabel(c.consultation_type || c.type, c.category);
-                                return (
-                                    <>
-                                        <div className="ap-detail-badge-row">
-                                            <span className="ap-badge" style={{ background: statusStyle.bg, color: statusStyle.text }}>{statusStyle.label}</span>
-                                            <span className="ap-type-badge" style={{ color: typeInfo.color }}>{typeInfo.icon} {typeInfo.label}</span>
-                                        </div>
-                                        <div className="ap-detail-grid">
-                                            <div className="ap-detail-row"><span>Vet</span><strong>Dr. {c.vet_name}</strong></div>
-                                            <div className="ap-detail-row"><span>Farmer</span><strong>{c.farmer_name}</strong></div>
-                                            <div className="ap-detail-row"><span>Date</span><strong>{c.date}</strong></div>
-                                            <div className="ap-detail-row"><span>Time</span><strong>{c.time?.substring(0, 5)}</strong></div>
-                                            <div className="ap-detail-row"><span>Amount Paid</span><strong style={{ color: '#059669' }}>₹{c.total_paid || c.amount || 0}</strong></div>
-                                            <div className="ap-detail-row"><span>Vet Earnings</span><strong>₹{c.vet_earnings || 0}</strong></div>
-                                            <div className="ap-detail-row"><span>Platform Revenue</span><strong style={{ color: '#7c3aed' }}>₹{c.platform_revenue || 0}</strong></div>
-                                            {c.id && <div className="ap-detail-row"><span>Consult ID</span><code style={{ fontSize: '0.75rem' }}>{c.id}</code></div>}
-                                        </div>
-                                        {['CONFIRMED', 'IN_PROGRESS', 'PENDING'].includes(c.status) && (
-                                            <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
-                                                <button 
-                                                    className="ap-btn-sm ap-btn-primary" 
-                                                    style={{ backgroundColor: '#dc2626' }}
-                                                    onClick={() => handleMarkNoShow('farmer')}
-                                                    disabled={actionLoading}
-                                                >
-                                                    Mark Farmer No-Show
-                                                </button>
-                                                <button 
-                                                    className="ap-btn-sm ap-btn-primary" 
-                                                    style={{ backgroundColor: '#dc2626' }}
-                                                    onClick={() => handleMarkNoShow('vet')}
-                                                    disabled={actionLoading}
-                                                >
-                                                    Mark Vet No-Show
-                                                </button>
+                            {loadingDetail ? (
+                                <div style={{ textAlign: 'center', padding: '2rem', color: '#6b7280' }}>
+                                    <Loader2 className="ap-spin" style={{ margin: '0 auto 10px' }} size={24} color="#16a34a" />
+                                    Loading Details...
+                                </div>
+                            ) : selectedConsultDetail ? (
+                                (() => {
+                                    const c = selectedConsultDetail;
+                                    const statusStyle = STATUS_COLORS[c.status] || { bg: '#f3f4f6', text: '#374151', label: c.status };
+                                    const typeInfo = getTypeLabel(c.consultation_type || c.type, c.category);
+                                    return (
+                                        <>
+                                            <div className="ap-detail-badge-row">
+                                                <span className="ap-badge" style={{ background: statusStyle.bg, color: statusStyle.text }}>{statusStyle.label}</span>
+                                                <span className="ap-type-badge" style={{ color: typeInfo.color }}>{typeInfo.icon} {typeInfo.label}</span>
                                             </div>
-                                        )}
-                                    </>
-                                );
-                            })()}
+                                            <div className="ap-detail-grid">
+                                                <div className="ap-detail-row"><span>Vet</span><strong>Dr. {c.vet_name}</strong></div>
+                                                <div className="ap-detail-row"><span>Farmer</span><strong>{c.farmer_name}</strong></div>
+                                                <div className="ap-detail-row"><span>Date</span><strong>{c.date}</strong></div>
+                                                <div className="ap-detail-row"><span>Time</span><strong>{c.time?.substring(0, 5)}</strong></div>
+                                                <div className="ap-detail-row"><span>Amount Paid</span><strong style={{ color: '#059669' }}>₹{c.total_paid || c.amount || 0}</strong></div>
+                                                {c.payment && (
+                                                    <>
+                                                        <div className="ap-detail-row"><span>Payment Status</span><strong>{c.payment.status}</strong></div>
+                                                        {c.payment.transaction_id && (
+                                                            <div className="ap-detail-row"><span>Txn ID</span><code style={{ fontSize: '0.75rem' }}>{c.payment.transaction_id}</code></div>
+                                                        )}
+                                                    </>
+                                                )}
+                                                {c.id && <div className="ap-detail-row"><span>Consult ID</span><code style={{ fontSize: '0.75rem' }}>{c.id}</code></div>}
+                                            </div>
+
+                                            {/* Visit Location Section */}
+                                            {(c.type === 'visit' || c.consultation_type === 'visit') && c.village && (
+                                                <div style={{ marginTop: '20px' }}>
+                                                    <h3 style={{ fontSize: '1rem', marginBottom: '10px' }}>📍 Visit Location / Address</h3>
+                                                    <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb', fontSize: '0.875rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                                        {c.address_text && <div><strong>Address:</strong> {c.address_text}</div>}
+                                                        <div><strong>Village / Area:</strong> {c.village}</div>
+                                                        {c.landmark && <div><strong>Landmark:</strong> {c.landmark}</div>}
+                                                        {c.pincode && <div><strong>Pincode:</strong> {c.pincode}</div>}
+                                                        {(c.district || c.state) && <div><strong>Region:</strong> {[c.district, c.state].filter(Boolean).join(', ')}</div>}
+                                                        {c.latitude && c.longitude && (
+                                                            <div style={{ marginTop: '4px', fontSize: '0.8rem', color: '#4b5563' }}>
+                                                                <strong>GPS:</strong> {c.latitude.toFixed(6)}, {c.longitude.toFixed(6)}
+                                                                {' '}(<a href={`https://www.google.com/maps/search/?api=1&query=${c.latitude},${c.longitude}`} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}>Open Map</a>)
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* Support Ticket History Section */}
+                                            <h3 style={{ fontSize: '1rem', marginTop: '20px', marginBottom: '10px' }}>Ticket History ({c.support_tickets?.length || 0})</h3>
+                                            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '20px' }}>
+                                                {c.support_tickets && c.support_tickets.length > 0 ? (
+                                                    c.support_tickets.map((t: any) => (
+                                                        <div key={t.id} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: t.id !== c.support_tickets[c.support_tickets.length - 1].id ? '1px solid #e5e7eb' : 'none' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                                 <strong style={{ fontSize: '0.875rem', color: '#111827' }}>{t.subject}</strong>
+                                                                 <span style={{
+                                                                     fontSize: '0.7rem',
+                                                                     padding: '2px 8px',
+                                                                     borderRadius: '8px',
+                                                                     background: t.status === 'RESOLVED' ? '#d1fae5' : t.status === 'CLOSED' ? '#f3f4f6' : '#fef3c7',
+                                                                     color: t.status === 'RESOLVED' ? '#065f46' : t.status === 'CLOSED' ? '#6b7280' : '#92400e',
+                                                                     fontWeight: 700
+                                                                 }}>
+                                                                     {t.status}
+                                                                 </span>
+                                                            </div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#4b5563', marginBottom: '4px' }}>{t.description}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                                                                Created: {new Date(t.created_at).toLocaleString()}
+                                                            </div>
+                                                            {t.resolution_notes && (
+                                                                <div style={{ marginTop: '4px', fontSize: '0.78rem', color: '#059669', background: 'rgba(5, 150, 105, 0.1)', padding: '4px 8px', borderRadius: '4px' }}>
+                                                                    <strong>Resolution:</strong> {t.resolution_notes}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div style={{ fontSize: '0.875rem', color: '#6b7280', textAlign: 'center', padding: '10px' }}>No tickets raised for this consultation.</div>
+                                                )}
+                                            </div>
+
+                                            {['CONFIRMED', 'IN_PROGRESS', 'PENDING'].includes(c.status) && (
+                                                <div style={{ marginTop: '20px', display: 'flex', gap: '10px' }}>
+                                                    <button 
+                                                        className="ap-btn-sm ap-btn-primary" 
+                                                        style={{ backgroundColor: '#dc2626' }}
+                                                        onClick={() => handleMarkNoShow('farmer')}
+                                                        disabled={actionLoading}
+                                                    >
+                                                        Mark Farmer No-Show
+                                                    </button>
+                                                    <button 
+                                                        className="ap-btn-sm ap-btn-primary" 
+                                                        style={{ backgroundColor: '#dc2626' }}
+                                                        onClick={() => handleMarkNoShow('vet')}
+                                                        disabled={actionLoading}
+                                                    >
+                                                        Mark Vet No-Show
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </>
+                                    );
+                                })()
+                            ) : (
+                                <div style={{ color: '#ef4444', textAlign: 'center', padding: '1rem' }}>Failed to load context data.</div>
+                            )}
                         </div>
                     </div>
                 </div>

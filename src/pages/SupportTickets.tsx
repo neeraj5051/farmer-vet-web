@@ -107,7 +107,8 @@ const SupportTickets = () => {
             result = result.filter(t =>
                 t.subject?.toLowerCase().includes(q) ||
                 t.description?.toLowerCase().includes(q) ||
-                t.user?.full_name?.toLowerCase().includes(q)
+                t.user?.full_name?.toLowerCase().includes(q) ||
+                t.booking_id?.toLowerCase().includes(q)
             );
         }
         return result;
@@ -414,6 +415,41 @@ const SupportTickets = () => {
                                                             </div>
                                                         </div>
 
+                                                        {bookingContext.booking.consultation_type === 'visit' && bookingContext.booking.village && (
+                                                            <div style={{ marginTop: '12px', padding: '10px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+                                                                <div style={{ fontSize: '0.75rem', color: '#6b7280', fontWeight: 600, textTransform: 'uppercase', marginBottom: '6px' }}>📍 Visit Location / Address</div>
+                                                                {bookingContext.booking.address_text && (
+                                                                    <div style={{ fontSize: '0.85rem', marginBottom: '4px' }}>
+                                                                        <strong>Address:</strong> {bookingContext.booking.address_text}
+                                                                    </div>
+                                                                )}
+                                                                <div style={{ fontSize: '0.85rem', marginBottom: '4px' }}>
+                                                                    <strong>Village / Area:</strong> {bookingContext.booking.village}
+                                                                </div>
+                                                                {bookingContext.booking.landmark && (
+                                                                    <div style={{ fontSize: '0.85rem', marginBottom: '4px' }}>
+                                                                        <strong>Landmark:</strong> {bookingContext.booking.landmark}
+                                                                    </div>
+                                                                )}
+                                                                {bookingContext.booking.pincode && (
+                                                                    <div style={{ fontSize: '0.85rem', marginBottom: '4px' }}>
+                                                                        <strong>Pincode:</strong> {bookingContext.booking.pincode}
+                                                                    </div>
+                                                                )}
+                                                                {(bookingContext.booking.district || bookingContext.booking.state) && (
+                                                                    <div style={{ fontSize: '0.85rem' }}>
+                                                                        <strong>Region:</strong> {[bookingContext.booking.district, bookingContext.booking.state].filter(Boolean).join(', ')}
+                                                                    </div>
+                                                                )}
+                                                                {bookingContext.booking.latitude && bookingContext.booking.longitude && (
+                                                                    <div style={{ marginTop: '6px', fontSize: '0.75rem', color: '#4b5563' }}>
+                                                                        <strong>GPS:</strong> {bookingContext.booking.latitude.toFixed(6)}, {bookingContext.booking.longitude.toFixed(6)}
+                                                                        {' '}(<a href={`https://www.google.com/maps/search/?api=1&query=${bookingContext.booking.latitude},${bookingContext.booking.longitude}`} target="_blank" rel="noreferrer" style={{ color: '#2563eb', fontWeight: 600, textDecoration: 'underline' }}>Open Map</a>)
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        )}
+
                                                         {bookingContext.booking.problem_description && (
                                                             <div style={{ marginTop: 12, padding: '10px', background: 'rgba(0,0,0,0.02)', borderRadius: '8px', borderLeft: `3px solid ${typeInfo.color}`, fontStyle: 'italic', color: '#4b5563' }}>
                                                                 "{bookingContext.booking.problem_description}"
@@ -433,6 +469,40 @@ const SupportTickets = () => {
                                                     </>
                                                 ) : (
                                                     <div style={{ color: '#6b7280' }}>No payment record found.</div>
+                                                )}
+                                            </div>
+
+                                            <h3 style={{ fontSize: '1rem', marginTop: '15px', marginBottom: '10px' }}>Ticket History ({bookingContext.tickets?.length || 0})</h3>
+                                            <div style={{ background: '#f9fafb', padding: '12px', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '20px' }}>
+                                                {bookingContext.tickets && bookingContext.tickets.length > 0 ? (
+                                                    bookingContext.tickets.map((t: any) => (
+                                                        <div key={t.id} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: t.id !== bookingContext.tickets[bookingContext.tickets.length - 1].id ? '1px solid #e5e7eb' : 'none' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                                                                <strong style={{ fontSize: '0.875rem', color: '#111827' }}>{t.subject}</strong>
+                                                                <span style={{
+                                                                    fontSize: '0.7rem',
+                                                                    padding: '2px 8px',
+                                                                    borderRadius: '8px',
+                                                                    background: t.status === 'RESOLVED' ? '#d1fae5' : t.status === 'CLOSED' ? '#f3f4f6' : '#fef3c7',
+                                                                    color: t.status === 'RESOLVED' ? '#065f46' : t.status === 'CLOSED' ? '#6b7280' : '#92400e',
+                                                                    fontWeight: 700
+                                                                }}>
+                                                                    {t.status}
+                                                                </span>
+                                                            </div>
+                                                            <div style={{ fontSize: '0.8rem', color: '#4b5563', marginBottom: '4px' }}>{t.description}</div>
+                                                            <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+                                                                Created: {new Date(t.created_at).toLocaleString()}
+                                                            </div>
+                                                            {t.resolution_notes && (
+                                                                <div style={{ marginTop: '4px', fontSize: '0.78rem', color: '#059669', background: 'rgba(5, 150, 105, 0.1)', padding: '4px 8px', borderRadius: '4px' }}>
+                                                                    <strong>Resolution:</strong> {t.resolution_notes}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <div style={{ fontSize: '0.875rem', color: '#6b7280', textAlign: 'center', padding: '10px' }}>No other tickets for this booking.</div>
                                                 )}
                                             </div>
 
