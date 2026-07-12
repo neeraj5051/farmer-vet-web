@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { serviceCardService, ServiceCard } from '../services/serviceCardService';
+import { serviceCardService, type ServiceCard } from '../services/serviceCardService';
 import { uploadAdminImage } from '../services/uploadService';
 import './AdminPages.css';
 

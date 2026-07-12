@@ -9,7 +9,7 @@ export interface ServiceCard {
     image_url?: string;
     navigation_route: string;
     navigation_params?: any;
-    order_index: int;
+    order_index: number;
     is_active: boolean;
     created_at: string;
     updated_at: string;
