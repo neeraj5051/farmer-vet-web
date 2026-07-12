@@ -499,7 +499,7 @@ const Dashboard = () => {
                         <QuickNavCard title="Services" subtitle="Categories & variants" emoji="🔧" color="#0ea5e9" to="/admin/services" />
                         <QuickNavCard title="Manage Fees" subtitle="Config & taxes" emoji="⚙️" color="#8b5cf6" to="/admin/fees" />
                         <QuickNavCard title="Support" subtitle="Help tickets" emoji="🎫" color="#d97706" to="/admin/support" />
-                        <QuickNavCard title="Pashu Gyan" subtitle="Manage articles" emoji="📖" color="#f97316" to="/admin/blogs" />
+                        <QuickNavCard title="Pashu Gyan" subtitle="Manage articles" emoji="📖" color="#f97316" to="/admin/articles" />
                         <QuickNavCard title="Reports" subtitle="Analytics" emoji="📊" color="#06b6d4" to="/admin/reports" />
                     </div>
                 </div>
