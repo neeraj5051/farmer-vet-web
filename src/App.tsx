@@ -17,6 +17,7 @@ import ServicesManagement from './pages/ServicesManagement';
 import VaccinationPage from './pages/VaccinationPage';
 import ReportsPage from './pages/ReportsPage';
 import VaccineManagement from './pages/VaccineManagement';
+import ManageServiceCards from './pages/ManageServiceCards';
 
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
@@ -81,7 +82,8 @@ const AppRoutes = () => {
         <Route path="users" element={<UsersPage />} />
         <Route path="fees" element={<ManageFees />} />
         <Route path="diseases" element={<ManageDiseases />} />
-        <Route path="blogs" element={<ManageArticles />} />
+        <Route path="articles" element={<ManageArticles />} />
+        <Route path="service-cards" element={<ManageServiceCards />} />
         <Route path="consultations" element={<Consultations />} />
         <Route path="payments" element={<PaymentsPage />} />
         <Route path="support" element={<SupportTickets />} />

@@ -52,9 +52,10 @@ const NAV_SECTIONS = [
         label: 'Content',
         items: [
             { to: '/admin/diseases', label: 'Diseases', icon: Stethoscope },
-            { to: '/admin/blogs', label: 'Pashu Gyan', icon: BookOpen },
+            { to: '/admin/articles', label: 'Pashu Gyan', icon: BookOpen },
             { to: '/admin/services', label: 'Services', icon: Calendar },
             { to: '/admin/vaccines', label: 'Vaccines', icon: Shield },
+            { to: '/admin/service-cards', label: 'Service Cards', icon: LayoutDashboard },
         ],
     },
     {
