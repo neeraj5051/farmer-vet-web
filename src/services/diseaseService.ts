@@ -54,8 +54,8 @@ export interface DiseaseCreate {
     category: string;
     description: string;
     description_hi?: string | null;
-    body_system: string;
-    disease_type: string;
+    body_system?: string | null;
+    disease_type?: string | null;
     species: string;
     symptoms: string[];
     symptoms_hi?: string[] | null;
@@ -63,8 +63,8 @@ export interface DiseaseCreate {
     causes_hi?: string[] | null;
     treatments: string[];
     treatments_hi?: string[] | null;
-    pathogen_type: string;
-    pathogen_name: string;
+    pathogen_type?: string | null;
+    pathogen_name?: string | null;
     severity_level: number;
     image_path?: string | null;
     group_id?: string | null;
