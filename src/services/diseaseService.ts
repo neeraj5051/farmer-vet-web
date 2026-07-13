@@ -41,55 +41,55 @@ export interface DiseaseGroup {
 
 export interface DiseaseGroupCreate {
     name: string;
-    name_hi?: string;
-    description?: string;
-    description_hi?: string;
-    icon_emoji?: string;
-    image_path?: string;
+    name_hi?: string | null;
+    description?: string | null;
+    description_hi?: string | null;
+    icon_emoji?: string | null;
+    image_path?: string | null;
 }
 
 export interface DiseaseCreate {
     name: string;
-    name_hi?: string;
+    name_hi?: string | null;
     category: string;
     description: string;
-    description_hi?: string;
+    description_hi?: string | null;
     body_system: string;
     disease_type: string;
     species: string;
     symptoms: string[];
-    symptoms_hi?: string[];
+    symptoms_hi?: string[] | null;
     causes: string[];
-    causes_hi?: string[];
+    causes_hi?: string[] | null;
     treatments: string[];
-    treatments_hi?: string[];
+    treatments_hi?: string[] | null;
     pathogen_type: string;
     pathogen_name: string;
     severity_level: number;
-    image_path?: string;
-    group_id?: string;
+    image_path?: string | null;
+    group_id?: string | null;
 }
 
 export interface DiseaseUpdate {
     name?: string;
-    name_hi?: string;
+    name_hi?: string | null;
     category?: string;
     description?: string;
-    description_hi?: string;
-    body_system?: string;
-    disease_type?: string;
+    description_hi?: string | null;
+    body_system?: string | null;
+    disease_type?: string | null;
     species?: string;
     symptoms?: string[];
-    symptoms_hi?: string[];
+    symptoms_hi?: string[] | null;
     causes?: string[];
-    causes_hi?: string[];
+    causes_hi?: string[] | null;
     treatments?: string[];
-    treatments_hi?: string[];
-    pathogen_type?: string;
-    pathogen_name?: string;
+    treatments_hi?: string[] | null;
+    pathogen_type?: string | null;
+    pathogen_name?: string | null;
     severity_level?: number;
-    image_path?: string;
-    group_id?: string;
+    image_path?: string | null;
+    group_id?: string | null;
 }
 
 // Helper to ensure arrays are arrays (backend sometimes returns null for empty)

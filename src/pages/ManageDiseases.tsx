@@ -16,27 +16,55 @@ import './AdminPages.css';
 
 const ArrayListDisplay = ({ label, items, onEdit, onAdd, onDelete, required }: { label: string, items: string[], onEdit: (idx: number) => void, onAdd: () => void, onDelete: (idx: number) => void, required?: boolean }) => {
     return (
-        <div className="mb-4">
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{label} {required && '*'}</label>
-            <div className="space-y-2 mb-2">
-                {items.length === 0 && <div className="text-sm text-gray-500 italic">No items added yet.</div>}
-                {items.map((item, idx) => (
-                    <div key={idx} className="flex gap-3 p-3 rounded-xl items-start" style={{ background: 'var(--glass-white)', border: '1px solid var(--border-glass)' }}>
-                        <div className="flex-1 text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>{item}</div>
-                        <div className="flex shrink-0 gap-2 opacity-70 hover:opacity-100 transition-opacity">
-                            <button type="button" onClick={() => onEdit(idx)} className="text-gray-400 hover:text-emerald-500 p-1 bg-transparent border-none cursor-pointer" title="Edit item">
-                                <Edit2 size={16} />
-                            </button>
-                            <button type="button" onClick={() => onDelete(idx)} className="text-gray-400 hover:text-red-500 p-1 bg-transparent border-none cursor-pointer" title="Remove item">
-                                <Trash2 size={16} />
-                            </button>
-                        </div>
-                    </div>
-                ))}
+        <div className="border-b pb-6" style={{ borderColor: 'var(--border-glass)' }}>
+            <div className="flex flex-col gap-3">
+                {/* Header Row: Label & Add Button */}
+                <div className="flex justify-between items-center">
+                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">{label} {required && '*'}</label>
+                    <button 
+                        type="button" 
+                        onClick={onAdd} 
+                        className="flex items-center text-emerald-500 text-sm font-bold hover:text-emerald-400 bg-transparent border-none cursor-pointer p-0"
+                    >
+                        <Plus size={16} className="mr-1" /> Add Item
+                    </button>
+                </div>
+                
+                {/* Chip List */}
+                <div className="flex flex-wrap gap-3 mt-1">
+                    {items.length === 0 ? (
+                        <div className="text-sm text-gray-500 italic py-1">No items added yet.</div>
+                    ) : (
+                        items.map((item, idx) => (
+                            <div 
+                                key={idx} 
+                                onClick={() => onEdit(idx)}
+                                className="group relative pr-8 pl-4 py-2 rounded-xl text-sm font-medium cursor-pointer transition-all hover:bg-white/5 active:scale-[0.98] select-none flex items-center max-w-sm"
+                                style={{ 
+                                    background: 'var(--glass-white)', 
+                                    border: '1px solid var(--border-glass)',
+                                    color: 'var(--text-primary)'
+                                }}
+                                title="Click to edit item"
+                            >
+                                <span className="break-words leading-tight">{item}</span>
+                                <button 
+                                    type="button" 
+                                    onClick={(e) => {
+                                        e.stopPropagation(); // Prevent triggering of edit click
+                                        onDelete(idx);
+                                    }} 
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center bg-gray-200 dark:bg-neutral-800 text-gray-500 hover:bg-red-600 hover:text-white border-none cursor-pointer shadow-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                    style={{ padding: 0, borderRadius: '50%', width: '18px', height: '18px' }}
+                                    title="Delete item"
+                                >
+                                    <X size={10} />
+                                </button>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
-            <button type="button" onClick={onAdd} className="flex items-center text-emerald-500 text-sm font-bold hover:text-emerald-400 bg-transparent border-none cursor-pointer p-0 mt-3">
-                <Plus size={16} className="mr-1" /> Add Item
-            </button>
         </div>
     );
 };
@@ -47,7 +75,7 @@ const ManageDiseases = () => {
 
     const [listEditorState, setListEditorState] = useState<{
         isOpen: boolean;
-        field: 'symptoms' | 'symptoms_hi' | 'causes' | 'causes_hi' | 'treatments' | 'treatments_hi' | null;
+        field: 'symptoms' | 'symptoms_hi' | 'treatments' | 'treatments_hi' | null;
         label: string;
         itemIndex: number;
         value: string;
@@ -74,6 +102,34 @@ const ManageDiseases = () => {
     const [detailLang, setDetailLang] = useState<'en' | 'hi'>('en');
     const [viewerImage, setViewerImage] = useState<string | null>(null);
 
+    // Custom confirm dialog state
+    const [confirmState, setConfirmState] = useState<{
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        type: 'danger' | 'warning';
+    }>({
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => {},
+        type: 'danger'
+    });
+
+    const showConfirm = (title: string, message: string, onConfirm: () => void, type: 'danger' | 'warning' = 'danger') => {
+        setConfirmState({
+            isOpen: true,
+            title,
+            message,
+            onConfirm: () => {
+                onConfirm();
+                setConfirmState(prev => ({ ...prev, isOpen: false }));
+            },
+            type
+        });
+    };
+
     // Forms Form States
     const [formData, setFormData] = useState<{
         name: string;
@@ -86,8 +142,8 @@ const ManageDiseases = () => {
         species: string;
         symptoms: string[]; 
         symptoms_hi: string[];
-        causes: string[];
-        causes_hi: string[];
+        causes: string;
+        causes_hi: string;
         treatments: string[];
         treatments_hi: string[];
         pathogen_type: string;
@@ -106,8 +162,8 @@ const ManageDiseases = () => {
         species: 'Cattle',
         symptoms: [], 
         symptoms_hi: [],
-        causes: [],
-        causes_hi: [],
+        causes: '',
+        causes_hi: '',
         treatments: [],
         treatments_hi: [],
         pathogen_type: 'Virus',
@@ -152,24 +208,24 @@ const ManageDiseases = () => {
         // Convert comma-separated string entries to trimmed arrays
         const payload = {
             name: formData.name,
-            name_hi: formData.name_hi || undefined,
+            name_hi: formData.name_hi || null,
             category: formData.category,
             description: formData.description,
-            description_hi: formData.description_hi || undefined,
-            body_system: formData.body_system,
-            disease_type: formData.disease_type,
+            description_hi: formData.description_hi || null,
+            body_system: formData.body_system || null,
+            disease_type: formData.disease_type || null,
             species: formData.species,
             symptoms: formData.symptoms.map(s => s.trim()).filter(Boolean),
-            symptoms_hi: formData.symptoms_hi ? formData.symptoms_hi.map(s => s.trim()).filter(Boolean) : undefined,
-            causes: formData.causes.map(s => s.trim()).filter(Boolean),
-            causes_hi: formData.causes_hi ? formData.causes_hi.map(s => s.trim()).filter(Boolean) : undefined,
+            symptoms_hi: formData.symptoms_hi ? formData.symptoms_hi.map(s => s.trim()).filter(Boolean) : null,
+            causes: formData.causes.split('\n').map(s => s.trim()).filter(Boolean),
+            causes_hi: formData.causes_hi ? formData.causes_hi.split('\n').map(s => s.trim()).filter(Boolean) : null,
             treatments: formData.treatments.map(s => s.trim()).filter(Boolean),
-            treatments_hi: formData.treatments_hi ? formData.treatments_hi.map(s => s.trim()).filter(Boolean) : undefined,
-            pathogen_type: formData.pathogen_type,
-            pathogen_name: formData.pathogen_name,
+            treatments_hi: formData.treatments_hi ? formData.treatments_hi.map(s => s.trim()).filter(Boolean) : null,
+            pathogen_type: formData.pathogen_type || null,
+            pathogen_name: formData.pathogen_name || null,
             severity_level: Number(formData.severity_level),
-            image_path: formData.image_path || undefined,
-            group_id: formData.group_id || undefined
+            image_path: formData.image_path || null,
+            group_id: formData.group_id || null
         };
 
         try {
@@ -191,11 +247,11 @@ const ManageDiseases = () => {
         e.preventDefault();
         const payload = {
             name: groupFormData.name,
-            name_hi: groupFormData.name_hi || undefined,
-            description: groupFormData.description || undefined,
-            description_hi: groupFormData.description_hi || undefined,
-            icon_emoji: groupFormData.icon_emoji || undefined,
-            image_path: groupFormData.image_path || undefined
+            name_hi: groupFormData.name_hi || null,
+            description: groupFormData.description || null,
+            description_hi: groupFormData.description_hi || null,
+            icon_emoji: groupFormData.icon_emoji || null,
+            image_path: groupFormData.image_path || null
         };
 
         try {
@@ -242,25 +298,37 @@ const ManageDiseases = () => {
     };
 
     const handleDeleteDisease = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this disease? This action cannot be undone.")) return;
-        try {
-            await deleteDisease(id);
-            loadData();
-        } catch (error) {
-            console.error("Failed to delete disease:", error);
-            alert("Failed to delete disease.");
-        }
+        showConfirm(
+            "Delete Disease",
+            "Are you sure you want to delete this disease? This action cannot be undone.",
+            async () => {
+                try {
+                    await deleteDisease(id);
+                    loadData();
+                } catch (error) {
+                    console.error("Failed to delete disease:", error);
+                    alert("Failed to delete disease.");
+                }
+            },
+            "danger"
+        );
     };
 
     const handleDeleteGroup = async (id: string) => {
-        if (!confirm("Are you sure you want to delete this category group? (Diseases inside it will not be deleted but will lose their category association).")) return;
-        try {
-            await deleteDiseaseGroup(id);
-            loadData();
-        } catch (error) {
-            console.error("Failed to delete disease group:", error);
-            alert("Failed to delete disease group.");
-        }
+        showConfirm(
+            "Delete Category Group",
+            "Are you sure you want to delete this category group? (Diseases inside it will not be deleted but will lose their category association).",
+            async () => {
+                try {
+                    await deleteDiseaseGroup(id);
+                    loadData();
+                } catch (error) {
+                    console.error("Failed to delete disease group:", error);
+                    alert("Failed to delete disease group.");
+                }
+            },
+            "danger"
+        );
     };
 
     const openEditDiseaseModal = (disease: Disease) => {
@@ -276,8 +344,8 @@ const ManageDiseases = () => {
             species: disease.species || '',
             symptoms: disease.symptoms || [],
             symptoms_hi: disease.symptoms_hi || [],
-            causes: disease.causes || [],
-            causes_hi: disease.causes_hi || [],
+            causes: (disease.causes || []).join('\n'),
+            causes_hi: (disease.causes_hi || []).join('\n'),
             treatments: disease.treatments || [],
             treatments_hi: disease.treatments_hi || [],
             pathogen_type: disease.pathogen_type || 'Virus',
@@ -304,7 +372,7 @@ const ManageDiseases = () => {
         setIsGroupModalOpen(true);
     };
 
-    const openListEditor = (field: 'symptoms' | 'symptoms_hi' | 'causes' | 'causes_hi' | 'treatments' | 'treatments_hi', label: string, itemIndex: number = -1) => {
+    const openListEditor = (field: 'symptoms' | 'symptoms_hi' | 'treatments' | 'treatments_hi', label: string, itemIndex: number = -1) => {
         setListEditorState({
             isOpen: true,
             field,
@@ -330,7 +398,7 @@ const ManageDiseases = () => {
         setListEditorState({ isOpen: false, field: null, label: '', itemIndex: -1, value: '' });
     };
 
-    const deleteListItem = (field: 'symptoms' | 'symptoms_hi' | 'causes' | 'causes_hi' | 'treatments' | 'treatments_hi', idx: number) => {
+    const deleteListItem = (field: 'symptoms' | 'symptoms_hi' | 'treatments' | 'treatments_hi', idx: number) => {
         const newArr = formData[field].filter((_, i) => i !== idx);
         setFormData({ ...formData, [field]: newArr });
     };
@@ -348,8 +416,8 @@ const ManageDiseases = () => {
             species: 'Cattle',
             symptoms: [],
             symptoms_hi: [],
-            causes: [],
-            causes_hi: [],
+            causes: '',
+            causes_hi: '',
             treatments: [],
             treatments_hi: [],
             pathogen_type: 'Virus',
@@ -464,7 +532,6 @@ const ManageDiseases = () => {
                                     <th>Disease Name</th>
                                     <th>Category Group</th>
                                     <th>Pathogen Type</th>
-                                    <th>Bilingual Status</th>
                                     <th>Severity</th>
                                     <th className="text-right">Actions</th>
                                 </tr>
@@ -480,10 +547,31 @@ const ManageDiseases = () => {
                                         }}
                                     >
                                         <td>
-                                            <div className="ap-cell-bold">{disease.name}</div>
-                                            {disease.name_hi && (
-                                                <div className="text-xs text-gray-400 font-medium">{disease.name_hi}</div>
-                                            )}
+                                            <div className="flex items-center gap-3">
+                                                {disease.image_path ? (
+                                                    <img 
+                                                        src={disease.image_path} 
+                                                        alt={disease.name} 
+                                                        className="w-12 h-12 rounded-lg object-cover bg-black/20 border" 
+                                                        style={{ borderColor: 'var(--border-glass)' }}
+                                                    />
+                                                ) : (
+                                                    <div 
+                                                        className="w-12 h-12 rounded-lg bg-[var(--glass-white)] border flex items-center justify-center text-gray-500 font-bold text-[10px] shrink-0"
+                                                        style={{ borderColor: 'var(--border-glass)' }}
+                                                    >
+                                                        NO IMG
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <div className="ap-cell-bold">{disease.name}</div>
+                                                    {disease.name_hi ? (
+                                                        <div className="text-xs text-gray-400 font-medium">{disease.name_hi}</div>
+                                                    ) : (
+                                                        <span className="text-[10px] text-amber-500 font-bold px-1.5 py-0.5 rounded bg-amber-500/10 mt-1 inline-block">HI Missing</span>
+                                                    )}
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>
                                             {disease.group?.name ? (
@@ -505,16 +593,6 @@ const ManageDiseases = () => {
                                             {disease.pathogen_name && (
                                                 <div className="text-xs text-gray-400 font-medium italic mt-1">{disease.pathogen_name}</div>
                                             )}
-                                        </td>
-                                        <td>
-                                            <div className="flex gap-1.5">
-                                                <span className="ap-badge" style={{ background: '#d1fae5', color: '#065f46' }}>EN</span>
-                                                {disease.description_hi ? (
-                                                    <span className="ap-badge" style={{ background: '#d1fae5', color: '#065f46' }}>HI</span>
-                                                ) : (
-                                                    <span className="ap-badge" style={{ background: '#fef3c7', color: '#92400e' }} title="Hindi description missing">HI Missing</span>
-                                                )}
-                                            </div>
                                         </td>
                                         <td>
                                             <div className="flex">
@@ -617,16 +695,31 @@ const ManageDiseases = () => {
             {/* DISEASE CREATE/EDIT MODAL */}
             {isModalOpen && (
                 <div className="ap-modal-backdrop">
-                    <div className="ap-modal w-full max-w-5xl" style={{ maxHeight: '90vh', maxWidth: '1024px', display: 'flex', flexDirection: 'column' }}>
+                    <form onSubmit={handleDiseaseSubmit} className="ap-modal w-full max-w-5xl" style={{ maxHeight: '90vh', maxWidth: '1024px', display: 'flex', flexDirection: 'column' }}>
                         <div className="flex-shrink-0">
                             {/* Modal Header */}
-                            <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
+                            <div className="ap-modal-header border-b flex justify-between items-center" style={{ borderColor: 'var(--border-glass)' }}>
                                 <h3 className="ap-title text-lg">
                                     {editingDisease ? 'Edit Disease' : 'Add New Disease'}
                                 </h3>
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="ap-modal-close">
-                                    <X size={20} />
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={() => setIsModalOpen(false)}
+                                        className="ap-btn-sm ap-btn-outline"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="ap-btn-sm ap-btn-primary"
+                                    >
+                                        {editingDisease ? 'Update Disease' : 'Create Disease'}
+                                    </button>
+                                    <button type="button" onClick={() => setIsModalOpen(false)} className="ap-modal-close ml-1">
+                                        <X size={20} />
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Internal Language Pills (Tabs) */}
@@ -658,8 +751,89 @@ const ManageDiseases = () => {
                             </div>
                         </div>
 
-                        {/* Modal Form */}
-                        <form onSubmit={handleDiseaseSubmit} className="ap-modal-body space-y-4 overflow-y-auto">
+                        {/* Modal Form Body */}
+                        <div className="ap-modal-body space-y-4 overflow-y-auto">
+                            {/* Disease Image Cover Section */}
+                            <div className="mb-2">
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Disease Cover Image</label>
+                                {formData.image_path ? (
+                                    <div className="relative group w-full h-[220px] rounded-2xl overflow-hidden border bg-black/40" style={{ borderColor: 'var(--border-glass)' }}>
+                                        {/* Blurred Background to fill empty spaces */}
+                                        <img 
+                                            src={formData.image_path} 
+                                            alt="" 
+                                            className="absolute inset-0 w-full h-full object-cover filter blur-md opacity-30 select-none pointer-events-none scale-105" 
+                                        />
+                                        {/* Main Fully Contained Image */}
+                                        <img 
+                                            src={formData.image_path} 
+                                            alt="Disease Cover" 
+                                            className="relative w-full h-full object-contain cursor-pointer transition-transform duration-500 group-hover:scale-[1.02]" 
+                                            onClick={() => setViewerImage(formData.image_path || null)}
+                                        />
+                                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-3">
+                                            <input 
+                                                type="file" 
+                                                accept="image/*" 
+                                                onChange={handleDiseaseImageUpload} 
+                                                style={{ display: 'none' }} 
+                                                id="disease-image-upload" 
+                                                disabled={uploadingImage}
+                                            />
+                                            <label 
+                                                htmlFor="disease-image-upload" 
+                                                className="ap-btn-sm bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer shadow-lg font-bold"
+                                            >
+                                                Change Image
+                                            </label>
+                                            <button 
+                                                type="button"
+                                                onClick={() => {
+                                                    showConfirm(
+                                                        "Remove Cover Image",
+                                                        "Are you sure you want to remove this cover image?",
+                                                        () => setFormData({ ...formData, image_path: '' }),
+                                                        "warning"
+                                                    );
+                                                }}
+                                                className="ap-btn-sm bg-red-500 hover:bg-red-600 text-white border-none shadow-lg font-bold"
+                                            >
+                                                <Trash2 size={14} className="mr-1" /> Remove Image
+                                            </button>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div>
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            onChange={handleDiseaseImageUpload} 
+                                            style={{ display: 'none' }} 
+                                            id="disease-image-upload" 
+                                            disabled={uploadingImage}
+                                        />
+                                        <label 
+                                            htmlFor="disease-image-upload" 
+                                            className="flex flex-col items-center justify-center w-full h-[160px] border-2 border-dashed rounded-2xl cursor-pointer transition-all"
+                                            style={{ 
+                                                borderColor: 'var(--border-glass)',
+                                                background: 'rgba(255,255,255,0.02)'
+                                            }}
+                                            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = '#10b981'; }}
+                                            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'var(--border-glass)'; }}
+                                        >
+                                            <div className="flex flex-col items-center justify-center p-4 text-center">
+                                                <ImagePlus size={28} className="mb-2 text-emerald-500/70" />
+                                                <span className="text-sm font-bold text-gray-300">
+                                                    {uploadingImage ? 'Uploading...' : 'Upload Cover Image'}
+                                                </span>
+                                                <span className="text-xs text-gray-500 mt-1 opacity-70">JPEG, PNG, GIF (Recommended: 16:9 aspect ratio)</span>
+                                            </div>
+                                        </label>
+                                    </div>
+                                )}
+                            </div>
+
                             {/* TAB 1: ENGLISH DETAILS */}
                             {modalTab === 'en' && (
                                 <div className="space-y-8">
@@ -720,88 +894,42 @@ const ManageDiseases = () => {
                                     {/* SECTION 2: DETAILS & MEDIA */}
                                     <div>
                                         <h4 className="text-sm font-bold text-emerald-500 mb-4 border-b pb-2 flex items-center gap-2" style={{ borderColor: 'rgba(16, 185, 129, 0.2)' }}>
-                                            <ImagePlus size={16} /> Details & Media
+                                            <ImagePlus size={16} /> Clinical Description
                                         </h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                                            <div className="md:col-span-2 flex flex-col h-full">
-                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Description (English) *</label>
-                                                <textarea
-                                                    required
-                                                    className="ap-textarea flex-1 min-h-[160px]"
-                                                    placeholder="Write comprehensive clinical description in English..."
-                                                    value={formData.description}
-                                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                                />
-                                            </div>
-                                            
-                                            <div className="md:col-span-1">
-                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Disease Image</label>
-                                                <div className="w-full">
-                                                    {formData.image_path ? (
-                                                        <div className="relative group w-full h-[160px] rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border-glass)' }}>
-                                                            <img 
-                                                                src={formData.image_path} 
-                                                                alt="Preview" 
-                                                                className="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105" 
-                                                                onClick={() => setViewerImage(formData.image_path || null)}
-                                                            />
-                                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
-                                                                <button 
-                                                                    type="button"
-                                                                    onClick={() => {
-                                                                        if (window.confirm("Are you sure you want to remove this image?")) {
-                                                                            setFormData({ ...formData, image_path: '' });
-                                                                        }
-                                                                    }}
-                                                                    className="ap-btn-sm bg-red-500 hover:bg-red-600 text-white border-none shadow-lg"
-                                                                >
-                                                                    <Trash2 size={14} className="mr-1" /> Remove Image
-                                                                </button>
-                                                            </div>
-                                                        </div>
-                                                    ) : (
-                                                        <div>
-                                                            <input 
-                                                                type="file" 
-                                                                accept="image/*" 
-                                                                onChange={handleDiseaseImageUpload} 
-                                                                style={{ display: 'none' }} 
-                                                                id="disease-image-upload" 
-                                                                disabled={uploadingImage}
-                                                            />
-                                                            <label 
-                                                                htmlFor="disease-image-upload" 
-                                                                className="flex flex-col items-center justify-center w-full h-[160px] border-2 border-dashed rounded-xl cursor-pointer transition-all"
-                                                                style={{ 
-                                                                    borderColor: 'var(--border-glass)',
-                                                                    background: 'rgba(255,255,255,0.02)'
-                                                                }}
-                                                                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = '#10b981'; }}
-                                                                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'var(--border-glass)'; }}
-                                                            >
-                                                                <div className="flex flex-col items-center justify-center p-4 text-center">
-                                                                    <ImagePlus size={28} className="mb-3 text-emerald-500/70" />
-                                                                    <span className="text-sm font-bold text-gray-300">
-                                                                        {uploadingImage ? 'Uploading...' : 'Upload Image'}
-                                                                    </span>
-                                                                    <span className="text-xs text-gray-500 mt-1 opacity-70">JPEG, PNG, GIF</span>
-                                                                </div>
-                                                            </label>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </div>
+                                        <div className="flex flex-col">
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Description (English) *</label>
+                                            <textarea
+                                                required
+                                                className="ap-textarea w-full min-h-[160px]"
+                                                placeholder="Write comprehensive clinical description in English..."
+                                                value={formData.description}
+                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                            />
                                         </div>
                                     </div>
 
-                                    {/* SECTION 3: CLINICAL LISTS */}
+                                    {/* SECTION 2.5: CAUSES & TRANSMISSION */}
                                     <div>
                                         <h4 className="text-sm font-bold text-emerald-500 mb-4 border-b pb-2 flex items-center gap-2" style={{ borderColor: 'rgba(16, 185, 129, 0.2)' }}>
-                                            <List size={16} /> Clinical Lists
+                                            <Globe size={16} /> Causes & Transmission
                                         </h4>
-                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        <div className="flex flex-col">
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Causes & Transmission (English) *</label>
+                                            <textarea
+                                                required
+                                                className="ap-textarea w-full min-h-[120px]"
+                                                placeholder="Write causes and transmission details in English (one per line)..."
+                                                value={formData.causes}
+                                                onChange={(e) => setFormData({ ...formData, causes: e.target.value })}
+                                            />
+                                        </div>
+                                        {/* SECTION 3: CLINICAL DETAILS */}
+                                        <div className="space-y-6">
+                                            <h4 className="text-sm font-bold text-emerald-500 mb-2 border-b pb-2 flex items-center gap-2" style={{ borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+                                                <List size={16} /> Clinical Lists
+                                            </h4>
                                             <ArrayListDisplay
-                                                label="Symptoms (English)"
+                                                label="Symptoms (English) *"
                                                 items={formData.symptoms}
                                                 onEdit={(idx) => openListEditor('symptoms', 'Symptoms (English)', idx)}
                                                 onAdd={() => openListEditor('symptoms', 'Symptoms (English)')}
@@ -809,15 +937,7 @@ const ManageDiseases = () => {
                                                 required
                                             />
                                             <ArrayListDisplay
-                                                label="Causes & Transmission"
-                                                items={formData.causes}
-                                                onEdit={(idx) => openListEditor('causes', 'Causes & Transmission (English)', idx)}
-                                                onAdd={() => openListEditor('causes', 'Causes & Transmission (English)')}
-                                                onDelete={(idx) => deleteListItem('causes', idx)}
-                                                required
-                                            />
-                                            <ArrayListDisplay
-                                                label="Treatments & Management"
+                                                label="Treatments & Management (English) *"
                                                 items={formData.treatments}
                                                 onEdit={(idx) => openListEditor('treatments', 'Treatments & Management (English)', idx)}
                                                 onAdd={() => openListEditor('treatments', 'Treatments & Management (English)')}
@@ -861,21 +981,24 @@ const ManageDiseases = () => {
                                         />
                                     </div>
 
-                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Causes & Transmission (Hindi / हिंदी)</label>
+                                        <textarea
+                                            rows={3}
+                                            placeholder="इस रोग का फैलाव मुख्य रूप से..."
+                                            className="ap-textarea"
+                                            value={formData.causes_hi}
+                                            onChange={(e) => setFormData({ ...formData, causes_hi: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div className="space-y-6">
                                         <ArrayListDisplay
                                             label="Symptoms (Hindi)"
                                             items={formData.symptoms_hi}
                                             onEdit={(idx) => openListEditor('symptoms_hi', 'Symptoms (Hindi)', idx)}
                                             onAdd={() => openListEditor('symptoms_hi', 'Symptoms (Hindi)')}
                                             onDelete={(idx) => deleteListItem('symptoms_hi', idx)}
-                                        />
-
-                                        <ArrayListDisplay
-                                            label="Causes & Transmission (Hindi)"
-                                            items={formData.causes_hi}
-                                            onEdit={(idx) => openListEditor('causes_hi', 'Causes & Transmission (Hindi)', idx)}
-                                            onAdd={() => openListEditor('causes_hi', 'Causes & Transmission (Hindi)')}
-                                            onDelete={(idx) => deleteListItem('causes_hi', idx)}
                                         />
 
                                         <ArrayListDisplay
@@ -889,24 +1012,8 @@ const ManageDiseases = () => {
                                 </div>
                             )}
 
-                            {/* Form CTAs */}
-                            <div className="ap-modal-footer mt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="ap-btn-sm ap-btn-outline"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="ap-btn-sm ap-btn-primary"
-                                >
-                                    {editingDisease ? 'Update Disease' : 'Create Disease'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                        </div>
+                    </form>
                 </div>
             )}
 
@@ -1163,9 +1270,12 @@ const ManageDiseases = () => {
                                                     <button 
                                                         type="button"
                                                         onClick={() => {
-                                                            if (window.confirm("Are you sure you want to remove this image?")) {
-                                                                setGroupFormData({ ...groupFormData, image_path: '' });
-                                                            }
+                                                            showConfirm(
+                                                                "Remove Group Image",
+                                                                "Are you sure you want to remove this group image?",
+                                                                () => setGroupFormData({ ...groupFormData, image_path: '' }),
+                                                                "warning"
+                                                            );
                                                         }}
                                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold border-none cursor-pointer shadow-lg hover:bg-red-600 transition-colors"
                                                         title="Remove Image"
@@ -1310,6 +1420,42 @@ const ManageDiseases = () => {
                             </button>
                             <button onClick={saveListEditor} className="ap-btn-sm ap-btn-primary">
                                 Save Item
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CUSTOM CONFIRM DIALOG */}
+            {confirmState.isOpen && (
+                <div className="ap-modal-backdrop" style={{ zIndex: 1200, backgroundColor: 'rgba(0,0,0,0.85)' }}>
+                    <div className="ap-modal w-full max-w-sm" style={{ padding: '2rem', textAlign: 'center', border: confirmState.type === 'danger' ? '1px solid rgba(239, 68, 68, 0.2)' : '1px solid rgba(245, 158, 11, 0.2)', boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }}>
+                        <div className="flex justify-center mb-4">
+                            <div className={`p-3 rounded-full ${confirmState.type === 'danger' ? 'bg-red-500/10 text-red-500' : 'bg-amber-500/10 text-amber-500'}`}>
+                                <AlertCircle size={32} />
+                            </div>
+                        </div>
+                        <h3 className="text-lg font-bold mb-2" style={{ color: confirmState.type === 'danger' ? '#ef4444' : '#f59e0b' }}>
+                            {confirmState.title}
+                        </h3>
+                        <p className="text-sm mb-6 leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+                            {confirmState.message}
+                        </p>
+                        <div className="flex justify-center gap-3">
+                            <button 
+                                type="button" 
+                                onClick={() => setConfirmState(prev => ({ ...prev, isOpen: false }))} 
+                                className="ap-btn-sm ap-btn-outline"
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                type="button" 
+                                onClick={confirmState.onConfirm} 
+                                className={`ap-btn-sm ${confirmState.type === 'danger' ? 'ap-btn-danger' : 'bg-amber-600 hover:bg-amber-700 text-white border-none shadow-lg'}`}
+                                style={{ padding: '0.5rem 1.5rem' }}
+                            >
+                                Confirm
                             </button>
                         </div>
                     </div>
