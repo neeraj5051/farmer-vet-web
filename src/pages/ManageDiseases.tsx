@@ -14,42 +14,27 @@ import type { Disease, DiseaseGroup } from '../services/diseaseService';
 import { uploadAdminImage } from '../services/uploadService';
 import './AdminPages.css';
 
-const DynamicArrayInput = ({ label, items, onChange, placeholder, required }: { label: string, items: string[], onChange: (newItems: string[]) => void, placeholder?: string, required?: boolean }) => {
-    const handleAdd = () => onChange([...items, '']);
-    const handleRemove = (idx: number) => onChange(items.filter((_, i) => i !== idx));
-    const handleChange = (idx: number, val: string) => {
-        const newItems = [...items];
-        newItems[idx] = val;
-        onChange(newItems);
-    };
-
+const ArrayListDisplay = ({ label, items, onEdit, onAdd, onDelete, required }: { label: string, items: string[], onEdit: (idx: number) => void, onAdd: () => void, onDelete: (idx: number) => void, required?: boolean }) => {
     return (
         <div className="mb-4">
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{label} {required && '*'}</label>
-            <div className="space-y-1.5">
+            <div className="space-y-2 mb-2">
+                {items.length === 0 && <div className="text-sm text-gray-500 italic">No items added yet.</div>}
                 {items.map((item, idx) => (
-                    <div key={idx} className="flex gap-2 items-center group">
-                        <textarea
-                            rows={1}
-                            value={item}
-                            onChange={(e) => handleChange(idx, e.target.value)}
-                            className="ap-textarea flex-1 !text-sm resize-y"
-                            style={{ minHeight: '42px', paddingTop: '0.65rem', paddingBottom: '0.65rem' }}
-                            placeholder={placeholder}
-                            required={required && items.length === 1}
-                        />
-                        <button 
-                            type="button" 
-                            onClick={() => handleRemove(idx)} 
-                            className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors bg-transparent border-none cursor-pointer opacity-50 group-hover:opacity-100 flex-shrink-0"
-                            title="Remove item"
-                        >
-                            <X size={16} />
-                        </button>
+                    <div key={idx} className="flex gap-3 p-3 rounded-xl items-start" style={{ background: 'var(--glass-white)', border: '1px solid var(--border-glass)' }}>
+                        <div className="flex-1 text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{item}</div>
+                        <div className="flex shrink-0 gap-2 opacity-70 hover:opacity-100 transition-opacity">
+                            <button type="button" onClick={() => onEdit(idx)} className="text-gray-400 hover:text-emerald-500 p-1 bg-transparent border-none cursor-pointer" title="Edit item">
+                                <Edit2 size={16} />
+                            </button>
+                            <button type="button" onClick={() => onDelete(idx)} className="text-gray-400 hover:text-red-500 p-1 bg-transparent border-none cursor-pointer" title="Remove item">
+                                <Trash2 size={16} />
+                            </button>
+                        </div>
                     </div>
                 ))}
             </div>
-            <button type="button" onClick={handleAdd} className="mt-2 flex items-center text-emerald-600 text-sm font-medium hover:text-emerald-700 bg-transparent border-none cursor-pointer p-0">
+            <button type="button" onClick={onAdd} className="flex items-center text-emerald-500 text-sm font-bold hover:text-emerald-400 bg-transparent border-none cursor-pointer p-0 mt-3">
                 <Plus size={16} className="mr-1" /> Add Item
             </button>
         </div>
@@ -59,6 +44,14 @@ const DynamicArrayInput = ({ label, items, onChange, placeholder, required }: { 
 const ManageDiseases = () => {
     // Navigation / Listing states
     const [activeTab, setActiveTab] = useState<'diseases' | 'groups'>('diseases');
+
+    const [listEditorState, setListEditorState] = useState<{
+        isOpen: boolean;
+        field: 'symptoms' | 'symptoms_hi' | 'causes' | 'causes_hi' | 'treatments' | 'treatments_hi' | null;
+        label: string;
+        itemIndex: number;
+        value: string;
+    }>({ isOpen: false, field: null, label: '', itemIndex: -1, value: '' });
     const [diseases, setDiseases] = useState<Disease[]>([]);
     const [groups, setGroups] = useState<DiseaseGroup[]>([]);
     const [loading, setLoading] = useState(true);
@@ -309,6 +302,37 @@ const ManageDiseases = () => {
         });
         setGroupModalTab('en');
         setIsGroupModalOpen(true);
+    };
+
+    const openListEditor = (field: 'symptoms' | 'symptoms_hi' | 'causes' | 'causes_hi' | 'treatments' | 'treatments_hi', label: string, itemIndex: number = -1) => {
+        setListEditorState({
+            isOpen: true,
+            field,
+            label,
+            itemIndex,
+            value: itemIndex === -1 ? '' : formData[field][itemIndex]
+        });
+    };
+
+    const saveListEditor = () => {
+        if (!listEditorState.field) return;
+        const newArr = [...formData[listEditorState.field]];
+        if (listEditorState.itemIndex === -1) {
+            if (listEditorState.value.trim()) newArr.push(listEditorState.value.trim());
+        } else {
+            if (listEditorState.value.trim()) {
+                newArr[listEditorState.itemIndex] = listEditorState.value.trim();
+            } else {
+                newArr.splice(listEditorState.itemIndex, 1);
+            }
+        }
+        setFormData({ ...formData, [listEditorState.field]: newArr });
+        setListEditorState({ isOpen: false, field: null, label: '', itemIndex: -1, value: '' });
+    };
+
+    const deleteListItem = (field: 'symptoms' | 'symptoms_hi' | 'causes' | 'causes_hi' | 'treatments' | 'treatments_hi', idx: number) => {
+        const newArr = formData[field].filter((_, i) => i !== idx);
+        setFormData({ ...formData, [field]: newArr });
     };
 
     const resetForm = () => {
@@ -593,43 +617,45 @@ const ManageDiseases = () => {
             {/* DISEASE CREATE/EDIT MODAL */}
             {isModalOpen && (
                 <div className="ap-modal-backdrop">
-                    <div className="ap-modal w-full max-w-4xl" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
-                        {/* Modal Header */}
-                        <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
-                            <h3 className="ap-title text-lg">
-                                {editingDisease ? 'Edit Disease' : 'Add New Disease'}
-                            </h3>
-                            <button onClick={() => setIsModalOpen(false)} className="ap-modal-close">
-                                <X size={20} />
-                            </button>
-                        </div>
+                    <div className="ap-modal w-full max-w-5xl" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                        <div className="flex-shrink-0">
+                            {/* Modal Header */}
+                            <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
+                                <h3 className="ap-title text-lg">
+                                    {editingDisease ? 'Edit Disease' : 'Add New Disease'}
+                                </h3>
+                                <button type="button" onClick={() => setIsModalOpen(false)} className="ap-modal-close">
+                                    <X size={20} />
+                                </button>
+                            </div>
 
-                        {/* Internal Language Pills (Tabs) */}
-                        <div className="flex border-b px-6" style={{ background: 'rgba(0,0,0,0.2)', borderColor: 'var(--border-glass)' }}>
-                            <button
-                                type="button"
-                                onClick={() => setModalTab('en')}
-                                className={`px-4 py-2 text-sm font-semibold border-b-2 cursor-pointer transition-all ${
-                                    modalTab === 'en' 
-                                        ? 'border-emerald-600 text-emerald-600' 
-                                        : 'border-transparent text-gray-500'
-                                }`}
-                            >
-                                <Globe size={14} className="inline mr-1" />
-                                English Details
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setModalTab('hi')}
-                                className={`px-4 py-2 text-sm font-semibold border-b-2 cursor-pointer transition-all ${
-                                    modalTab === 'hi' 
-                                        ? 'border-emerald-600 text-emerald-600' 
-                                        : 'border-transparent text-gray-500'
-                                }`}
-                            >
-                                <Globe size={14} className="inline mr-1" />
-                                Hindi Translation (हिंदी अनुवाद)
-                            </button>
+                            {/* Internal Language Pills (Tabs) */}
+                            <div className="flex border-b px-6 bg-[var(--bg-primary)] shadow-sm z-10 relative" style={{ borderColor: 'var(--border-glass)' }}>
+                                <button
+                                    type="button"
+                                    onClick={() => setModalTab('en')}
+                                    className={`px-4 py-2 text-sm font-semibold border-b-2 cursor-pointer transition-all ${
+                                        modalTab === 'en' 
+                                            ? 'border-emerald-600 text-emerald-600' 
+                                            : 'border-transparent text-gray-500'
+                                    }`}
+                                >
+                                    <Globe size={14} className="inline mr-1" />
+                                    English Details
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setModalTab('hi')}
+                                    className={`px-4 py-2 text-sm font-semibold border-b-2 cursor-pointer transition-all ${
+                                        modalTab === 'hi' 
+                                            ? 'border-emerald-600 text-emerald-600' 
+                                            : 'border-transparent text-gray-500'
+                                    }`}
+                                >
+                                    <Globe size={14} className="inline mr-1" />
+                                    Hindi Translation (हिंदी अनुवाद)
+                                </button>
+                            </div>
                         </div>
 
                         {/* Modal Form */}
@@ -808,27 +834,30 @@ const ManageDiseases = () => {
                                         />
                                     </div>
 
-                                    <DynamicArrayInput
+                                    <ArrayListDisplay
                                         label="Symptoms (English)"
                                         items={formData.symptoms}
-                                        onChange={(items) => setFormData({ ...formData, symptoms: items })}
-                                        placeholder="e.g. High fever"
+                                        onEdit={(idx) => openListEditor('symptoms', 'Symptoms (English)', idx)}
+                                        onAdd={() => openListEditor('symptoms', 'Symptoms (English)')}
+                                        onDelete={(idx) => deleteListItem('symptoms', idx)}
                                         required
                                     />
 
-                                    <DynamicArrayInput
+                                    <ArrayListDisplay
                                         label="Causes & Transmission (English)"
                                         items={formData.causes}
-                                        onChange={(items) => setFormData({ ...formData, causes: items })}
-                                        placeholder="e.g. Direct contact"
+                                        onEdit={(idx) => openListEditor('causes', 'Causes & Transmission (English)', idx)}
+                                        onAdd={() => openListEditor('causes', 'Causes & Transmission (English)')}
+                                        onDelete={(idx) => deleteListItem('causes', idx)}
                                         required
                                     />
 
-                                    <DynamicArrayInput
+                                    <ArrayListDisplay
                                         label="Treatments & Management (English)"
                                         items={formData.treatments}
-                                        onChange={(items) => setFormData({ ...formData, treatments: items })}
-                                        placeholder="e.g. Supportive therapy"
+                                        onEdit={(idx) => openListEditor('treatments', 'Treatments & Management (English)', idx)}
+                                        onAdd={() => openListEditor('treatments', 'Treatments & Management (English)')}
+                                        onDelete={(idx) => deleteListItem('treatments', idx)}
                                         required
                                     />
                                 </div>
@@ -866,25 +895,28 @@ const ManageDiseases = () => {
                                         />
                                     </div>
 
-                                    <DynamicArrayInput
+                                    <ArrayListDisplay
                                         label="Symptoms (Hindi)"
                                         items={formData.symptoms_hi}
-                                        onChange={(items) => setFormData({ ...formData, symptoms_hi: items })}
-                                        placeholder="e.g. तेज बुखार"
+                                        onEdit={(idx) => openListEditor('symptoms_hi', 'Symptoms (Hindi)', idx)}
+                                        onAdd={() => openListEditor('symptoms_hi', 'Symptoms (Hindi)')}
+                                        onDelete={(idx) => deleteListItem('symptoms_hi', idx)}
                                     />
 
-                                    <DynamicArrayInput
+                                    <ArrayListDisplay
                                         label="Causes & Transmission (Hindi)"
                                         items={formData.causes_hi}
-                                        onChange={(items) => setFormData({ ...formData, causes_hi: items })}
-                                        placeholder="e.g. प्रत्यक्ष संपर्क"
+                                        onEdit={(idx) => openListEditor('causes_hi', 'Causes & Transmission (Hindi)', idx)}
+                                        onAdd={() => openListEditor('causes_hi', 'Causes & Transmission (Hindi)')}
+                                        onDelete={(idx) => deleteListItem('causes_hi', idx)}
                                     />
 
-                                    <DynamicArrayInput
+                                    <ArrayListDisplay
                                         label="Treatments (Hindi)"
                                         items={formData.treatments_hi}
-                                        onChange={(items) => setFormData({ ...formData, treatments_hi: items })}
-                                        placeholder="e.g. संक्रमित पशु को अलग रखना"
+                                        onEdit={(idx) => openListEditor('treatments_hi', 'Treatments (Hindi)', idx)}
+                                        onAdd={() => openListEditor('treatments_hi', 'Treatments (Hindi)')}
+                                        onDelete={(idx) => deleteListItem('treatments_hi', idx)}
                                     />
                                 </div>
                             )}
@@ -1280,6 +1312,39 @@ const ManageDiseases = () => {
                         className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
                         onClick={(e) => e.stopPropagation()} 
                     />
+                </div>
+            )}
+            {/* LIST EDITOR SECONDARY MODAL */}
+            {listEditorState.isOpen && (
+                <div className="ap-modal-backdrop" style={{ zIndex: 1100, backgroundColor: 'rgba(0,0,0,0.8)' }}>
+                    <div className="ap-modal w-full max-w-2xl" style={{ border: '1px solid var(--accent-green-glow)', boxShadow: '0 0 40px rgba(16,185,129,0.1)' }}>
+                        <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
+                            <h3 className="ap-title text-lg">
+                                {listEditorState.itemIndex === -1 ? 'Add' : 'Edit'} {listEditorState.label}
+                            </h3>
+                            <button onClick={() => setListEditorState({ ...listEditorState, isOpen: false })} className="ap-modal-close">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <div className="ap-modal-body p-6">
+                            <textarea
+                                autoFocus
+                                rows={6}
+                                className="ap-textarea w-full text-base"
+                                placeholder="Type your text here..."
+                                value={listEditorState.value}
+                                onChange={(e) => setListEditorState({ ...listEditorState, value: e.target.value })}
+                            />
+                        </div>
+                        <div className="ap-modal-footer flex justify-end gap-3 p-4 border-t" style={{ borderColor: 'var(--border-glass)', background: 'var(--bg-card)' }}>
+                            <button onClick={() => setListEditorState({ ...listEditorState, isOpen: false })} className="ap-btn-sm ap-btn-outline">
+                                Cancel
+                            </button>
+                            <button onClick={saveListEditor} className="ap-btn-sm ap-btn-primary">
+                                Save Item
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>
