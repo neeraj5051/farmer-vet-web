@@ -28,17 +28,22 @@ const DynamicArrayInput = ({ label, items, onChange, placeholder, required }: { 
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{label} {required && '*'}</label>
             <div className="space-y-2">
                 {items.map((item, idx) => (
-                    <div key={idx} className="flex gap-2">
-                        <input
-                            type="text"
+                    <div key={idx} className="flex gap-2 items-center group">
+                        <textarea
+                            rows={2}
                             value={item}
                             onChange={(e) => handleChange(idx, e.target.value)}
-                            className="ap-input flex-1"
+                            className="ap-textarea flex-1 !py-1.5 !text-sm resize-y"
                             placeholder={placeholder}
                             required={required && items.length === 1}
                         />
-                        <button type="button" onClick={() => handleRemove(idx)} className="ap-btn-danger px-3 py-1 rounded border-none cursor-pointer">
-                            <Trash2 size={16} />
+                        <button 
+                            type="button" 
+                            onClick={() => handleRemove(idx)} 
+                            className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors bg-transparent border-none cursor-pointer opacity-50 group-hover:opacity-100 flex-shrink-0"
+                            title="Remove item"
+                        >
+                            <X size={16} />
                         </button>
                     </div>
                 ))}
@@ -587,7 +592,7 @@ const ManageDiseases = () => {
             {/* DISEASE CREATE/EDIT MODAL */}
             {isModalOpen && (
                 <div className="ap-modal-backdrop">
-                    <div className="ap-modal w-full max-w-2xl" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                    <div className="ap-modal w-full max-w-4xl" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
                         {/* Modal Header */}
                         <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
                             <h3 className="ap-title text-lg">
