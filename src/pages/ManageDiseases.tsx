@@ -26,14 +26,15 @@ const DynamicArrayInput = ({ label, items, onChange, placeholder, required }: { 
     return (
         <div className="mb-4">
             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{label} {required && '*'}</label>
-            <div className="space-y-2">
+            <div className="space-y-1.5">
                 {items.map((item, idx) => (
                     <div key={idx} className="flex gap-2 items-center group">
                         <textarea
-                            rows={2}
+                            rows={1}
                             value={item}
                             onChange={(e) => handleChange(idx, e.target.value)}
-                            className="ap-textarea flex-1 !py-1.5 !text-sm resize-y"
+                            className="ap-textarea flex-1 !text-sm resize-y"
+                            style={{ minHeight: '42px', paddingTop: '0.65rem', paddingBottom: '0.65rem' }}
                             placeholder={placeholder}
                             required={required && items.length === 1}
                         />
