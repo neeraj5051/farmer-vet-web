@@ -14,6 +14,42 @@ import type { Disease, DiseaseGroup } from '../services/diseaseService';
 import { uploadAdminImage } from '../services/uploadService';
 import './AdminPages.css';
 
+const DynamicArrayInput = ({ label, items, onChange, placeholder, required }: { label: string, items: string[], onChange: (newItems: string[]) => void, placeholder?: string, required?: boolean }) => {
+    const handleAdd = () => onChange([...items, '']);
+    const handleRemove = (idx: number) => onChange(items.filter((_, i) => i !== idx));
+    const handleChange = (idx: number, val: string) => {
+        const newItems = [...items];
+        newItems[idx] = val;
+        onChange(newItems);
+    };
+
+    return (
+        <div className="mb-4">
+            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{label} {required && '*'}</label>
+            <div className="space-y-2">
+                {items.map((item, idx) => (
+                    <div key={idx} className="flex gap-2">
+                        <input
+                            type="text"
+                            value={item}
+                            onChange={(e) => handleChange(idx, e.target.value)}
+                            className="ap-input flex-1"
+                            placeholder={placeholder}
+                            required={required && items.length === 1}
+                        />
+                        <button type="button" onClick={() => handleRemove(idx)} className="ap-btn-danger px-3 py-1 rounded border-none cursor-pointer">
+                            <Trash2 size={16} />
+                        </button>
+                    </div>
+                ))}
+            </div>
+            <button type="button" onClick={handleAdd} className="mt-2 flex items-center text-emerald-600 text-sm font-medium hover:text-emerald-700 bg-transparent border-none cursor-pointer p-0">
+                <Plus size={16} className="mr-1" /> Add Item
+            </button>
+        </div>
+    );
+};
+
 const ManageDiseases = () => {
     // Navigation / Listing states
     const [activeTab, setActiveTab] = useState<'diseases' | 'groups'>('diseases');
@@ -40,7 +76,27 @@ const ManageDiseases = () => {
     const [viewerImage, setViewerImage] = useState<string | null>(null);
 
     // Forms Form States
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        name: string;
+        name_hi: string;
+        category: string;
+        description: string;
+        description_hi: string;
+        body_system: string;
+        disease_type: string;
+        species: string;
+        symptoms: string[]; 
+        symptoms_hi: string[];
+        causes: string[];
+        causes_hi: string[];
+        treatments: string[];
+        treatments_hi: string[];
+        pathogen_type: string;
+        pathogen_name: string;
+        severity_level: number;
+        image_path: string;
+        group_id: string;
+    }>({
         name: '',
         name_hi: '',
         category: 'Viral',
@@ -49,12 +105,12 @@ const ManageDiseases = () => {
         body_system: 'Respiratory',
         disease_type: 'Infectious',
         species: 'Cattle',
-        symptoms: '', 
-        symptoms_hi: '',
-        causes: '',
-        causes_hi: '',
-        treatments: '',
-        treatments_hi: '',
+        symptoms: [], 
+        symptoms_hi: [],
+        causes: [],
+        causes_hi: [],
+        treatments: [],
+        treatments_hi: [],
         pathogen_type: 'Virus',
         pathogen_name: '',
         severity_level: 1,
@@ -104,12 +160,12 @@ const ManageDiseases = () => {
             body_system: formData.body_system,
             disease_type: formData.disease_type,
             species: formData.species,
-            symptoms: formData.symptoms.split(',').map(s => s.trim()).filter(Boolean),
-            symptoms_hi: formData.symptoms_hi ? formData.symptoms_hi.split(',').map(s => s.trim()).filter(Boolean) : undefined,
-            causes: formData.causes.split(',').map(s => s.trim()).filter(Boolean),
-            causes_hi: formData.causes_hi ? formData.causes_hi.split(',').map(s => s.trim()).filter(Boolean) : undefined,
-            treatments: formData.treatments.split(',').map(s => s.trim()).filter(Boolean),
-            treatments_hi: formData.treatments_hi ? formData.treatments_hi.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+            symptoms: formData.symptoms.map(s => s.trim()).filter(Boolean),
+            symptoms_hi: formData.symptoms_hi ? formData.symptoms_hi.map(s => s.trim()).filter(Boolean) : undefined,
+            causes: formData.causes.map(s => s.trim()).filter(Boolean),
+            causes_hi: formData.causes_hi ? formData.causes_hi.map(s => s.trim()).filter(Boolean) : undefined,
+            treatments: formData.treatments.map(s => s.trim()).filter(Boolean),
+            treatments_hi: formData.treatments_hi ? formData.treatments_hi.map(s => s.trim()).filter(Boolean) : undefined,
             pathogen_type: formData.pathogen_type,
             pathogen_name: formData.pathogen_name,
             severity_level: Number(formData.severity_level),
@@ -219,12 +275,12 @@ const ManageDiseases = () => {
             body_system: disease.body_system || '',
             disease_type: disease.disease_type || '',
             species: disease.species || '',
-            symptoms: (disease.symptoms || []).join(', '),
-            symptoms_hi: (disease.symptoms_hi || []).join(', '),
-            causes: (disease.causes || []).join(', '),
-            causes_hi: (disease.causes_hi || []).join(', '),
-            treatments: (disease.treatments || []).join(', '),
-            treatments_hi: (disease.treatments_hi || []).join(', '),
+            symptoms: disease.symptoms || [],
+            symptoms_hi: disease.symptoms_hi || [],
+            causes: disease.causes || [],
+            causes_hi: disease.causes_hi || [],
+            treatments: disease.treatments || [],
+            treatments_hi: disease.treatments_hi || [],
             pathogen_type: disease.pathogen_type || 'Virus',
             pathogen_name: disease.pathogen_name || '',
             severity_level: disease.severity_level || 1,
@@ -746,41 +802,29 @@ const ManageDiseases = () => {
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Symptoms (English, comma-separated) *</label>
-                                        <textarea
-                                            required
-                                            rows={2}
-                                            placeholder="High fever, drooling, blisters on hooves"
-                                            className="ap-textarea"
-                                            value={formData.symptoms}
-                                            onChange={(e) => setFormData({ ...formData, symptoms: e.target.value })}
-                                        />
-                                    </div>
+                                    <DynamicArrayInput
+                                        label="Symptoms (English)"
+                                        items={formData.symptoms}
+                                        onChange={(items) => setFormData({ ...formData, symptoms: items })}
+                                        placeholder="e.g. High fever"
+                                        required
+                                    />
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Causes & Transmission (English, comma-separated) *</label>
-                                        <textarea
-                                            required
-                                            rows={2}
-                                            placeholder="Direct contact, contaminated water, airborne droplets"
-                                            className="ap-textarea"
-                                            value={formData.causes}
-                                            onChange={(e) => setFormData({ ...formData, causes: e.target.value })}
-                                        />
-                                    </div>
+                                    <DynamicArrayInput
+                                        label="Causes & Transmission (English)"
+                                        items={formData.causes}
+                                        onChange={(items) => setFormData({ ...formData, causes: items })}
+                                        placeholder="e.g. Direct contact"
+                                        required
+                                    />
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Treatments & Management (English, comma-separated) *</label>
-                                        <textarea
-                                            required
-                                            rows={2}
-                                            placeholder="Supportive therapy, clean water, isolate animal"
-                                            className="ap-textarea"
-                                            value={formData.treatments}
-                                            onChange={(e) => setFormData({ ...formData, treatments: e.target.value })}
-                                        />
-                                    </div>
+                                    <DynamicArrayInput
+                                        label="Treatments & Management (English)"
+                                        items={formData.treatments}
+                                        onChange={(items) => setFormData({ ...formData, treatments: items })}
+                                        placeholder="e.g. Supportive therapy"
+                                        required
+                                    />
                                 </div>
                             )}
 
@@ -816,38 +860,26 @@ const ManageDiseases = () => {
                                         />
                                     </div>
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Symptoms (Hindi, comma-separated)</label>
-                                        <textarea
-                                            rows={2}
-                                            placeholder="तेज बुखार, मुंह से लार टपकना, थन और खुरों पर छाले"
-                                            className="ap-textarea"
-                                            value={formData.symptoms_hi}
-                                            onChange={(e) => setFormData({ ...formData, symptoms_hi: e.target.value })}
-                                        />
-                                    </div>
+                                    <DynamicArrayInput
+                                        label="Symptoms (Hindi)"
+                                        items={formData.symptoms_hi}
+                                        onChange={(items) => setFormData({ ...formData, symptoms_hi: items })}
+                                        placeholder="e.g. तेज बुखार"
+                                    />
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Causes & Transmission (Hindi, comma-separated)</label>
-                                        <textarea
-                                            rows={2}
-                                            placeholder="प्रत्यक्ष संपर्क, दूषित पानी और हवा, संक्रमित पशु के संपर्क में आना"
-                                            className="ap-textarea"
-                                            value={formData.causes_hi}
-                                            onChange={(e) => setFormData({ ...formData, causes_hi: e.target.value })}
-                                        />
-                                    </div>
+                                    <DynamicArrayInput
+                                        label="Causes & Transmission (Hindi)"
+                                        items={formData.causes_hi}
+                                        onChange={(items) => setFormData({ ...formData, causes_hi: items })}
+                                        placeholder="e.g. प्रत्यक्ष संपर्क"
+                                    />
 
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Treatments (Hindi, comma-separated)</label>
-                                        <textarea
-                                            rows={2}
-                                            placeholder="संक्रमित पशु को अलग रखना, खुरों को एंटीसेप्टिक से धोना, सहायक चिकित्सा"
-                                            className="ap-textarea"
-                                            value={formData.treatments_hi}
-                                            onChange={(e) => setFormData({ ...formData, treatments_hi: e.target.value })}
-                                        />
-                                    </div>
+                                    <DynamicArrayInput
+                                        label="Treatments (Hindi)"
+                                        items={formData.treatments_hi}
+                                        onChange={(items) => setFormData({ ...formData, treatments_hi: items })}
+                                        placeholder="e.g. संक्रमित पशु को अलग रखना"
+                                    />
                                 </div>
                             )}
 
