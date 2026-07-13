@@ -1,4 +1,4 @@
-import { Edit2, Plus, Trash2, X, Stethoscope, Search, Globe, CheckCircle, AlertCircle, Info, BookOpen, Layers } from 'lucide-react';
+import { Edit2, Plus, Trash2, X, Stethoscope, Search, Globe, CheckCircle, AlertCircle, Info, BookOpen, Layers, ImagePlus, List } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { 
     createDisease, 
@@ -22,7 +22,7 @@ const ArrayListDisplay = ({ label, items, onEdit, onAdd, onDelete, required }: {
                 {items.length === 0 && <div className="text-sm text-gray-500 italic">No items added yet.</div>}
                 {items.map((item, idx) => (
                     <div key={idx} className="flex gap-3 p-3 rounded-xl items-start" style={{ background: 'var(--glass-white)', border: '1px solid var(--border-glass)' }}>
-                        <div className="flex-1 text-sm text-gray-200 leading-relaxed whitespace-pre-wrap">{item}</div>
+                        <div className="flex-1 text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'var(--text-primary)' }}>{item}</div>
                         <div className="flex shrink-0 gap-2 opacity-70 hover:opacity-100 transition-opacity">
                             <button type="button" onClick={() => onEdit(idx)} className="text-gray-400 hover:text-emerald-500 p-1 bg-transparent border-none cursor-pointer" title="Edit item">
                                 <Edit2 size={16} />
@@ -617,7 +617,7 @@ const ManageDiseases = () => {
             {/* DISEASE CREATE/EDIT MODAL */}
             {isModalOpen && (
                 <div className="ap-modal-backdrop">
-                    <div className="ap-modal w-full max-w-5xl" style={{ maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+                    <div className="ap-modal w-full max-w-5xl" style={{ maxHeight: '90vh', maxWidth: '1024px', display: 'flex', flexDirection: 'column' }}>
                         <div className="flex-shrink-0">
                             {/* Modal Header */}
                             <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
@@ -662,204 +662,170 @@ const ManageDiseases = () => {
                         <form onSubmit={handleDiseaseSubmit} className="ap-modal-body space-y-4 overflow-y-auto">
                             {/* TAB 1: ENGLISH DETAILS */}
                             {modalTab === 'en' && (
-                                <div className="space-y-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Name (English) *</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                placeholder="e.g. Foot and Mouth Disease"
-                                                className="ap-input"
-                                                value={formData.name}
-                                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Category Group *</label>
-                                            <select
-                                                required
-                                                className="ap-input"
-                                                value={formData.group_id}
-                                                onChange={(e) => setFormData({ ...formData, group_id: e.target.value })}
-                                            >
-                                                <option value="">Select Category Group</option>
-                                                {groups.map(g => (
-                                                    <option key={g.id} value={g.id}>{g.name}</option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Species *</label>
-                                            <input
-                                                type="text"
-                                                required
-                                                placeholder="e.g. Cattle, Buffalo"
-                                                className="ap-input"
-                                                value={formData.species}
-                                                onChange={(e) => setFormData({ ...formData, species: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Body System Affected</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Respiratory, Integumentary"
-                                                className="ap-input"
-                                                value={formData.body_system}
-                                                onChange={(e) => setFormData({ ...formData, body_system: e.target.value })}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Disease Type</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Infectious, Zoonotic"
-                                                className="ap-input"
-                                                value={formData.disease_type}
-                                                onChange={(e) => setFormData({ ...formData, disease_type: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Pathogen Type *</label>
-                                            <select
-                                                className="ap-input"
-                                                value={formData.pathogen_type}
-                                                onChange={(e) => setFormData({ ...formData, pathogen_type: e.target.value })}
-                                            >
-                                                <option value="Virus">Virus</option>
-                                                <option value="Bacteria">Bacteria</option>
-                                                <option value="Fungi">Fungi</option>
-                                                <option value="Parasite">Parasite</option>
-                                                <option value="Other">Other</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Pathogen Name</label>
-                                            <input
-                                                type="text"
-                                                placeholder="e.g. Aphthovirus, Brucella abortus"
-                                                className="ap-input"
-                                                value={formData.pathogen_name}
-                                                onChange={(e) => setFormData({ ...formData, pathogen_name: e.target.value })}
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Severity Level (1-5)</label>
-                                            <input
-                                                type="number"
-                                                min="1"
-                                                max="5"
-                                                className="ap-input"
-                                                value={formData.severity_level}
-                                                onChange={(e) => setFormData({ ...formData, severity_level: Number(e.target.value) })}
-                                            />
-                                        </div>
-                                    </div>
-
+                                <div className="space-y-8">
+                                    {/* SECTION 1: BASIC INFORMATION */}
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Image Upload</label>
-                                        <div className="flex flex-wrap items-center gap-4">
-                                            {formData.image_path && (
-                                                <div className="relative group">
-                                                    <img 
-                                                        src={formData.image_path} 
-                                                        alt="Preview" 
-                                                        className="w-32 h-32 rounded-lg object-cover border cursor-pointer transition-opacity hover:opacity-90" 
-                                                        style={{ borderColor: 'var(--border-glass)' }} 
-                                                        onClick={() => setViewerImage(formData.image_path || null)}
-                                                    />
-                                                    <button 
-                                                        type="button"
-                                                        onClick={() => {
-                                                            if (window.confirm("Are you sure you want to remove this image?")) {
-                                                                setFormData({ ...formData, image_path: '' });
-                                                            }
-                                                        }}
-                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold border-none cursor-pointer shadow-lg hover:bg-red-600 transition-colors"
-                                                        title="Remove Image"
-                                                    >
-                                                        <X size={14} />
-                                                    </button>
-                                                </div>
-                                            )}
-                                            <div className="flex flex-col items-start gap-2">
-                                                <input 
-                                                    type="file" 
-                                                    accept="image/*" 
-                                                    onChange={handleDiseaseImageUpload} 
-                                                    style={{ display: 'none' }} 
-                                                    id="disease-image-upload" 
-                                                    disabled={uploadingImage}
-                                                />
-                                                <label 
-                                                    htmlFor="disease-image-upload" 
-                                                    className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed rounded-lg cursor-pointer transition-colors"
-                                                    style={{ 
-                                                        borderColor: 'var(--border-glass)',
-                                                        background: 'rgba(255,255,255,0.02)'
-                                                    }}
-                                                    onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                                                    onMouseOut={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
-                                                >
-                                                    <div className="flex flex-col items-center justify-center p-2 text-center">
-                                                        <Plus size={24} className="mb-2 text-gray-400" />
-                                                        <span className="text-xs text-gray-400">
-                                                            {uploadingImage ? 'Uploading...' : formData.image_path ? 'Change Image' : 'Upload Image'}
-                                                        </span>
-                                                    </div>
-                                                </label>
+                                        <h4 className="text-sm font-bold text-emerald-500 mb-4 border-b pb-2 flex items-center gap-2" style={{ borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+                                            <Info size={16} /> Basic Information
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Name (English) *</label>
+                                                <input type="text" required placeholder="e.g. Foot and Mouth Disease" className="ap-input" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Category Group *</label>
+                                                <select required className="ap-input" value={formData.group_id} onChange={(e) => setFormData({ ...formData, group_id: e.target.value })}>
+                                                    <option value="">Select Category Group</option>
+                                                    {groups.map(g => (
+                                                        <option key={g.id} value={g.id}>{g.name}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Species *</label>
+                                                <input type="text" required placeholder="e.g. Cattle, Buffalo" className="ap-input" value={formData.species} onChange={(e) => setFormData({ ...formData, species: e.target.value })} />
+                                            </div>
+                                            
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Body System Affected</label>
+                                                <input type="text" placeholder="e.g. Respiratory, Integumentary" className="ap-input" value={formData.body_system} onChange={(e) => setFormData({ ...formData, body_system: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Disease Type</label>
+                                                <input type="text" placeholder="e.g. Infectious, Zoonotic" className="ap-input" value={formData.disease_type} onChange={(e) => setFormData({ ...formData, disease_type: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Pathogen Type *</label>
+                                                <select className="ap-input" value={formData.pathogen_type} onChange={(e) => setFormData({ ...formData, pathogen_type: e.target.value })}>
+                                                    <option value="Virus">Virus</option>
+                                                    <option value="Bacteria">Bacteria</option>
+                                                    <option value="Fungi">Fungi</option>
+                                                    <option value="Parasite">Parasite</option>
+                                                    <option value="Other">Other</option>
+                                                </select>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Pathogen Name</label>
+                                                <input type="text" placeholder="e.g. Aphthovirus, Brucella abortus" className="ap-input" value={formData.pathogen_name} onChange={(e) => setFormData({ ...formData, pathogen_name: e.target.value })} />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Severity Level (1-5)</label>
+                                                <input type="number" min="1" max="5" className="ap-input" value={formData.severity_level} onChange={(e) => setFormData({ ...formData, severity_level: Number(e.target.value) })} />
                                             </div>
                                         </div>
                                     </div>
 
+                                    {/* SECTION 2: DETAILS & MEDIA */}
                                     <div>
-                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Description (English) *</label>
-                                        <textarea
-                                            required
-                                            rows={3}
-                                            placeholder="Write clinical description in English..."
-                                            className="ap-textarea"
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        />
+                                        <h4 className="text-sm font-bold text-emerald-500 mb-4 border-b pb-2 flex items-center gap-2" style={{ borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+                                            <ImagePlus size={16} /> Details & Media
+                                        </h4>
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                                            <div className="md:col-span-2 flex flex-col h-full">
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Description (English) *</label>
+                                                <textarea
+                                                    required
+                                                    className="ap-textarea flex-1 min-h-[160px]"
+                                                    placeholder="Write comprehensive clinical description in English..."
+                                                    value={formData.description}
+                                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                />
+                                            </div>
+                                            
+                                            <div className="md:col-span-1">
+                                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Disease Image</label>
+                                                <div className="w-full">
+                                                    {formData.image_path ? (
+                                                        <div className="relative group w-full h-[160px] rounded-xl overflow-hidden border" style={{ borderColor: 'var(--border-glass)' }}>
+                                                            <img 
+                                                                src={formData.image_path} 
+                                                                alt="Preview" 
+                                                                className="w-full h-full object-cover cursor-pointer transition-transform duration-500 group-hover:scale-105" 
+                                                                onClick={() => setViewerImage(formData.image_path || null)}
+                                                            />
+                                                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-3">
+                                                                <button 
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        if (window.confirm("Are you sure you want to remove this image?")) {
+                                                                            setFormData({ ...formData, image_path: '' });
+                                                                        }
+                                                                    }}
+                                                                    className="ap-btn-sm bg-red-500 hover:bg-red-600 text-white border-none shadow-lg"
+                                                                >
+                                                                    <Trash2 size={14} className="mr-1" /> Remove Image
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div>
+                                                            <input 
+                                                                type="file" 
+                                                                accept="image/*" 
+                                                                onChange={handleDiseaseImageUpload} 
+                                                                style={{ display: 'none' }} 
+                                                                id="disease-image-upload" 
+                                                                disabled={uploadingImage}
+                                                            />
+                                                            <label 
+                                                                htmlFor="disease-image-upload" 
+                                                                className="flex flex-col items-center justify-center w-full h-[160px] border-2 border-dashed rounded-xl cursor-pointer transition-all"
+                                                                style={{ 
+                                                                    borderColor: 'var(--border-glass)',
+                                                                    background: 'rgba(255,255,255,0.02)'
+                                                                }}
+                                                                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.05)'; e.currentTarget.style.borderColor = '#10b981'; }}
+                                                                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255,255,255,0.02)'; e.currentTarget.style.borderColor = 'var(--border-glass)'; }}
+                                                            >
+                                                                <div className="flex flex-col items-center justify-center p-4 text-center">
+                                                                    <ImagePlus size={28} className="mb-3 text-emerald-500/70" />
+                                                                    <span className="text-sm font-bold text-gray-300">
+                                                                        {uploadingImage ? 'Uploading...' : 'Upload Image'}
+                                                                    </span>
+                                                                    <span className="text-xs text-gray-500 mt-1 opacity-70">JPEG, PNG, GIF</span>
+                                                                </div>
+                                                            </label>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
 
-                                    <ArrayListDisplay
-                                        label="Symptoms (English)"
-                                        items={formData.symptoms}
-                                        onEdit={(idx) => openListEditor('symptoms', 'Symptoms (English)', idx)}
-                                        onAdd={() => openListEditor('symptoms', 'Symptoms (English)')}
-                                        onDelete={(idx) => deleteListItem('symptoms', idx)}
-                                        required
-                                    />
-
-                                    <ArrayListDisplay
-                                        label="Causes & Transmission (English)"
-                                        items={formData.causes}
-                                        onEdit={(idx) => openListEditor('causes', 'Causes & Transmission (English)', idx)}
-                                        onAdd={() => openListEditor('causes', 'Causes & Transmission (English)')}
-                                        onDelete={(idx) => deleteListItem('causes', idx)}
-                                        required
-                                    />
-
-                                    <ArrayListDisplay
-                                        label="Treatments & Management (English)"
-                                        items={formData.treatments}
-                                        onEdit={(idx) => openListEditor('treatments', 'Treatments & Management (English)', idx)}
-                                        onAdd={() => openListEditor('treatments', 'Treatments & Management (English)')}
-                                        onDelete={(idx) => deleteListItem('treatments', idx)}
-                                        required
-                                    />
+                                    {/* SECTION 3: CLINICAL LISTS */}
+                                    <div>
+                                        <h4 className="text-sm font-bold text-emerald-500 mb-4 border-b pb-2 flex items-center gap-2" style={{ borderColor: 'rgba(16, 185, 129, 0.2)' }}>
+                                            <List size={16} /> Clinical Lists
+                                        </h4>
+                                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                            <ArrayListDisplay
+                                                label="Symptoms (English)"
+                                                items={formData.symptoms}
+                                                onEdit={(idx) => openListEditor('symptoms', 'Symptoms (English)', idx)}
+                                                onAdd={() => openListEditor('symptoms', 'Symptoms (English)')}
+                                                onDelete={(idx) => deleteListItem('symptoms', idx)}
+                                                required
+                                            />
+                                            <ArrayListDisplay
+                                                label="Causes & Transmission"
+                                                items={formData.causes}
+                                                onEdit={(idx) => openListEditor('causes', 'Causes & Transmission (English)', idx)}
+                                                onAdd={() => openListEditor('causes', 'Causes & Transmission (English)')}
+                                                onDelete={(idx) => deleteListItem('causes', idx)}
+                                                required
+                                            />
+                                            <ArrayListDisplay
+                                                label="Treatments & Management"
+                                                items={formData.treatments}
+                                                onEdit={(idx) => openListEditor('treatments', 'Treatments & Management (English)', idx)}
+                                                onAdd={() => openListEditor('treatments', 'Treatments & Management (English)')}
+                                                onDelete={(idx) => deleteListItem('treatments', idx)}
+                                                required
+                                            />
+                                        </div>
+                                    </div>
                                 </div>
                             )}
 
@@ -895,29 +861,31 @@ const ManageDiseases = () => {
                                         />
                                     </div>
 
-                                    <ArrayListDisplay
-                                        label="Symptoms (Hindi)"
-                                        items={formData.symptoms_hi}
-                                        onEdit={(idx) => openListEditor('symptoms_hi', 'Symptoms (Hindi)', idx)}
-                                        onAdd={() => openListEditor('symptoms_hi', 'Symptoms (Hindi)')}
-                                        onDelete={(idx) => deleteListItem('symptoms_hi', idx)}
-                                    />
+                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                        <ArrayListDisplay
+                                            label="Symptoms (Hindi)"
+                                            items={formData.symptoms_hi}
+                                            onEdit={(idx) => openListEditor('symptoms_hi', 'Symptoms (Hindi)', idx)}
+                                            onAdd={() => openListEditor('symptoms_hi', 'Symptoms (Hindi)')}
+                                            onDelete={(idx) => deleteListItem('symptoms_hi', idx)}
+                                        />
 
-                                    <ArrayListDisplay
-                                        label="Causes & Transmission (Hindi)"
-                                        items={formData.causes_hi}
-                                        onEdit={(idx) => openListEditor('causes_hi', 'Causes & Transmission (Hindi)', idx)}
-                                        onAdd={() => openListEditor('causes_hi', 'Causes & Transmission (Hindi)')}
-                                        onDelete={(idx) => deleteListItem('causes_hi', idx)}
-                                    />
+                                        <ArrayListDisplay
+                                            label="Causes & Transmission (Hindi)"
+                                            items={formData.causes_hi}
+                                            onEdit={(idx) => openListEditor('causes_hi', 'Causes & Transmission (Hindi)', idx)}
+                                            onAdd={() => openListEditor('causes_hi', 'Causes & Transmission (Hindi)')}
+                                            onDelete={(idx) => deleteListItem('causes_hi', idx)}
+                                        />
 
-                                    <ArrayListDisplay
-                                        label="Treatments (Hindi)"
-                                        items={formData.treatments_hi}
-                                        onEdit={(idx) => openListEditor('treatments_hi', 'Treatments (Hindi)', idx)}
-                                        onAdd={() => openListEditor('treatments_hi', 'Treatments (Hindi)')}
-                                        onDelete={(idx) => deleteListItem('treatments_hi', idx)}
-                                    />
+                                        <ArrayListDisplay
+                                            label="Treatments (Hindi)"
+                                            items={formData.treatments_hi}
+                                            onEdit={(idx) => openListEditor('treatments_hi', 'Treatments (Hindi)', idx)}
+                                            onAdd={() => openListEditor('treatments_hi', 'Treatments (Hindi)')}
+                                            onDelete={(idx) => deleteListItem('treatments_hi', idx)}
+                                        />
+                                    </div>
                                 </div>
                             )}
 
@@ -1317,7 +1285,7 @@ const ManageDiseases = () => {
             {/* LIST EDITOR SECONDARY MODAL */}
             {listEditorState.isOpen && (
                 <div className="ap-modal-backdrop" style={{ zIndex: 1100, backgroundColor: 'rgba(0,0,0,0.8)' }}>
-                    <div className="ap-modal w-full max-w-2xl" style={{ border: '1px solid var(--accent-green-glow)', boxShadow: '0 0 40px rgba(16,185,129,0.1)' }}>
+                    <div className="ap-modal w-full max-w-2xl" style={{ maxWidth: '42rem', border: '1px solid var(--accent-green-glow)', boxShadow: '0 0 40px rgba(16,185,129,0.1)' }}>
                         <div className="ap-modal-header border-b" style={{ borderColor: 'var(--border-glass)' }}>
                             <h3 className="ap-title text-lg">
                                 {listEditorState.itemIndex === -1 ? 'Add' : 'Edit'} {listEditorState.label}
