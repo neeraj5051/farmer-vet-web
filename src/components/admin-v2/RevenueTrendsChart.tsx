@@ -2,7 +2,7 @@ import React from 'react';
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface RevenueTrendsChartProps {
-  data?: { name: string; revenue: number }[];
+  data?: { name: any; revenue: number }[];
 }
 
 const defaultData = [
@@ -41,7 +41,7 @@ const RevenueTrendsChart: React.FC<RevenueTrendsChartProps> = ({ data }) => {
               <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} dx={-10} tickFormatter={(value) => `₹${value/1000}k`} />
               <Tooltip 
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                formatter={((value: any) => [`₹${value.toLocaleString()}`, 'Revenue']) as any}
               />
               <Bar dataKey="revenue" fill="#10b981" radius={[6, 6, 0, 0]} />
             </BarChart>
@@ -58,7 +58,7 @@ const RevenueTrendsChart: React.FC<RevenueTrendsChartProps> = ({ data }) => {
               <YAxis axisLine={false} tickLine={false} tick={{ fill: 'var(--text-secondary)', fontSize: 12 }} dx={-10} tickFormatter={(value) => `₹${value/1000}k`} />
               <Tooltip 
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
+                formatter={((value: any) => [`₹${value.toLocaleString()}`, 'Revenue']) as any}
               />
               <Area 
                 type="monotone" 

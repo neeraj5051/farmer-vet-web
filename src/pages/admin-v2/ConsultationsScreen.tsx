@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getConsultations, getConsultationDetail } from '../../services/consultationsService';
 import { markConsultationNoShow } from '../../services/adminService';
 import { Search, Download, Loader2, Eye, X, Video, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
@@ -36,7 +36,7 @@ const ConsultationsScreen = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
   const [selectedConsult, setSelectedConsult] = useState<any>(null);
-  const [consultDetail, setConsultDetail] = useState<any>(null);
+  const [, setConsultDetail] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [drawerTab, setDrawerTab] = useState('overview');
   const [page, setPage] = useState(1);

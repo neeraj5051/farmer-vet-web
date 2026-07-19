@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getConsultations, getConsultationDetail } from '../../services/consultationsService';
 import { Search, Download, Loader2, Eye, X, FileText, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
@@ -42,7 +42,7 @@ const BookingsScreen = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [serviceFilter, setServiceFilter] = useState('all');
   const [selectedBooking, setSelectedBooking] = useState<any>(null);
-  const [bookingDetail, setBookingDetail] = useState<any>(null);
+  const [, setBookingDetail] = useState<any>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [drawerTab, setDrawerTab] = useState('overview');
   const [page, setPage] = useState(1);

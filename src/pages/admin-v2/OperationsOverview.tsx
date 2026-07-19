@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import KpiCard from '../../components/admin-v2/KpiCard';
 import BookingTrendsChart from '../../components/admin-v2/BookingTrendsChart';
 import BookingsByServiceChart from '../../components/admin-v2/BookingsByServiceChart';

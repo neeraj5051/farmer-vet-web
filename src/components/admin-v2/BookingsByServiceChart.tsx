@@ -2,7 +2,7 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface BookingsByServiceChartProps {
-  data?: { name: string; value: number; count: number; color: string }[];
+  data?: { name: any; value: any; count: number; color: string }[];
 }
 
 const defaultData = [
@@ -46,7 +46,7 @@ const BookingsByServiceChart: React.FC<BookingsByServiceChartProps> = ({ data })
               </Pie>
               <Tooltip 
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                formatter={(value: number, name: string) => [`${value}%`, name]}
+                formatter={((value: any, name: any) => [`${value}%`, name]) as any}
               />
             </PieChart>
           </ResponsiveContainer>

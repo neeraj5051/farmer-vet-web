@@ -2,7 +2,7 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface RevenueByServiceChartProps {
-  data?: { name: string; revenue: number; color: string }[];
+  data?: { name: any; revenue: number; color: string }[];
 }
 
 const defaultData = [
@@ -46,7 +46,7 @@ const RevenueByServiceChart: React.FC<RevenueByServiceChartProps> = ({ data }) =
             />
             <Tooltip 
               contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-              formatter={(value: number) => [`₹${value.toLocaleString()}`, 'Revenue']}
+              formatter={((value: any) => [`₹${value.toLocaleString()}`, 'Revenue']) as any}
             />
             <Bar dataKey="revenue" radius={[6, 6, 0, 0]}>
               {chartData.map((entry, index) => (

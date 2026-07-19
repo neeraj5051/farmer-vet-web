@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { getFarmers } from '../../services/adminService';
 import { Search, Download, Loader2, Eye, X, Users, UserPlus, UserCheck, Repeat } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';

@@ -16,7 +16,7 @@ interface VetPayoutsTableProps {
 }
 
 const VetPayoutsTable: React.FC<VetPayoutsTableProps> = ({ data }) => {
-  const { dateRange, stateFilter, districtFilter } = useFilters();
+  const { dateRange, stateFilter } = useFilters();
 
   const payouts = data && data.length > 0 ? data.slice(0, 10) : [];
   const isEmpty = payouts.length === 0;
@@ -39,7 +39,7 @@ const VetPayoutsTable: React.FC<VetPayoutsTableProps> = ({ data }) => {
         </div>
       </div>
       <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '24px' }}>
-        Filtered by: {dateRange} • {stateFilter} • {districtFilter}
+        Filtered by: {dateRange} • {stateFilter}
       </div>
       
       <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>

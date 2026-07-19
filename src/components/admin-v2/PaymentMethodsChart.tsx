@@ -2,7 +2,7 @@ import React from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 
 interface PaymentMethodsChartProps {
-  data?: { name: string; value: number; amount: number; color: string }[];
+  data?: { name: any; value: any; amount: number; color: string }[];
 }
 
 const defaultData = [
@@ -47,7 +47,7 @@ const PaymentMethodsChart: React.FC<PaymentMethodsChartProps> = ({ data }) => {
               </Pie>
               <Tooltip 
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                formatter={(value: number, name: string) => [`${value}%`, name]}
+                formatter={((value: any, name: any) => [`${value}%`, name]) as any}
               />
             </PieChart>
           </ResponsiveContainer>

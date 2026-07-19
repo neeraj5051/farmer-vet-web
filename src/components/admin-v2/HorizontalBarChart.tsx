@@ -2,7 +2,7 @@ import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 
 interface HorizontalBarChartProps {
-  data?: { name: string; value: number }[];
+  data?: { name: any; value: any }[];
   title: string;
   color?: string;
   valuePrefix?: string;
@@ -61,10 +61,10 @@ const HorizontalBarChart: React.FC<HorizontalBarChartProps> = ({
               <Tooltip 
                 cursor={{ fill: 'rgba(0,0,0,0.02)' }}
                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }}
-                formatter={(value: number) => [`${valuePrefix}${value.toLocaleString()}`, title]}
+                formatter={((value: any) => [`${valuePrefix}${value.toLocaleString()}`, title]) as any}
               />
               <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                {data.map((entry, index) => (
+                {data.map((_, index) => (
                   <Cell key={`cell-${index}`} fill={color} />
                 ))}
               </Bar>
