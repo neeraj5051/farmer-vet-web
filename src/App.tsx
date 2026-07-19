@@ -19,6 +19,17 @@ import ReportsPage from './pages/ReportsPage';
 import VaccineManagement from './pages/VaccineManagement';
 import ManageServiceCards from './pages/ManageServiceCards';
 
+// Admin V2 Imports
+import AdminLayoutV2 from './layouts/AdminLayoutV2';
+import OperationsOverview from './pages/admin-v2/OperationsOverview';
+import FinancialOverview from './pages/admin-v2/FinancialOverview';
+import RevenueScreen from './pages/admin-v2/RevenueScreen';
+import VetPayoutsScreen from './pages/admin-v2/VetPayoutsScreen';
+import TransactionsScreen from './pages/admin-v2/TransactionsScreen';
+import BookingsScreen from './pages/admin-v2/BookingsScreen';
+import ConsultationsScreen from './pages/admin-v2/ConsultationsScreen';
+import FarmersScreen from './pages/admin-v2/FarmersScreen';
+import VetsScreen from './pages/admin-v2/VetsScreen';
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
   const { token, loading } = useAuth();
@@ -91,6 +102,24 @@ const AppRoutes = () => {
         <Route path="vaccination" element={<VaccinationPage />} />
         <Route path="reports" element={<ReportsPage />} />
         <Route path="vaccines" element={<VaccineManagement />} />
+      </Route>
+
+      {/* Protected Admin V2 routes (New Redesign) */}
+      <Route path="/admin-v2" element={
+        <AdminLayoutV2 />
+      }>
+        <Route index element={<Navigate to="operations" replace />} />
+        <Route path="operations" element={<OperationsOverview />} />
+        <Route path="financials" element={<FinancialOverview />} />
+        <Route path="revenue" element={<RevenueScreen />} />
+        <Route path="payouts" element={<VetPayoutsScreen />} />
+        <Route path="transactions" element={<TransactionsScreen />} />
+        <Route path="bookings" element={<BookingsScreen />} />
+        <Route path="consultations" element={<ConsultationsScreen />} />
+        <Route path="farmers" element={<FarmersScreen />} />
+        <Route path="vets" element={<VetsScreen />} />
+        {/* Stub routes for remaining pages */}
+        <Route path="*" element={<div style={{padding: 24}}>Content coming soon in subsequent phases.</div>} />
       </Route>
 
       {/* Protected Support Executive route */}
