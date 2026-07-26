@@ -66,6 +66,18 @@ const AdminLayoutContent = () => {
 
   const [showCustomDateModal, setShowCustomDateModal] = useState(false);
 
+  const formatPillDate = (s?: string, e?: string) => {
+    if (!s) return 'Custom Range...';
+    const formatSingle = (str: string) => {
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return str;
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    };
+    const startFmt = formatSingle(s);
+    const endFmt = e ? formatSingle(e) : startFmt;
+    return startFmt === endFmt ? startFmt : `${startFmt} – ${endFmt}`;
+  };
+
   const handleDateSelectChange = (val: string) => {
     if (val === 'Custom') {
       setShowCustomDateModal(true);
@@ -125,17 +137,39 @@ const AdminLayoutContent = () => {
 
           {/* Global Filters */}
           <div className="topbar-filters" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <select className="filter-select" value={dateRange} onChange={e => handleDateSelectChange(e.target.value)}>
-              <option value="Today">Date: Today</option>
-              <option value="This Week">Date: Last 7 Days</option>
-              <option value="This Month">Date: Last 30 Days</option>
-              <option value="All Time">Date: All Time</option>
-              <option value="Custom">
-                {dateRange === 'Custom' && customStartDate && customEndDate 
-                  ? `Custom: ${customStartDate} to ${customEndDate}` 
-                  : 'Custom Range... 📅'}
-              </option>
-            </select>
+            {dateRange === 'Custom' ? (
+              <button
+                type="button"
+                onClick={() => setShowCustomDateModal(true)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  padding: '7px 14px',
+                  borderRadius: '8px',
+                  border: '1.5px solid #0d5c3a',
+                  backgroundColor: '#e6f4ea',
+                  color: '#0d5c3a',
+                  fontSize: '0.85rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(13, 92, 58, 0.1)',
+                  transition: 'all 0.15s ease'
+                }}
+                title="Click to change custom date range"
+              >
+                <Calendar size={15} color="#0d5c3a" />
+                <span>Date: {formatPillDate(customStartDate, customEndDate)}</span>
+              </button>
+            ) : (
+              <select className="filter-select" value={dateRange} onChange={e => handleDateSelectChange(e.target.value)}>
+                <option value="Today">Date: Today</option>
+                <option value="This Week">Date: Last 7 Days</option>
+                <option value="This Month">Date: Last 30 Days</option>
+                <option value="All Time">Date: All Time</option>
+                <option value="Custom">Custom Range... 📅</option>
+              </select>
+            )}
             <select className="filter-select" value={stateFilter} onChange={e => setStateFilter(e.target.value)}>
               <option value="All States">All States</option>
               <option value="Bihar">Bihar</option>
