@@ -84,7 +84,7 @@ export function filterByState<T>(
       stateVal = getStateFn(item) || '';
     } else {
       const anyItem = item as any;
-      stateVal = anyItem.state || anyItem.state_name || anyItem.vet_state || anyItem.farmer_state || anyItem.location || anyItem.district || anyItem.city || '';
+      stateVal = String(anyItem.state || anyItem.state_name || anyItem.vet_state || anyItem.farmer_state || anyItem.location || anyItem.district || anyItem.city || '');
     }
 
     if (!stateVal) return true;
@@ -103,29 +103,75 @@ export function filterByService<T>(
   const target = serviceFilter.trim().toLowerCase();
 
   return items.filter(item => {
-    let typeVal: string = '';
-    let catVal: string = '';
+    let typeVal = '';
+    let catVal = '';
+    let titleVal = '';
+    let descVal = '';
+
     if (getServiceFn) {
       typeVal = getServiceFn(item) || '';
     } else {
       const anyItem = item as any;
-      typeVal = anyItem.type || anyItem.consultation_type || anyItem.service_type || anyItem.service || '';
-      catVal = anyItem.category || anyItem.service_category || '';
+      typeVal = String(anyItem.type || anyItem.consultation_type || anyItem.service_type || anyItem.service || '');
+      catVal = String(anyItem.category || anyItem.service_category || anyItem.category_name || anyItem.service_name || '');
+      titleVal = String(anyItem.title || anyItem.reason || anyItem.symptoms || '');
+      descVal = String(anyItem.description || anyItem.notes || '');
     }
 
-    const combined = `${typeVal} ${catVal}`.toLowerCase();
+    const combined = `${typeVal} ${catVal} ${titleVal} ${descVal}`.toLowerCase();
 
+    // Matching for Online Consultation
     if (target.includes('online') || target.includes('video') || target.includes('phone')) {
-      return combined.includes('online') || combined.includes('video') || combined.includes('phone') || combined.includes('tele');
+      return (
+        combined.includes('online') ||
+        combined.includes('video') ||
+        combined.includes('phone') ||
+        combined.includes('tele') ||
+        combined.includes('instant') ||
+        combined.includes('chat') ||
+        typeVal.toUpperCase() === 'ONLINE'
+      );
     }
+
+    // Matching for In-Person Visit
     if (target.includes('visit') || target.includes('person') || target.includes('physical')) {
-      return combined.includes('visit') || combined.includes('person') || combined.includes('physical') || combined.includes('clinic');
+      return (
+        combined.includes('visit') ||
+        combined.includes('person') ||
+        combined.includes('physical') ||
+        combined.includes('clinic') ||
+        combined.includes('home') ||
+        combined.includes('doorstep') ||
+        typeVal.toUpperCase() === 'PHYSICAL' ||
+        typeVal.toUpperCase() === 'PHYSICAL_VISIT'
+      );
     }
-    if (target.includes('ai') || target.includes('insemination')) {
-      return combined.includes('ai') || combined.includes('insemination') || combined.includes('artificial');
+
+    // Matching for AI / Insemination
+    if (target.includes('ai') || target.includes('insemination') || target.includes('artificial')) {
+      return (
+        /\bai\b/i.test(combined) ||
+        combined.includes('insemination') ||
+        combined.includes('artificial') ||
+        combined.includes('semen') ||
+        combined.includes('breeding') ||
+        typeVal.toUpperCase() === 'AI' ||
+        catVal.toUpperCase() === 'AI' ||
+        catVal.toUpperCase() === 'ARTIFICIAL_INSEMINATION'
+      );
     }
-    if (target.includes('vaccin')) {
-      return combined.includes('vaccin');
+
+    // Matching for Vaccination
+    if (target.includes('vaccin') || target.includes('vacc') || target.includes('tika')) {
+      return (
+        combined.includes('vaccin') ||
+        combined.includes('vacc') ||
+        combined.includes('tika') ||
+        combined.includes('booster') ||
+        combined.includes('immun') ||
+        catVal.toUpperCase() === 'VACCINATION' ||
+        typeVal.toUpperCase() === 'VACCINATION'
+      );
     }
 
     return combined.includes(target);
