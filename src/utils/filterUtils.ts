@@ -17,11 +17,13 @@ export function filterByDate<T>(
   if (!dateRange || dateRange === 'All Time' || dateRange === 'all') return items;
 
   const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-  
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const startOfYesterday = new Date(startOfToday.getTime() - 24 * 60 * 60 * 1000);
   const sevenDaysAgo = new Date(startOfToday.getTime() - 7 * 24 * 60 * 60 * 1000);
   const thirtyDaysAgo = new Date(startOfToday.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
   let customStart: Date | null = null;
   let customEnd: Date | null = null;
@@ -56,12 +58,15 @@ export function filterByDate<T>(
       if (customEnd && d > customEnd) return false;
       return true;
     } else if (dateRange === 'Today') {
-      const itemDateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      return itemDateStr === todayStr || d >= startOfToday;
-    } else if (dateRange === 'This Week') {
+      return d >= startOfToday;
+    } else if (dateRange === 'Yesterday') {
+      return d >= startOfYesterday && d < startOfToday;
+    } else if (dateRange === 'Last 7 Days' || dateRange === 'This Week') {
       return d >= sevenDaysAgo;
-    } else if (dateRange === 'This Month') {
+    } else if (dateRange === 'Last 30 Days' || dateRange === 'This Month') {
       return d >= thirtyDaysAgo;
+    } else if (dateRange === 'Last Month') {
+      return d >= startOfLastMonth && d <= endOfLastMonth;
     }
 
     return true;
@@ -160,6 +165,7 @@ export function filterByService<T>(
     // Matching for AI / Insemination
     if (target.includes('ai') || target.includes('insemination') || target.includes('artificial')) {
       return (
+        lowerCat === 'ai' ||
         lowerCat.includes('ai') ||
         lowerCat.includes('artificial') ||
         lowerCat.includes('inseminat') ||
@@ -177,6 +183,7 @@ export function filterByService<T>(
     // Matching for Vaccination
     if (target.includes('vaccin') || target.includes('vacc') || target.includes('tika')) {
       return (
+        lowerCat === 'vaccination' ||
         lowerCat.includes('vacc') ||
         lowerType.includes('vacc') ||
         combined.includes('vacc') ||

@@ -160,7 +160,20 @@ const OperationsOverview = () => {
       
       {/* Row 1: Primary KPI Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '20px', marginBottom: '20px' }}>
-        <KpiCard title="Today's Bookings" value={opStats?.todayBookings ?? '—'} icon={<FileText />} highlightColor="#3b82f6" />
+        <KpiCard 
+          title={
+            dateRange === 'Today' ? "Today's Bookings" :
+            dateRange === 'Yesterday' ? "Yesterday's Bookings" :
+            dateRange === 'Last 7 Days' ? "7-Day Bookings" :
+            dateRange === 'Last 30 Days' ? "30-Day Bookings" :
+            dateRange === 'This Month' ? "This Month's Bookings" :
+            dateRange === 'Last Month' ? "Last Month's Bookings" :
+            dateRange === 'All Time' ? "All-Time Bookings" : "Range Bookings"
+          } 
+          value={opStats?.todayBookings ?? '—'} 
+          icon={<FileText />} 
+          highlightColor="#3b82f6" 
+        />
         <KpiCard title="Completed Consultations" value={opStats?.completed ?? '—'} icon={<CheckCircle />} highlightColor="#10b981" />
         <KpiCard title="Live Consultations" value={opStats?.live ?? '—'} icon={<Video />} subtitle="● Live" highlightColor="#f59e0b" />
         <KpiCard title="Cancelled" value={opStats?.cancelled ?? '—'} icon={<XCircle />} highlightColor="#ef4444" />
