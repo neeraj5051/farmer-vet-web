@@ -9,7 +9,11 @@ import { FileText, CheckCircle, Video, UserSquare2, XCircle, Clock, Users, Timer
 import { getAdminStats, getFarmers } from '../../services/adminService';
 import { getConsultations } from '../../services/consultationsService';
 
+import { useFilters } from '../../context/FilterContext';
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 const OperationsOverview = () => {
+  const { dateRange, stateFilter, serviceFilter } = useFilters();
   const [stats, setStats] = useState<any>(null);
   const [consults, setConsults] = useState<any[]>([]);
   const [farmerCount, setFarmerCount] = useState(0);
@@ -38,51 +42,57 @@ const OperationsOverview = () => {
   useEffect(() => { fetchData(); }, []);
   const handleRefresh = () => { setRefreshing(true); fetchData(); };
 
+  // Apply global filters from Topbar
+  const filteredConsults = useMemo(() => {
+    return applyGlobalFilters(consults, { dateRange, stateFilter, serviceFilter });
+  }, [consults, dateRange, stateFilter, serviceFilter]);
+
   const opStats = useMemo(() => {
     if (!stats) return null;
     const cm = stats.consultation_metrics || {};
     const u = stats.users || {};
-    
-    // Compute today's bookings directly from the consults array to ensure accuracy
-    const today = new Date();
-    const todayString = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-    const computedTodayBookings = consults.filter((c: any) => {
-      const d = c.date || (c.created_at ? c.created_at.slice(0, 10) : '') || (c.scheduled_at ? c.scheduled_at.slice(0, 10) : '');
-      return d === todayString;
-    }).length;
-    
-    const backendToday = stats.consults?.today?.total || 0;
-    const finalTodayBookings = Math.max(computedTodayBookings, backendToday);
 
-    const noShow = consults.filter(c => ['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(c.status)).length;
+    const totalCount = filteredConsults.length;
+    const completedCount = filteredConsults.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status)).length;
+    const liveCount = filteredConsults.filter(c => ['AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(c.status)).length;
+    const cancelledCount = filteredConsults.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status)).length;
+    const noShowCount = filteredConsults.filter(c => ['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(c.status)).length;
+
+    // Fallback to backend defaults if no global filters applied
+    const isDefaultFilter = dateRange === 'Today' && stateFilter === 'All States' && serviceFilter === 'All Services';
+    const finalTodayBookings = isDefaultFilter ? Math.max(totalCount, stats.consults?.today?.total || 0) : totalCount;
+
     return {
       todayBookings: finalTodayBookings,
-      completed: cm.completed || 0,
-      live: cm.ongoing || 0,
-      cancelled: cm.cancelled || 0,
-      noShow,
+      completed: isDefaultFilter ? (cm.completed || completedCount) : completedCount,
+      live: isDefaultFilter ? (cm.ongoing || liveCount) : liveCount,
+      cancelled: isDefaultFilter ? (cm.cancelled || cancelledCount) : cancelledCount,
+      noShow: noShowCount,
       avgResponseTime: stats.call_chat_metrics?.avg_response_time || '8m 24s',
       avgDuration: stats.call_chat_metrics?.avg_duration || '23m 15s',
       activeVets: u.active_vets || u.total_vets || 0,
       activeFarmers: farmerCount,
-      completionRate: cm.total > 0 ? Math.round((cm.completed / cm.total) * 100) : 0,
+      completionRate: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : (cm.total > 0 ? Math.round((cm.completed / cm.total) * 100) : 0),
     };
-  }, [stats, consults, farmerCount]);
+  }, [stats, filteredConsults, farmerCount, dateRange, stateFilter, serviceFilter]);
 
   // Booking trends chart data
   const chartData = useMemo(() => {
     if (!stats) return [];
     return [
-      { name: 'Today', bookings: stats.consults?.today?.total || 0 },
-      { name: '7 Days', bookings: stats.consults?.last_7d?.total || 0 },
-      { name: '30 Days', bookings: stats.consults?.last_30d?.total || 0 },
-      { name: 'All Time', bookings: stats.consults?.all_time?.total || 0 },
+      { name: 'Today', bookings: filteredConsults.filter(c => {
+          const d = c.date || (c.created_at ? c.created_at.slice(0, 10) : '');
+          return d === new Date().toISOString().slice(0, 10);
+        }).length || stats.consults?.today?.total || 0 },
+      { name: '7 Days', bookings: stats.consults?.last_7d?.total || filteredConsults.length },
+      { name: '30 Days', bookings: stats.consults?.last_30d?.total || filteredConsults.length },
+      { name: 'All Time', bookings: stats.consults?.all_time?.total || consults.length },
     ];
-  }, [stats]);
+  }, [stats, filteredConsults, consults]);
 
   // Bookings by service donut data
   const serviceData = useMemo(() => {
-    if (consults.length === 0) return undefined;
+    if (filteredConsults.length === 0) return undefined;
     const getType = (c: any) => {
       const cat = (c.category || '').toLowerCase();
       const t = (c.type || c.consultation_type || '').toLowerCase();
@@ -92,8 +102,8 @@ const OperationsOverview = () => {
       return 'In-person Visit';
     };
     const counts: Record<string, number> = {};
-    consults.forEach(c => { const t = getType(c); counts[t] = (counts[t] || 0) + 1; });
-    const total = consults.length;
+    filteredConsults.forEach(c => { const t = getType(c); counts[t] = (counts[t] || 0) + 1; });
+    const total = filteredConsults.length;
     const colors: Record<string, string> = {
       'Online Consultation': '#10b981',
       'In-person Visit': '#3b82f6',
@@ -106,13 +116,13 @@ const OperationsOverview = () => {
       count,
       color: colors[name] || '#6b7280',
     }));
-  }, [consults]);
+  }, [filteredConsults]);
 
   // Top cities data
   const citiesData = useMemo(() => {
-    if (consults.length === 0) return undefined;
+    if (filteredConsults.length === 0) return undefined;
     const counts: Record<string, number> = {};
-    consults.forEach(c => {
+    filteredConsults.forEach(c => {
       const city = c.city || c.district || c.location || 'Unknown';
       if (city && city !== 'Unknown') counts[city] = (counts[city] || 0) + 1;
     });
@@ -120,7 +130,7 @@ const OperationsOverview = () => {
       .map(([city, count]) => ({ city, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
-  }, [consults]);
+  }, [filteredConsults]);
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: 12, color: 'var(--text-secondary)' }}>
@@ -188,7 +198,7 @@ const OperationsOverview = () => {
       </div>
 
       {/* Row 5: Recent Bookings Table */}
-      <RecentBookingsTable data={consults} />
+      <RecentBookingsTable data={filteredConsults} />
     </div>
   );
 };

@@ -12,14 +12,17 @@ const STATUS_BADGE: Record<string, { bg: string; text: string }> = {
   REFUNDED: { bg: '#f3f4f6', text: '#6b7280' },
 };
 
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 interface RecentTransactionsTableProps {
   data?: any[];
 }
 
 const RecentTransactionsTable: React.FC<RecentTransactionsTableProps> = ({ data }) => {
-  const { dateRange, stateFilter } = useFilters();
+  const { dateRange, stateFilter, serviceFilter } = useFilters();
 
-  const transactions = data && data.length > 0 ? data.slice(0, 5) : [];
+  const filteredData = data && data.length > 0 ? applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter }) : [];
+  const transactions = filteredData.slice(0, 5);
   const isEmpty = transactions.length === 0;
 
   return (

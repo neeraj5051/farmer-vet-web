@@ -27,9 +27,13 @@ const getServiceLabel = (type: string, category?: string) => {
   return 'In-Person Visit';
 };
 
+import { useFilters } from '../../context/FilterContext';
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 const PAGE_SIZE = 10;
 
 const ConsultationsScreen = () => {
+  const { dateRange, stateFilter, serviceFilter: globalServiceFilter } = useFilters();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -56,7 +60,7 @@ const ConsultationsScreen = () => {
   useEffect(() => { fetchData(); }, []);
 
   const filtered = useMemo(() => {
-    let result = [...data];
+    let result = applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter: globalServiceFilter });
     if (statusFilter === 'live') result = result.filter(c => ['AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(c.status));
     else if (statusFilter === 'completed') result = result.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status));
     else if (statusFilter === 'noshow') result = result.filter(c => ['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(c.status));
@@ -82,7 +86,7 @@ const ConsultationsScreen = () => {
       );
     }
     return result;
-  }, [data, statusFilter, serviceFilter, searchTerm]);
+  }, [data, statusFilter, serviceFilter, searchTerm, dateRange, stateFilter, globalServiceFilter]);
 
   const stats = useMemo(() => ({
     total: data.length,

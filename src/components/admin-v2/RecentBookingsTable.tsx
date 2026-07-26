@@ -23,6 +23,8 @@ const getServiceLabel = (type: string, category?: string) => {
   return 'In-Person Visit';
 };
 
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 interface RecentBookingsTableProps {
   data?: any[];
 }
@@ -30,10 +32,8 @@ interface RecentBookingsTableProps {
 const RecentBookingsTable: React.FC<RecentBookingsTableProps> = ({ data }) => {
   const { dateRange, stateFilter, serviceFilter } = useFilters();
 
-  // Use real data if passed, limit to 5 most recent
-  const bookings = data && data.length > 0 
-    ? data.slice(0, 5) 
-    : [];
+  const filteredData = data && data.length > 0 ? applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter }) : [];
+  const bookings = filteredData.slice(0, 5);
 
   const isEmpty = bookings.length === 0;
 

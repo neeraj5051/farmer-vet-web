@@ -33,9 +33,13 @@ const getServiceLabel = (type: string, category?: string) => {
   return 'In-Person Visit';
 };
 
+import { useFilters } from '../../context/FilterContext';
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 const PAGE_SIZE = 10;
 
 const BookingsScreen = () => {
+  const { dateRange, stateFilter, serviceFilter: globalServiceFilter } = useFilters();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -63,7 +67,7 @@ const BookingsScreen = () => {
   }, []);
 
   const filtered = useMemo(() => {
-    let result = [...data];
+    let result = applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter: globalServiceFilter });
     if (statusFilter === 'upcoming') result = result.filter(c => ['PENDING', 'CONFIRMED', 'AWAITING_PAYMENT'].includes(c.status));
     else if (statusFilter === 'completed') result = result.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status));
     else if (statusFilter === 'cancelled') result = result.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status));
@@ -90,7 +94,7 @@ const BookingsScreen = () => {
       );
     }
     return result;
-  }, [data, statusFilter, serviceFilter, searchTerm]);
+  }, [data, statusFilter, serviceFilter, searchTerm, dateRange, stateFilter, globalServiceFilter]);
 
   const stats = useMemo(() => ({
     upcoming: data.filter(c => ['PENDING', 'CONFIRMED', 'AWAITING_PAYMENT'].includes(c.status)).length,

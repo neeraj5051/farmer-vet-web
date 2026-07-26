@@ -11,14 +11,17 @@ const STATUS_MAP: Record<string, { bg: string; text: string; label: string }> = 
   CANCELLED: { bg: '#f3f4f6', text: '#6b7280', label: 'Cancelled' },
 };
 
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 interface VetPayoutsTableProps {
   data?: any[];
 }
 
 const VetPayoutsTable: React.FC<VetPayoutsTableProps> = ({ data }) => {
-  const { dateRange, stateFilter } = useFilters();
+  const { dateRange, stateFilter, serviceFilter } = useFilters();
 
-  const payouts = data && data.length > 0 ? data.slice(0, 10) : [];
+  const filteredData = data && data.length > 0 ? applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter }) : [];
+  const payouts = filteredData.slice(0, 10);
   const isEmpty = payouts.length === 0;
 
   return (

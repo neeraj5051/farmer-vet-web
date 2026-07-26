@@ -7,7 +7,11 @@ import VetPayoutsTable from '../../components/admin-v2/VetPayoutsTable';
 import { IndianRupee, CreditCard, Clock, AlertCircle, Users, Loader2, RefreshCw } from 'lucide-react';
 import { getAdminStats, getPayouts } from '../../services/adminService';
 
+import { useFilters } from '../../context/FilterContext';
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 const VetPayoutsScreen = () => {
+  const { dateRange, stateFilter, serviceFilter } = useFilters();
   const [stats, setStats] = useState<any>(null);
   const [payouts, setPayouts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +36,10 @@ const VetPayoutsScreen = () => {
   useEffect(() => { fetchData(); }, []);
   const handleRefresh = () => { setRefreshing(true); fetchData(); };
 
+  const filteredPayouts = useMemo(() => {
+    return applyGlobalFilters(payouts, { dateRange, stateFilter, serviceFilter });
+  }, [payouts, dateRange, stateFilter, serviceFilter]);
+
   const finStats = useMemo(() => {
     if (!stats) return null;
     const rev = stats.revenue || {};
@@ -43,10 +51,10 @@ const VetPayoutsScreen = () => {
     const gstCollected = rm.total_gst || 0;
     const vetEarnings = grossRevenue - platformRevenue - gstCollected;
 
-    const paidPayouts = payouts.filter(p => p.status === 'PROCESSED' || p.status === 'PAID');
+    const paidPayouts = filteredPayouts.filter(p => p.status === 'PROCESSED' || p.status === 'PAID');
     const totalPaid = paidPayouts.reduce((s, p) => s + (p.amount || 0), 0);
     
-    const pendingPayoutsList = payouts.filter(p => p.status === 'PENDING' || p.status === 'PROCESSING');
+    const pendingPayoutsList = filteredPayouts.filter(p => p.status === 'PENDING' || p.status === 'PROCESSING');
     const pendingPayoutAmount = pendingPayoutsList.reduce((s, p) => s + (p.amount || 0), 0);
 
     // Number of unique vets paid
@@ -168,7 +176,7 @@ const VetPayoutsScreen = () => {
       </div>
 
       {/* Table */}
-      <VetPayoutsTable data={payouts} />
+      <VetPayoutsTable data={filteredPayouts} />
     </div>
   );
 };

@@ -7,7 +7,11 @@ import TransactionsTable from '../../components/admin-v2/TransactionsTable';
 import { IndianRupee, FileText, CheckCircle, XCircle, RotateCcw, Percent, Loader2, RefreshCw } from 'lucide-react';
 import { getAdminStats, getPayments } from '../../services/adminService';
 
+import { useFilters } from '../../context/FilterContext';
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 const TransactionsScreen = () => {
+  const { dateRange, stateFilter, serviceFilter } = useFilters();
   const [stats, setStats] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,14 +36,18 @@ const TransactionsScreen = () => {
   useEffect(() => { fetchData(); }, []);
   const handleRefresh = () => { setRefreshing(true); fetchData(); };
 
+  const filteredPayments = useMemo(() => {
+    return applyGlobalFilters(payments, { dateRange, stateFilter, serviceFilter });
+  }, [payments, dateRange, stateFilter, serviceFilter]);
+
   const finStats = useMemo(() => {
-    const totalTransactions = payments.length;
-    const successful = payments.filter(p => p.status === 'COMPLETED' || p.status === 'SUCCESS').length;
-    const failed = payments.filter(p => p.status === 'FAILED').length;
-    const refunded = payments.filter(p => (p.type || '').toLowerCase().includes('refund')).length;
+    const totalTransactions = filteredPayments.length;
+    const successful = filteredPayments.filter(p => p.status === 'COMPLETED' || p.status === 'SUCCESS').length;
+    const failed = filteredPayments.filter(p => p.status === 'FAILED').length;
+    const refunded = filteredPayments.filter(p => (p.type || '').toLowerCase().includes('refund')).length;
     
     const successRate = totalTransactions > 0 ? ((successful / totalTransactions) * 100).toFixed(2) : '0.00';
-    const totalValue = payments.reduce((s, p) => s + (p.amount || 0), 0);
+    const totalValue = filteredPayments.reduce((s, p) => s + (p.amount || 0), 0);
 
     return {
       totalTransactions,
@@ -49,7 +57,7 @@ const TransactionsScreen = () => {
       successRate,
       totalValue
     };
-  }, [payments]);
+  }, [filteredPayments]);
 
   // Status Donut
   const statusData = useMemo(() => {
@@ -148,7 +156,7 @@ const TransactionsScreen = () => {
       </div>
 
       {/* Table */}
-      <TransactionsTable data={payments} />
+      <TransactionsTable data={filteredPayments} />
     </div>
   );
 };

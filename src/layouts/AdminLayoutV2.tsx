@@ -47,7 +47,7 @@ const NAV_SECTIONS = [
 
 const AdminLayoutContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const { dateRange, setDateRange, stateFilter, setStateFilter, serviceFilter, setServiceFilter } = useFilters();
+  const { dateRange, setDateRange, stateFilter, setStateFilter, serviceFilter, setServiceFilter, resetFilters, isFiltered } = useFilters();
 
   return (
     <div className="admin-v2-container">
@@ -99,22 +99,57 @@ const AdminLayoutContent = () => {
           </div>
 
           {/* Global Filters */}
-          <div className="topbar-filters">
+          <div className="topbar-filters" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <select className="filter-select" value={dateRange} onChange={e => setDateRange(e.target.value)}>
               <option value="Today">Date: Today</option>
-              <option value="This Week">Date: This Week</option>
-              <option value="This Month">Date: This Month</option>
+              <option value="This Week">Date: Last 7 Days</option>
+              <option value="This Month">Date: Last 30 Days</option>
+              <option value="All Time">Date: All Time</option>
             </select>
             <select className="filter-select" value={stateFilter} onChange={e => setStateFilter(e.target.value)}>
               <option value="All States">All States</option>
               <option value="Bihar">Bihar</option>
+              <option value="Uttar Pradesh">Uttar Pradesh</option>
+              <option value="Rajasthan">Rajasthan</option>
+              <option value="Madhya Pradesh">Madhya Pradesh</option>
+              <option value="Maharashtra">Maharashtra</option>
               <option value="Karnataka">Karnataka</option>
+              <option value="Tamil Nadu">Tamil Nadu</option>
+              <option value="Punjab">Punjab</option>
+              <option value="Haryana">Haryana</option>
+              <option value="Gujarat">Gujarat</option>
+              <option value="West Bengal">West Bengal</option>
+              <option value="Odisha">Odisha</option>
             </select>
             <select className="filter-select" value={serviceFilter} onChange={e => setServiceFilter(e.target.value)}>
               <option value="All Services">All Services</option>
               <option value="Online Consultation">Online Consultation</option>
               <option value="In-Person Visit">In-Person Visit</option>
+              <option value="AI / Insemination">AI / Insemination</option>
+              <option value="Vaccination">Vaccination</option>
             </select>
+
+            {isFiltered && (
+              <button 
+                onClick={resetFilters}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '6px 12px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'var(--humal-green-light)',
+                  color: 'var(--humal-green)',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  cursor: 'pointer'
+                }}
+                title="Reset all filters"
+              >
+                Reset
+              </button>
+            )}
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)' }}>

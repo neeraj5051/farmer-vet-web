@@ -3,9 +3,13 @@ import { getVets } from '../../services/adminService';
 import { Search, Download, Loader2, Eye, X, UserSquare2, ShieldCheck, Wifi, Star } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
 
+import { useFilters } from '../../context/FilterContext';
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 const PAGE_SIZE = 10;
 
 const VetsScreen = () => {
+  const { dateRange, stateFilter, serviceFilter } = useFilters();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,7 +40,7 @@ const VetsScreen = () => {
   }, [data]);
 
   const filtered = useMemo(() => {
-    let result = [...data];
+    let result = applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter });
     if (statusFilter === 'verified') result = result.filter(v => v.verification_status === 'verified');
     else if (statusFilter === 'pending') result = result.filter(v => v.verification_status === 'pending');
     else if (statusFilter === 'active') result = result.filter(v => v.is_active === true);
@@ -55,7 +59,7 @@ const VetsScreen = () => {
       );
     }
     return result;
-  }, [data, statusFilter, specFilter, searchTerm]);
+  }, [data, statusFilter, specFilter, searchTerm, dateRange, stateFilter, serviceFilter]);
 
   const stats = useMemo(() => ({
     total: data.length,

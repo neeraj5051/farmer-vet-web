@@ -3,9 +3,13 @@ import { getFarmers } from '../../services/adminService';
 import { Search, Download, Loader2, Eye, X, Users, UserPlus, UserCheck, Repeat } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
 
+import { useFilters } from '../../context/FilterContext';
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 const PAGE_SIZE = 10;
 
 const FarmersScreen = () => {
+  const { dateRange, stateFilter, serviceFilter } = useFilters();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -29,7 +33,7 @@ const FarmersScreen = () => {
   }, []);
 
   const filtered = useMemo(() => {
-    let result = [...data];
+    let result = applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter });
     if (statusFilter === 'active') result = result.filter(f => f.is_active === true);
     else if (statusFilter === 'inactive') result = result.filter(f => f.is_active === false);
 
@@ -43,7 +47,7 @@ const FarmersScreen = () => {
       );
     }
     return result;
-  }, [data, statusFilter, searchTerm]);
+  }, [data, statusFilter, searchTerm, dateRange, stateFilter, serviceFilter]);
 
   const stats = useMemo(() => {
     const now = new Date();

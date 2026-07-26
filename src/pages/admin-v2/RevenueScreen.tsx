@@ -7,7 +7,11 @@ import HorizontalBarChart from '../../components/admin-v2/HorizontalBarChart';
 import { IndianRupee, CreditCard, Percent, Landmark, RotateCcw, Loader2, RefreshCw } from 'lucide-react';
 import { getAdminStats, getPayments } from '../../services/adminService';
 
+import { useFilters } from '../../context/FilterContext';
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 const RevenueScreen = () => {
+  const { dateRange, stateFilter, serviceFilter } = useFilters();
   const [stats, setStats] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -32,6 +36,10 @@ const RevenueScreen = () => {
   useEffect(() => { fetchData(); }, []);
   const handleRefresh = () => { setRefreshing(true); fetchData(); };
 
+  const filteredPayments = useMemo(() => {
+    return applyGlobalFilters(payments, { dateRange, stateFilter, serviceFilter });
+  }, [payments, dateRange, stateFilter, serviceFilter]);
+
   const finStats = useMemo(() => {
     if (!stats) return null;
     const rev = stats.revenue || {};
@@ -39,12 +47,15 @@ const RevenueScreen = () => {
     const todayRev = rev.today || {};
     const allTimeRev = rev.all_time || {};
 
-    const grossRevenue = allTimeRev.total || 0;
-    const platformRevenue = rm.platform_total || allTimeRev.platform_revenue || 0;
-    const gstCollected = rm.total_gst || 0;
+    const isDefaultFilter = dateRange === 'Today' && stateFilter === 'All States' && serviceFilter === 'All Services';
+
+    const calculatedGross = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const grossRevenue = isDefaultFilter ? (allTimeRev.total || calculatedGross) : calculatedGross;
+    const platformRevenue = Math.round(grossRevenue * 0.20);
+    const gstCollected = Math.round(grossRevenue * 0.18);
     const vetEarnings = grossRevenue - platformRevenue - gstCollected;
 
-    const refunds = payments.filter(p => (p.type || '').toLowerCase().includes('refund'));
+    const refunds = filteredPayments.filter(p => (p.type || '').toLowerCase().includes('refund'));
     const refundAmount = refunds.reduce((s, p) => s + (p.amount || 0), 0);
 
     return {
@@ -53,12 +64,12 @@ const RevenueScreen = () => {
       gstCollected,
       vetEarnings: vetEarnings > 0 ? vetEarnings : 0,
       refundAmount,
-      todayGross: todayRev.total || 0,
-      todayGst: todayRev.gst || Math.round((todayRev.total || 0) * 0.18),
-      todayHumal: todayRev.platform_revenue || Math.round((todayRev.total || 0) * 0.20),
-      todayVet: todayRev.vet_share || Math.round((todayRev.total || 0) * 0.62),
+      todayGross: todayRev.total || grossRevenue,
+      todayGst: todayRev.gst || gstCollected,
+      todayHumal: todayRev.platform_revenue || platformRevenue,
+      todayVet: todayRev.vet_share || vetEarnings,
     };
-  }, [stats, payments]);
+  }, [stats, filteredPayments, dateRange, stateFilter, serviceFilter]);
 
   // Revenue by service breakdown
   const serviceData = useMemo(() => {

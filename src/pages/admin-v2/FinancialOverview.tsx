@@ -8,7 +8,11 @@ import RecentTransactionsTable from '../../components/admin-v2/RecentTransaction
 import { IndianRupee, CreditCard, ArrowRightLeft, Percent, Landmark, AlertCircle, Loader2, RefreshCw, RotateCcw, CheckCircle, XCircle, ShoppingCart } from 'lucide-react';
 import { getAdminStats, getPayments, getPayouts } from '../../services/adminService';
 
+import { useFilters } from '../../context/FilterContext';
+import { applyGlobalFilters } from '../../utils/filterUtils';
+
 const FinancialOverview = () => {
+  const { dateRange, stateFilter, serviceFilter } = useFilters();
   const [stats, setStats] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [payouts, setPayouts] = useState<any[]>([]);
@@ -42,6 +46,14 @@ const FinancialOverview = () => {
     fetchData();
   };
 
+  const filteredPayments = useMemo(() => {
+    return applyGlobalFilters(payments, { dateRange, stateFilter, serviceFilter });
+  }, [payments, dateRange, stateFilter, serviceFilter]);
+
+  const filteredPayouts = useMemo(() => {
+    return applyGlobalFilters(payouts, { dateRange, stateFilter, serviceFilter });
+  }, [payouts, dateRange, stateFilter, serviceFilter]);
+
   const finStats = useMemo(() => {
     if (!stats) return null;
     const rev = stats.revenue || {};
@@ -49,17 +61,21 @@ const FinancialOverview = () => {
     const todayRev = rev.today || {};
     const allTimeRev = rev.all_time || {};
 
-    const grossRevenue = allTimeRev.total || 0;
-    const platformRevenue = rm.platform_total || allTimeRev.platform_revenue || 0;
-    const gstCollected = rm.total_gst || 0;
+    const isDefaultFilter = dateRange === 'Today' && stateFilter === 'All States' && serviceFilter === 'All Services';
+
+    const calculatedGross = filteredPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const grossRevenue = isDefaultFilter ? (allTimeRev.total || calculatedGross) : calculatedGross;
+    const platformRevenue = Math.round(grossRevenue * 0.20);
+    const gstCollected = Math.round(grossRevenue * 0.18);
     const vetEarnings = grossRevenue - platformRevenue - gstCollected;
 
-    const successfulTxns = payments.filter(p => p.status === 'COMPLETED' || p.status === 'SUCCESS').length;
-    const failedTxns = payments.filter(p => p.status === 'FAILED').length;
-    const refunds = payments.filter(p => (p.type || '').toLowerCase().includes('refund'));
+    const successfulTxnsList = filteredPayments.filter(p => p.status === 'COMPLETED' || p.status === 'SUCCESS');
+    const successfulTxns = successfulTxnsList.length;
+    const failedTxns = filteredPayments.filter(p => p.status === 'FAILED').length;
+    const refunds = filteredPayments.filter(p => (p.type || '').toLowerCase().includes('refund'));
     const refundAmount = refunds.reduce((s, p) => s + (p.amount || 0), 0);
     
-    const pendingPayoutsList = payouts.filter(p => p.status === 'PENDING' || p.status === 'PROCESSING');
+    const pendingPayoutsList = filteredPayouts.filter(p => p.status === 'PENDING' || p.status === 'PROCESSING');
     const pendingPayoutsCount = new Set(pendingPayoutsList.map(p => p.vet_id)).size;
     const pendingPayoutAmount = pendingPayoutsList.reduce((s, p) => s + (p.amount || 0), 0);
 
@@ -78,36 +94,39 @@ const FinancialOverview = () => {
       failedTxns,
       aov,
       takeRate,
-      todayGross: todayRev.total || 0,
-      todayGst: todayRev.gst || Math.round((todayRev.total || 0) * 0.18),
-      todayHumal: todayRev.platform_revenue || Math.round((todayRev.total || 0) * 0.20),
-      todayVet: todayRev.vet_share || Math.round((todayRev.total || 0) * 0.62),
+      todayGross: todayRev.total || grossRevenue,
+      todayGst: todayRev.gst || gstCollected,
+      todayHumal: todayRev.platform_revenue || platformRevenue,
+      todayVet: todayRev.vet_share || vetEarnings,
     };
-  }, [stats, payments, payouts]);
+  }, [stats, filteredPayments, filteredPayouts, dateRange, stateFilter, serviceFilter]);
 
   const serviceData = useMemo(() => {
-    if (!stats) return undefined;
-    const breakdown = stats.revenue?.today?.completed_breakdown || stats.revenue?.all_time?.completed_breakdown || {};
+    if (filteredPayments.length === 0 && !stats) return undefined;
+    const counts: Record<string, number> = {};
+    filteredPayments.forEach(p => {
+      const type = p.service_type || p.type || 'Online Consultation';
+      counts[type] = (counts[type] || 0) + (p.amount || 0);
+    });
     const items = [
-      { name: 'Online Consultation', revenue: breakdown.online || 0, color: '#10b981' },
-      { name: 'In-person Visit', revenue: breakdown.visit || 0, color: '#3b82f6' },
-      { name: 'Artificial Insemination', revenue: breakdown.ai || 0, color: '#8b5cf6' },
-      { name: 'Vaccination', revenue: breakdown.vaccination || 0, color: '#f59e0b' },
+      { name: 'Online Consultation', revenue: counts['Online Consultation'] || (stats?.revenue?.today?.completed_breakdown?.online || 0), color: '#10b981' },
+      { name: 'In-person Visit', revenue: counts['In-person Visit'] || (stats?.revenue?.today?.completed_breakdown?.visit || 0), color: '#3b82f6' },
+      { name: 'Artificial Insemination', revenue: counts['AI / Insemination'] || (stats?.revenue?.today?.completed_breakdown?.ai || 0), color: '#8b5cf6' },
+      { name: 'Vaccination', revenue: counts['Vaccination'] || (stats?.revenue?.today?.completed_breakdown?.vaccination || 0), color: '#f59e0b' },
     ];
     return items.some(i => i.revenue > 0) ? items : undefined;
-  }, [stats]);
+  }, [stats, filteredPayments]);
 
   const chartData = useMemo(() => {
     if (!stats) return [];
     const rev = stats.revenue || {};
     return [
-      { name: 'Today', revenue: rev.today?.total || 0 },
-      { name: '7 Days', revenue: rev.last_7d?.total || 0 },
-      { name: '30 Days', revenue: rev.last_30d?.total || 0 },
-      { name: 'All Time', revenue: rev.all_time?.total || 0 },
+      { name: 'Today', revenue: rev.today?.total || finStats?.grossRevenue || 0 },
+      { name: '7 Days', revenue: rev.last_7d?.total || finStats?.grossRevenue || 0 },
+      { name: '30 Days', revenue: rev.last_30d?.total || finStats?.grossRevenue || 0 },
+      { name: 'All Time', revenue: rev.all_time?.total || finStats?.grossRevenue || 0 },
     ];
-  }, [stats]);
-
+  }, [stats, finStats]);
 
   if (loading) return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 20px', gap: 12, color: 'var(--text-secondary)' }}>
@@ -167,7 +186,7 @@ const FinancialOverview = () => {
       </div>
 
       {/* Transactions Table */}
-      <RecentTransactionsTable data={payments} />
+      <RecentTransactionsTable data={filteredPayments} />
     </div>
   );
 };
