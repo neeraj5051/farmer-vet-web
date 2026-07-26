@@ -12,7 +12,7 @@ import {
   LogOut,
   Menu,
   Bell,
-  User
+  User,
   Calendar,
   X
 } from 'lucide-react';
