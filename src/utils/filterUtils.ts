@@ -118,59 +118,71 @@ export function filterByService<T>(
       descVal = String(anyItem.description || anyItem.notes || '');
     }
 
+    const lowerType = typeVal.toLowerCase();
+    const lowerCat = catVal.toLowerCase();
     const combined = `${typeVal} ${catVal} ${titleVal} ${descVal}`.toLowerCase();
 
     // Matching for Online Consultation
     if (target.includes('online') || target.includes('video') || target.includes('phone')) {
       return (
+        lowerType.includes('online') ||
+        lowerType.includes('video') ||
+        lowerType.includes('phone') ||
+        lowerType.includes('tele') ||
+        lowerCat.includes('online') ||
         combined.includes('online') ||
         combined.includes('video') ||
         combined.includes('phone') ||
         combined.includes('tele') ||
         combined.includes('instant') ||
-        combined.includes('chat') ||
-        typeVal.toUpperCase() === 'ONLINE'
+        combined.includes('chat')
       );
     }
 
     // Matching for In-Person Visit
     if (target.includes('visit') || target.includes('person') || target.includes('physical')) {
       return (
+        lowerType.includes('visit') ||
+        lowerType.includes('person') ||
+        lowerType.includes('physical') ||
+        lowerCat.includes('visit') ||
+        lowerCat.includes('person') ||
+        lowerCat.includes('physical') ||
         combined.includes('visit') ||
         combined.includes('person') ||
         combined.includes('physical') ||
         combined.includes('clinic') ||
         combined.includes('home') ||
-        combined.includes('doorstep') ||
-        typeVal.toUpperCase() === 'PHYSICAL' ||
-        typeVal.toUpperCase() === 'PHYSICAL_VISIT'
+        combined.includes('doorstep')
       );
     }
 
     // Matching for AI / Insemination
     if (target.includes('ai') || target.includes('insemination') || target.includes('artificial')) {
       return (
-        /\bai\b/i.test(combined) ||
-        combined.includes('insemination') ||
+        lowerCat.includes('ai') ||
+        lowerCat.includes('artificial') ||
+        lowerCat.includes('inseminat') ||
+        lowerType.includes('ai') ||
+        lowerType.includes('artificial') ||
+        lowerType.includes('inseminat') ||
+        combined.includes('ai') ||
+        combined.includes('inseminat') ||
         combined.includes('artificial') ||
         combined.includes('semen') ||
-        combined.includes('breeding') ||
-        typeVal.toUpperCase() === 'AI' ||
-        catVal.toUpperCase() === 'AI' ||
-        catVal.toUpperCase() === 'ARTIFICIAL_INSEMINATION'
+        combined.includes('breed')
       );
     }
 
     // Matching for Vaccination
     if (target.includes('vaccin') || target.includes('vacc') || target.includes('tika')) {
       return (
-        combined.includes('vaccin') ||
+        lowerCat.includes('vacc') ||
+        lowerType.includes('vacc') ||
         combined.includes('vacc') ||
         combined.includes('tika') ||
         combined.includes('booster') ||
-        combined.includes('immun') ||
-        catVal.toUpperCase() === 'VACCINATION' ||
-        typeVal.toUpperCase() === 'VACCINATION'
+        combined.includes('immun')
       );
     }
 
