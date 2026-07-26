@@ -12,7 +12,7 @@ import { useFilters } from '../../context/FilterContext';
 import { applyGlobalFilters } from '../../utils/filterUtils';
 
 const FinancialOverview = () => {
-  const { dateRange, stateFilter, serviceFilter } = useFilters();
+  const { dateRange, stateFilter, serviceFilter, customStartDate, customEndDate } = useFilters();
   const [stats, setStats] = useState<any>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [payouts, setPayouts] = useState<any[]>([]);
@@ -47,12 +47,12 @@ const FinancialOverview = () => {
   };
 
   const filteredPayments = useMemo(() => {
-    return applyGlobalFilters(payments, { dateRange, stateFilter, serviceFilter });
-  }, [payments, dateRange, stateFilter, serviceFilter]);
+    return applyGlobalFilters(payments, { dateRange, stateFilter, serviceFilter, customStartDate, customEndDate });
+  }, [payments, dateRange, stateFilter, serviceFilter, customStartDate, customEndDate]);
 
   const filteredPayouts = useMemo(() => {
-    return applyGlobalFilters(payouts, { dateRange, stateFilter, serviceFilter });
-  }, [payouts, dateRange, stateFilter, serviceFilter]);
+    return applyGlobalFilters(payouts, { dateRange, stateFilter, serviceFilter, customStartDate, customEndDate });
+  }, [payouts, dateRange, stateFilter, serviceFilter, customStartDate, customEndDate]);
 
   const finStats = useMemo(() => {
     if (!stats) return null;

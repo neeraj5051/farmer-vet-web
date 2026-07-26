@@ -8,6 +8,11 @@ interface FilterContextType {
   setStateFilter: (val: string) => void;
   serviceFilter: string;
   setServiceFilter: (val: string) => void;
+  customStartDate: string;
+  setCustomStartDate: (val: string) => void;
+  customEndDate: string;
+  setCustomEndDate: (val: string) => void;
+  setCustomDateRange: (start: string, end: string) => void;
   resetFilters: () => void;
   isFiltered: boolean;
 }
@@ -18,13 +23,23 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
   const [dateRange, setDateRange] = useState('Today');
   const [stateFilter, setStateFilter] = useState('All States');
   const [serviceFilter, setServiceFilter] = useState('All Services');
+  const [customStartDate, setCustomStartDate] = useState('');
+  const [customEndDate, setCustomEndDate] = useState('');
 
-  const isFiltered = dateRange !== 'Today' || stateFilter !== 'All States' || serviceFilter !== 'All Services';
+  const isFiltered = dateRange !== 'Today' || stateFilter !== 'All States' || serviceFilter !== 'All Services' || !!customStartDate || !!customEndDate;
+
+  const setCustomDateRange = (start: string, end: string) => {
+    setCustomStartDate(start);
+    setCustomEndDate(end);
+    setDateRange('Custom');
+  };
 
   const resetFilters = () => {
     setDateRange('Today');
     setStateFilter('All States');
     setServiceFilter('All Services');
+    setCustomStartDate('');
+    setCustomEndDate('');
   };
 
   return (
@@ -36,6 +51,11 @@ export const FilterProvider = ({ children }: { children: ReactNode }) => {
         setStateFilter, 
         serviceFilter, 
         setServiceFilter,
+        customStartDate,
+        setCustomStartDate,
+        customEndDate,
+        setCustomEndDate,
+        setCustomDateRange,
         resetFilters,
         isFiltered
       }}

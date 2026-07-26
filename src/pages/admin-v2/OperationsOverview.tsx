@@ -13,7 +13,7 @@ import { useFilters } from '../../context/FilterContext';
 import { applyGlobalFilters } from '../../utils/filterUtils';
 
 const OperationsOverview = () => {
-  const { dateRange, stateFilter, serviceFilter } = useFilters();
+  const { dateRange, stateFilter, serviceFilter, customStartDate, customEndDate } = useFilters();
   const [stats, setStats] = useState<any>(null);
   const [consults, setConsults] = useState<any[]>([]);
   const [farmerCount, setFarmerCount] = useState(0);
@@ -44,8 +44,8 @@ const OperationsOverview = () => {
 
   // Apply global filters from Topbar
   const filteredConsults = useMemo(() => {
-    return applyGlobalFilters(consults, { dateRange, stateFilter, serviceFilter });
-  }, [consults, dateRange, stateFilter, serviceFilter]);
+    return applyGlobalFilters(consults, { dateRange, stateFilter, serviceFilter, customStartDate, customEndDate });
+  }, [consults, dateRange, stateFilter, serviceFilter, customStartDate, customEndDate]);
 
   const opStats = useMemo(() => {
     if (!stats) return null;
