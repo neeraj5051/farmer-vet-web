@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar as CalendarIcon, ChevronLeft, ChevronRight, X, Check } from 'lucide-react';
+import { Calendar as CalendarIcon, X, Check } from 'lucide-react';
 
 interface DateRangeCalendarModalProps {
   isOpen: boolean;
@@ -299,10 +299,14 @@ export const DateRangeCalendarModal: React.FC<DateRangeCalendarModalProps> = ({
               <span style={{ fontSize: '0.98rem', fontWeight: 700, color: '#0f172a' }}>{monthName}</span>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <button type="button" className="calendar-modal-btn" onClick={prevMonth} style={navBtnStyle} title="Previous Month">
-                  <ChevronLeft size={18} style={{ stroke: '#0f172a', color: '#0f172a', strokeWidth: 2.5 }} />
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: 'auto' }}>
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                  </svg>
                 </button>
                 <button type="button" className="calendar-modal-btn" onClick={nextMonth} style={navBtnStyle} title="Next Month">
-                  <ChevronRight size={18} style={{ stroke: '#0f172a', color: '#0f172a', strokeWidth: 2.5 }} />
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: 'auto' }}>
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
                 </button>
               </div>
             </div>
