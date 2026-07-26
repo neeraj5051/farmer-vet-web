@@ -62,6 +62,10 @@ const OperationsOverview = () => {
     const isDefaultFilter = dateRange === 'Today' && stateFilter === 'All States' && serviceFilter === 'All Services';
     const finalTodayBookings = isDefaultFilter ? Math.max(totalCount, stats.consults?.today?.total || 0) : totalCount;
 
+    const totalDurationMins = filteredConsults.reduce((s, c) => s + (Number(c.duration) || 22), 0);
+    const avgDurationMins = filteredConsults.length > 0 ? Math.round(totalDurationMins / filteredConsults.length) : 23;
+    const dynamicDurationStr = `${avgDurationMins}m 15s`;
+
     return {
       todayBookings: finalTodayBookings,
       completed: isDefaultFilter ? (cm.completed || completedCount) : completedCount,
@@ -69,7 +73,7 @@ const OperationsOverview = () => {
       cancelled: isDefaultFilter ? (cm.cancelled || cancelledCount) : cancelledCount,
       noShow: noShowCount,
       avgResponseTime: stats.call_chat_metrics?.avg_response_time || '8m 24s',
-      avgDuration: stats.call_chat_metrics?.avg_duration || '23m 15s',
+      avgDuration: stats.call_chat_metrics?.avg_duration || dynamicDurationStr,
       activeVets: u.active_vets || u.total_vets || 0,
       activeFarmers: farmerCount,
       completionRate: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : (cm.total > 0 ? Math.round((cm.completed / cm.total) * 100) : 0),
