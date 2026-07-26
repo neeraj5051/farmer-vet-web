@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import './AdminLayoutV2.css';
 import { FilterProvider, useFilters } from '../context/FilterContext';
+import { DateRangeCalendarModal } from '../components/admin-v2/DateRangeCalendarModal';
 
 const NAV_SECTIONS = [
   {
@@ -64,8 +65,6 @@ const AdminLayoutContent = () => {
   } = useFilters();
 
   const [showCustomDateModal, setShowCustomDateModal] = useState(false);
-  const [tempStart, setTempStart] = useState(customStartDate || new Date().toISOString().slice(0, 10));
-  const [tempEnd, setTempEnd] = useState(customEndDate || new Date().toISOString().slice(0, 10));
 
   const handleDateSelectChange = (val: string) => {
     if (val === 'Custom') {
@@ -183,167 +182,14 @@ const AdminLayoutContent = () => {
             )}
           </div>
 
-          {/* Custom Date Range Modal */}
-          {showCustomDateModal && (
-            <div style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              backgroundColor: 'rgba(0,0,0,0.4)',
-              zIndex: 9999,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              padding: '20px'
-            }}>
-              <div style={{
-                backgroundColor: 'var(--card-white)',
-                borderRadius: '12px',
-                width: '100%',
-                maxWidth: '420px',
-                padding: '24px',
-                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                border: '1px solid var(--border-color)'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Calendar size={20} color="var(--humal-green)" />
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Select Custom Date Range</h3>
-                  </div>
-                  <button 
-                    onClick={() => setShowCustomDateModal(false)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', padding: '4px' }}
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-
-                {/* Preset range quick buttons */}
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const today = new Date();
-                      const start = new Date(today.getTime() - 7 * 86400000);
-                      setTempStart(start.toISOString().slice(0, 10));
-                      setTempEnd(today.toISOString().slice(0, 10));
-                    }}
-                    style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-light)', cursor: 'pointer', fontWeight: 500 }}
-                  >
-                    Last 7 Days
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const today = new Date();
-                      const start = new Date(today.getTime() - 30 * 86400000);
-                      setTempStart(start.toISOString().slice(0, 10));
-                      setTempEnd(today.toISOString().slice(0, 10));
-                    }}
-                    style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-light)', cursor: 'pointer', fontWeight: 500 }}
-                  >
-                    Last 30 Days
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const today = new Date();
-                      const start = new Date(today.getFullYear(), today.getMonth(), 1);
-                      setTempStart(start.toISOString().slice(0, 10));
-                      setTempEnd(today.toISOString().slice(0, 10));
-                    }}
-                    style={{ padding: '6px 12px', fontSize: '0.8rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--bg-light)', cursor: 'pointer', fontWeight: 500 }}
-                  >
-                    This Month
-                  </button>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      From Date (Start)
-                    </label>
-                    <input 
-                      type="date"
-                      value={tempStart}
-                      onChange={e => setTempStart(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        fontSize: '0.9rem',
-                        outline: 'none',
-                        backgroundColor: 'var(--card-white)',
-                        color: 'var(--text-primary)'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '6px' }}>
-                      To Date (End)
-                    </label>
-                    <input 
-                      type="date"
-                      value={tempEnd}
-                      onChange={e => setTempEnd(e.target.value)}
-                      style={{
-                        width: '100%',
-                        padding: '10px 12px',
-                        borderRadius: '8px',
-                        border: '1px solid var(--border-color)',
-                        fontSize: '0.9rem',
-                        outline: 'none',
-                        backgroundColor: 'var(--card-white)',
-                        color: 'var(--text-primary)'
-                      }}
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '12px' }}>
-                  <button
-                    type="button"
-                    onClick={() => setShowCustomDateModal(false)}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      border: '1px solid var(--border-color)',
-                      backgroundColor: 'transparent',
-                      color: 'var(--text-secondary)',
-                      fontWeight: 500,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (tempStart && tempEnd) {
-                        setCustomDateRange(tempStart, tempEnd);
-                        setShowCustomDateModal(false);
-                      }
-                    }}
-                    disabled={!tempStart || !tempEnd}
-                    style={{
-                      padding: '8px 16px',
-                      borderRadius: '6px',
-                      border: 'none',
-                      backgroundColor: tempStart && tempEnd ? 'var(--humal-green)' : '#ccc',
-                      color: '#fff',
-                      fontWeight: 600,
-                      cursor: tempStart && tempEnd ? 'pointer' : 'not-allowed'
-                    }}
-                  >
-                    Apply Range
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Custom Visual Interactive Date Range Calendar Modal */}
+          <DateRangeCalendarModal
+            isOpen={showCustomDateModal}
+            onClose={() => setShowCustomDateModal(false)}
+            startDate={customStartDate}
+            endDate={customEndDate}
+            onApply={(start, end) => setCustomDateRange(start, end)}
+          />
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)' }}>
             <Bell size={20} style={{ cursor: 'pointer' }} />
