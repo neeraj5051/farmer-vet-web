@@ -238,11 +238,11 @@ export const DateRangeCalendarModal: React.FC<DateRangeCalendarModalProps> = ({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#64748b',
+              color: '#334155',
               transition: 'all 0.15s ease'
             }}
           >
-            <X size={18} />
+            <X size={18} color="#334155" stroke="#334155" strokeWidth={2.5} />
           </button>
         </div>
 
@@ -284,7 +284,7 @@ export const DateRangeCalendarModal: React.FC<DateRangeCalendarModalProps> = ({
                   }}
                 >
                   <span>{p.label}</span>
-                  {isActive && <Check size={14} color="#0d5c3a" />}
+                  {isActive && <Check size={14} color="#0d5c3a" stroke="#0d5c3a" strokeWidth={2.5} />}
                 </button>
               );
             })}
@@ -297,10 +297,10 @@ export const DateRangeCalendarModal: React.FC<DateRangeCalendarModalProps> = ({
               <span style={{ fontSize: '0.98rem', fontWeight: 700, color: '#0f172a' }}>{monthName}</span>
               <div style={{ display: 'flex', gap: '6px' }}>
                 <button type="button" onClick={prevMonth} style={navBtnStyle} title="Previous Month">
-                  <ChevronLeft size={16} color="#334155" />
+                  <ChevronLeft size={18} color="#1e293b" stroke="#1e293b" strokeWidth={2.5} />
                 </button>
                 <button type="button" onClick={nextMonth} style={navBtnStyle} title="Next Month">
-                  <ChevronRight size={16} color="#334155" />
+                  <ChevronRight size={18} color="#1e293b" stroke="#1e293b" strokeWidth={2.5} />
                 </button>
               </div>
             </div>
@@ -457,14 +457,16 @@ export const DateRangeCalendarModal: React.FC<DateRangeCalendarModalProps> = ({
 };
 
 const navBtnStyle: React.CSSProperties = {
-  width: 30,
-  height: 30,
+  width: 32,
+  height: 32,
   borderRadius: '8px',
   border: '1px solid #cbd5e1',
-  backgroundColor: '#ffffff',
+  backgroundColor: '#f8fafc',
+  color: '#0f172a',
   cursor: 'pointer',
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  transition: 'all 0.15s ease'
+  transition: 'all 0.15s ease',
+  boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
 };
