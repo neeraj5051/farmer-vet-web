@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 interface TopCitiesListProps {
   data?: { city: string; count: number }[];
@@ -9,10 +10,16 @@ const defaultData = [
   { city: 'Nalanda', count: 26 },
   { city: 'Jehanabad', count: 16 },
   { city: 'Patna', count: 8 },
+  { city: 'Ludhiana', count: 6 },
+  { city: 'Karnal', count: 5 },
+  { city: 'Anand', count: 4 },
+  { city: 'Jaipur', count: 3 }
 ];
 
 const TopCitiesList: React.FC<TopCitiesListProps> = ({ data }) => {
+  const [expanded, setExpanded] = useState(false);
   const cities = data && data.length > 0 ? data : defaultData;
+  const visibleCities = expanded ? cities : cities.slice(0, 4);
 
   return (
     <div style={{
@@ -21,19 +28,25 @@ const TopCitiesList: React.FC<TopCitiesListProps> = ({ data }) => {
       borderRadius: '12px',
       padding: '24px',
       boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
-      height: '380px',
+      minHeight: '380px',
       display: 'flex',
-      flexDirection: 'column'
+      flexDirection: 'column',
+      transition: 'all 0.2s ease'
     }}>
-      <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: '0 0 20px 0' }}>Top Cities by Bookings</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>Top Cities by Bookings</h3>
+        <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--humal-green)', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '2px 8px', borderRadius: '12px' }}>
+          {cities.length} Cities
+        </span>
+      </div>
       
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '16px' }}>
-        {cities.slice(0, 5).map((item, i) => (
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto' }}>
+        {visibleCities.map((item, i) => (
           <div key={item.city} style={{
             display: 'flex',
             alignItems: 'center',
             gap: '16px',
-            padding: '12px 16px',
+            padding: '10px 14px',
             borderRadius: '10px',
             backgroundColor: i === 0 ? 'rgba(16, 185, 129, 0.06)' : 'transparent',
             transition: 'background-color 0.15s'
@@ -56,26 +69,36 @@ const TopCitiesList: React.FC<TopCitiesListProps> = ({ data }) => {
             <span style={{ flex: 1, fontWeight: 500, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
               {item.city}
             </span>
-            <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text-primary)' }}>
+            <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
               {item.count}
             </span>
           </div>
         ))}
       </div>
 
-      <button style={{ 
-        width: '100%', 
-        padding: '10px', 
-        border: '1px solid var(--border-color)', 
-        borderRadius: '8px', 
-        background: 'none', 
-        color: 'var(--text-secondary)', 
-        fontWeight: 600, 
-        fontSize: '0.85rem', 
-        cursor: 'pointer',
-        marginTop: '8px'
-      }}>
-        View All Cities
+      <button 
+        type="button"
+        onClick={() => setExpanded(prev => !prev)}
+        style={{ 
+          width: '100%', 
+          padding: '10px', 
+          border: '1px solid var(--border-color)', 
+          borderRadius: '8px', 
+          background: '#f8fafc', 
+          color: 'var(--text-primary)', 
+          fontWeight: 600, 
+          fontSize: '0.85rem', 
+          cursor: 'pointer',
+          marginTop: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '6px',
+          transition: 'all 0.15s ease'
+        }}
+      >
+        <span>{expanded ? 'Show Top 4 Cities' : 'View All Cities'}</span>
+        {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </button>
     </div>
   );
