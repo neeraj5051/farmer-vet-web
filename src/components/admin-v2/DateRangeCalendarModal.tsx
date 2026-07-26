@@ -227,22 +227,24 @@ export const DateRangeCalendarModal: React.FC<DateRangeCalendarModalProps> = ({
           </div>
           <button 
             type="button"
+            className="calendar-modal-btn"
             onClick={onClose}
             style={{
-              background: '#f8fafc',
-              border: '1px solid #e2e8f0',
+              backgroundColor: '#f1f5f9',
+              border: '1px solid #cbd5e1',
               borderRadius: '50%',
               width: 34,
               height: 34,
+              padding: 0,
               cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#334155',
+              color: '#0f172a',
               transition: 'all 0.15s ease'
             }}
           >
-            <X size={18} color="#334155" stroke="#334155" strokeWidth={2.5} />
+            <X size={18} style={{ stroke: '#0f172a', color: '#0f172a', strokeWidth: 2.5 }} />
           </button>
         </div>
 
@@ -284,7 +286,7 @@ export const DateRangeCalendarModal: React.FC<DateRangeCalendarModalProps> = ({
                   }}
                 >
                   <span>{p.label}</span>
-                  {isActive && <Check size={14} color="#0d5c3a" stroke="#0d5c3a" strokeWidth={2.5} />}
+                  {isActive && <Check size={14} style={{ stroke: '#0d5c3a', color: '#0d5c3a', strokeWidth: 2.5 }} />}
                 </button>
               );
             })}
@@ -296,11 +298,11 @@ export const DateRangeCalendarModal: React.FC<DateRangeCalendarModalProps> = ({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
               <span style={{ fontSize: '0.98rem', fontWeight: 700, color: '#0f172a' }}>{monthName}</span>
               <div style={{ display: 'flex', gap: '6px' }}>
-                <button type="button" onClick={prevMonth} style={navBtnStyle} title="Previous Month">
-                  <ChevronLeft size={18} color="#1e293b" stroke="#1e293b" strokeWidth={2.5} />
+                <button type="button" className="calendar-modal-btn" onClick={prevMonth} style={navBtnStyle} title="Previous Month">
+                  <ChevronLeft size={18} style={{ stroke: '#0f172a', color: '#0f172a', strokeWidth: 2.5 }} />
                 </button>
-                <button type="button" onClick={nextMonth} style={navBtnStyle} title="Next Month">
-                  <ChevronRight size={18} color="#1e293b" stroke="#1e293b" strokeWidth={2.5} />
+                <button type="button" className="calendar-modal-btn" onClick={nextMonth} style={navBtnStyle} title="Next Month">
+                  <ChevronRight size={18} style={{ stroke: '#0f172a', color: '#0f172a', strokeWidth: 2.5 }} />
                 </button>
               </div>
             </div>
