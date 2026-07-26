@@ -4,12 +4,12 @@ import { Search, Download, Loader2, Eye, X, Users, UserPlus, UserCheck, Repeat }
 import '../../components/admin-v2/ListScreens.css';
 
 import { useFilters } from '../../context/FilterContext';
-import { applyGlobalFilters } from '../../utils/filterUtils';
+import { filterByState } from '../../utils/filterUtils';
 
 const PAGE_SIZE = 10;
 
 const FarmersScreen = () => {
-  const { dateRange, stateFilter, serviceFilter } = useFilters();
+  const { stateFilter } = useFilters();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -33,8 +33,13 @@ const FarmersScreen = () => {
   }, []);
 
   const filtered = useMemo(() => {
-    let result = applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter });
-    if (statusFilter === 'active') result = result.filter(f => f.is_active === true);
+    let result = [...data];
+
+    if (stateFilter && stateFilter !== 'All States' && stateFilter !== 'all') {
+      result = filterByState(result, stateFilter);
+    }
+
+    if (statusFilter === 'active') result = result.filter(f => f.is_active !== false);
     else if (statusFilter === 'inactive') result = result.filter(f => f.is_active === false);
 
     if (searchTerm.trim()) {
@@ -43,11 +48,13 @@ const FarmersScreen = () => {
         f.first_name?.toLowerCase().includes(q) ||
         f.last_name?.toLowerCase().includes(q) ||
         f.phone?.includes(q) ||
-        f.district?.toLowerCase().includes(q)
+        f.district?.toLowerCase().includes(q) ||
+        f.village?.toLowerCase().includes(q) ||
+        f.state?.toLowerCase().includes(q)
       );
     }
     return result;
-  }, [data, statusFilter, searchTerm, dateRange, stateFilter, serviceFilter]);
+  }, [data, statusFilter, searchTerm, stateFilter]);
 
   const stats = useMemo(() => {
     const now = new Date();
