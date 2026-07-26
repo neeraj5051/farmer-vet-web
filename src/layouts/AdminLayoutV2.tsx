@@ -13,8 +13,7 @@ import {
   Menu,
   Bell,
   User,
-  Calendar,
-  X
+  Calendar
 } from 'lucide-react';
 import './AdminLayoutV2.css';
 import { FilterProvider, useFilters } from '../context/FilterContext';

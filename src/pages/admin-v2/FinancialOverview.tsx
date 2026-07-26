@@ -57,7 +57,6 @@ const FinancialOverview = () => {
   const finStats = useMemo(() => {
     if (!stats) return null;
     const rev = stats.revenue || {};
-    const rm = stats.revenue_metrics || {};
     const todayRev = rev.today || {};
     const allTimeRev = rev.all_time || {};
 
