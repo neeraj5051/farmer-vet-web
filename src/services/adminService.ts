@@ -10,9 +10,48 @@ export const getPayouts = async () => {
     return response.data;
 };
 
-
 export const getVets = async () => {
     const response = await api.get('/admin/vets');
+    return response.data;
+};
+
+export const getDiseases = async () => {
+    const response = await api.get('/diseases');
+    return response.data;
+};
+
+export const getArticles = async () => {
+    const response = await api.get('/articles');
+    return response.data;
+};
+
+export const getVaccines = async () => {
+    const response = await api.get('/vaccines');
+    return response.data;
+};
+
+export const getFees = async () => {
+    const response = await api.get('/admin/fees');
+    return response.data;
+};
+
+export const updateFeeConfig = async (category: string, feeData: Record<string, any>) => {
+    const response = await api.put(`/admin/fees/${category}`, feeData);
+    return response.data;
+};
+
+export const getServiceCards = async () => {
+    const response = await api.get('/service-cards');
+    return response.data;
+};
+
+export const getSupportTickets = async () => {
+    const response = await api.get('/admin/tickets');
+    return response.data;
+};
+
+export const updateSupportTicket = async (ticketId: string, status: string, responseText?: string) => {
+    const response = await api.put(`/admin/tickets/${ticketId}`, { status, response: responseText });
     return response.data;
 };
 

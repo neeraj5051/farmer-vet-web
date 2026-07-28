@@ -30,6 +30,15 @@ import BookingsScreen from './pages/admin-v2/BookingsScreen';
 import ConsultationsScreen from './pages/admin-v2/ConsultationsScreen';
 import FarmersScreen from './pages/admin-v2/FarmersScreen';
 import VetsScreen from './pages/admin-v2/VetsScreen';
+import DiseasesScreen from './pages/admin-v2/DiseasesScreen';
+import ArticlesScreen from './pages/admin-v2/ArticlesScreen';
+import VaccinesScreen from './pages/admin-v2/VaccinesScreen';
+import FeesScreen from './pages/admin-v2/FeesScreen';
+import ServiceCardsScreen from './pages/admin-v2/ServiceCardsScreen';
+import SupportTicketsScreen from './pages/admin-v2/SupportTicketsScreen';
+import ServicesScreen from './pages/admin-v2/ServicesScreen';
+import ReportsScreen from './pages/admin-v2/ReportsScreen';
+import SettingsScreen from './pages/admin-v2/SettingsScreen';
 // Protected Route Wrapper
 const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
   const { token, loading } = useAuth();
@@ -118,8 +127,17 @@ const AppRoutes = () => {
         <Route path="consultations" element={<ConsultationsScreen />} />
         <Route path="farmers" element={<FarmersScreen />} />
         <Route path="vets" element={<VetsScreen />} />
+        <Route path="diseases" element={<DiseasesScreen />} />
+        <Route path="articles" element={<ArticlesScreen />} />
+        <Route path="vaccines" element={<VaccinesScreen />} />
+        <Route path="fees" element={<FeesScreen />} />
+        <Route path="service-cards" element={<ServiceCardsScreen />} />
+        <Route path="support" element={<SupportTicketsScreen />} />
+        <Route path="services" element={<ServicesScreen />} />
+        <Route path="reports" element={<ReportsScreen />} />
+        <Route path="settings" element={<SettingsScreen />} />
         {/* Stub routes for remaining pages */}
-        <Route path="*" element={<div style={{padding: 24}}>Content coming soon in subsequent phases.</div>} />
+        <Route path="*" element={<Navigate to="operations" replace />} />
       </Route>
 
       {/* Protected Support Executive route */}

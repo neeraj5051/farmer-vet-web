@@ -13,7 +13,14 @@ import {
   Menu,
   Bell,
   User,
-  Calendar
+  Calendar,
+  Stethoscope,
+  BookOpen,
+  Syringe,
+  Percent,
+  LayoutGrid,
+  Headphones,
+  Settings2
 } from 'lucide-react';
 import './AdminLayoutV2.css';
 import { FilterProvider, useFilters } from '../context/FilterContext';
@@ -28,6 +35,7 @@ const NAV_SECTIONS = [
       { to: '/admin-v2/consultations', label: 'Consultations', icon: Video },
       { to: '/admin-v2/farmers', label: 'Farmers', icon: Users },
       { to: '/admin-v2/vets', label: 'Veterinarians', icon: UserSquare2 },
+      { to: '/admin-v2/support', label: 'Support Tickets', icon: Headphones },
     ],
   },
   {
@@ -37,12 +45,24 @@ const NAV_SECTIONS = [
       { to: '/admin-v2/revenue', label: 'Revenue', icon: IndianRupee },
       { to: '/admin-v2/payouts', label: 'Vet Payouts', icon: CreditCard },
       { to: '/admin-v2/transactions', label: 'Transactions', icon: FileText },
+      { to: '/admin-v2/fees', label: 'Platform Fees', icon: Percent },
     ],
   },
   {
-    label: 'Reports',
+    label: 'Catalogs & Content',
     items: [
-      { to: '/admin-v2/reports', label: 'Reports & Downloads', icon: FileText },
+      { to: '/admin-v2/diseases', label: 'Disease Catalog', icon: Stethoscope },
+      { to: '/admin-v2/vaccines', label: 'Vaccine Catalog', icon: Syringe },
+      { to: '/admin-v2/articles', label: 'Articles & Advisory', icon: BookOpen },
+      { to: '/admin-v2/service-cards', label: 'Service Action Cards', icon: LayoutGrid },
+      { to: '/admin-v2/services', label: 'Global Services', icon: Settings2 },
+    ],
+  },
+  {
+    label: 'Reports & Settings',
+    items: [
+      { to: '/admin-v2/reports', label: 'Reports & Exports', icon: FileText },
+      { to: '/admin-v2/settings', label: 'System Settings', icon: Settings },
     ],
   },
 ];
