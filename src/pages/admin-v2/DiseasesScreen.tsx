@@ -873,53 +873,66 @@ const DiseasesScreen = () => {
         </div>
       )}
 
-      {/* TAB 2: CATEGORY GROUPS GRID */}
+      {/* TAB 2: CATEGORY GROUPS TABLE */}
       {activeTab === 'groups' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-          {filteredGroups.map(g => {
-            const count = diseases.filter(d => d.group_id === g.id).length;
-            const imgUrl = getImageVariantUrl(g.image_path, 'medium');
-            return (
-              <div key={g.id} style={{ background: 'var(--card-white)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 20, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <div style={{ width: 42, height: 42, borderRadius: 8, backgroundColor: '#e6f0eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem' }}>
-                        {g.icon_emoji || '🐄'}
-                      </div>
-                      <div>
-                        <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 600 }}>{g.name}</h3>
-                        {g.name_hi && <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{g.name_hi}</p>}
-                      </div>
-                    </div>
-                    <span className="list-status-badge" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>
-                      {count} {count === 1 ? 'Disease' : 'Diseases'}
-                    </span>
-                  </div>
-
-                  {imgUrl && (
-                    <img src={imgUrl} alt={g.name} style={{ width: '100%', height: 100, borderRadius: 6, objectFit: 'cover', margin: '8px 0' }} />
-                  )}
-
-                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', lineHeight: 1.5, margin: '8px 0 0 0' }}>
-                    {g.description || 'No description provided.'}
-                  </p>
-                </div>
-
-                <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid var(--border-color)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-                  <button onClick={() => openEditGroupModal(g)} className="export-btn" style={{ padding: '6px 12px', backgroundColor: '#e6f0eb', color: '#0a4f32' }}>
-                    <Edit3 size={14} /> Edit
-                  </button>
-                  <button onClick={() => handleDeleteGroupClick(g.id)} className="export-btn" style={{ padding: '6px 12px', backgroundColor: '#fee2e2', color: '#ef4444' }}>
-                    <Trash2 size={14} /> Delete
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-          {filteredGroups.length === 0 && (
-            <div className="list-empty" style={{ gridColumn: '1 / -1' }}>No category groups defined yet.</div>
-          )}
+        <div className="list-table-card">
+          <div style={{ overflowX: 'auto' }}>
+            <table className="list-table">
+              <thead>
+                <tr>
+                  <th>Group Name</th>
+                  <th>Hindi Name</th>
+                  <th>Description</th>
+                  <th>Associated Diseases</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredGroups.map(g => {
+                  const count = diseases.filter(d => d.group_id === g.id).length;
+                  const imgUrl = getImageVariantUrl(g.image_path, 'medium');
+                  return (
+                    <tr key={g.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {imgUrl ? (
+                            <img src={imgUrl} alt={g.name} style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover' }} />
+                          ) : (
+                            <div style={{ width: 36, height: 36, borderRadius: 6, backgroundColor: '#e6f0eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
+                              {g.icon_emoji || '🐄'}
+                            </div>
+                          )}
+                          <div style={{ fontWeight: 600 }}>{g.name}</div>
+                        </div>
+                      </td>
+                      <td style={{ color: 'var(--text-secondary)' }}>{g.name_hi || '—'}</td>
+                      <td style={{ color: 'var(--text-secondary)', maxWidth: 280, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {g.description || 'No description provided.'}
+                      </td>
+                      <td>
+                        <span className="list-status-badge" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>
+                          {count} {count === 1 ? 'Disease' : 'Diseases'}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <button onClick={() => openEditGroupModal(g)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--humal-green)' }} title="Edit group">
+                            <Edit3 size={18} />
+                          </button>
+                          <button onClick={() => handleDeleteGroupClick(g.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="Delete group">
+                            <Trash2 size={18} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {filteredGroups.length === 0 && (
+                  <tr><td colSpan={5} className="list-empty">No category groups found.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -1247,38 +1260,121 @@ const DiseasesScreen = () => {
 
       {/* GROUP MODAL */}
       {isGroupModalOpen && (
-        <>
-          <div className="profile-drawer-overlay" onClick={() => setIsGroupModalOpen(false)} />
-          <div className="profile-drawer" style={{ width: 460 }}>
-            <div className="drawer-header">
-              <div className="drawer-name">{editingGroup ? 'Edit Category Group' : 'Add Category Group'}</div>
-              <button className="drawer-close" onClick={() => setIsGroupModalOpen(false)}><X size={20} /></button>
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(15, 23, 42, 0.4)', 
+            backdropFilter: 'blur(8px)', 
+            zIndex: 9999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            padding: 24 
+          }}
+          onClick={() => setIsGroupModalOpen(false)}
+        >
+          <div 
+            style={{ 
+              backgroundColor: '#fff', 
+              borderRadius: 16, 
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', 
+              width: '100%', 
+              maxWidth: 540, 
+              maxHeight: '85vh', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden',
+              border: '1px solid var(--border-color)' 
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div 
+              style={{ 
+                padding: '20px 24px', 
+                borderBottom: '1px solid var(--border-color)', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                backgroundColor: '#fafafa'
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {editingGroup ? 'Edit Category Group' : 'Add Category Group'}
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  Configure disease grouping classifications.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsGroupModalOpen(false)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
             </div>
-            <form onSubmit={handleGroupSave} className="drawer-body" style={{ gap: 14, display: 'flex', flexDirection: 'column' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Group Name *</label>
-                <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Group Name (Hindi)</label>
-                <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={groupForm.name_hi} onChange={e => setGroupForm({ ...groupForm, name_hi: e.target.value })} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Icon Emoji</label>
-                <input type="text" className="filter-search" style={{ width: 80 }} value={groupForm.icon_emoji} onChange={e => setGroupForm({ ...groupForm, icon_emoji: e.target.value })} />
-              </div>
-              {renderImageUploader(groupForm.image_path, 'group')}
-              <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description</label>
-                <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 70 }} value={groupForm.description} onChange={e => setGroupForm({ ...groupForm, description: e.target.value })} />
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleGroupSave} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+              <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                
+                {/* Banner image at the top */}
+                {renderImageUploader(groupForm.image_path, 'group')}
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Group Name *</label>
+                    <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} placeholder="e.g. Digestive Disorders" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Icon Emoji</label>
+                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center' }} value={groupForm.icon_emoji} onChange={e => setGroupForm({ ...groupForm, icon_emoji: e.target.value })} placeholder="e.g. 🐄" />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Group Name (Hindi)</label>
+                  <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={groupForm.name_hi} onChange={e => setGroupForm({ ...groupForm, name_hi: e.target.value })} placeholder="हिंदी में श्रेणी समूह का नाम..." />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description</label>
+                  <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 80 }} value={groupForm.description} onChange={e => setGroupForm({ ...groupForm, description: e.target.value })} placeholder="Write group description..." />
+                </div>
               </div>
 
-              <button type="submit" className="export-btn" style={{ marginTop: 12 }}>
-                {editingGroup ? 'Update Category Group' : 'Create Category Group'}
-              </button>
+              {/* Modal Footer (Sticky) */}
+              <div 
+                style={{ 
+                  padding: '16px 24px', 
+                  borderTop: '1px solid var(--border-color)', 
+                  display: 'flex', 
+                  justifyContent: 'flex-end', 
+                  gap: 12,
+                  backgroundColor: '#fafafa'
+                }}
+              >
+                <button 
+                  type="button" 
+                  onClick={() => setIsGroupModalOpen(false)} 
+                  className="export-btn" 
+                  style={{ backgroundColor: '#fff', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="export-btn" 
+                  style={{ backgroundColor: 'var(--humal-green)', color: '#fff', border: 'none' }}
+                >
+                  {editingGroup ? 'Update Group' : 'Create Group'}
+                </button>
+              </div>
             </form>
           </div>
-        </>
+        </div>
       )}
 
       {/* DETAIL DRAWER */}
