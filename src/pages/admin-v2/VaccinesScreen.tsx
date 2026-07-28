@@ -653,8 +653,8 @@ const VaccinesScreen = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                       <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Prevented *</label>
-                        <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={vaccineForm.disease_name} onChange={e => setVaccineForm({ ...vaccineForm, disease_name: e.target.value })} placeholder="e.g. Brucellosis" />
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Prevented</label>
+                        <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={vaccineForm.disease_name} onChange={e => setVaccineForm({ ...vaccineForm, disease_name: e.target.value })} placeholder="e.g. Brucellosis" />
                       </div>
                       <div>
                         <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Target Animals</label>
