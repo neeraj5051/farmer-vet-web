@@ -768,6 +768,11 @@ const DiseasesScreen = () => {
                     </select>
                   </div>
 
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description *</label>
+                    <textarea required className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 80 }} value={diseaseForm.description} onChange={e => setDiseaseForm({ ...diseaseForm, description: e.target.value })} placeholder="Write comprehensive clinical description in English..." />
+                  </div>
+
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Body System</label>
@@ -864,6 +869,10 @@ const DiseasesScreen = () => {
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Name (Hindi)</label>
                     <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.name_hi} onChange={e => setDiseaseForm({ ...diseaseForm, name_hi: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description in Hindi (हिंदी विवरण)</label>
+                    <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 80 }} value={diseaseForm.description_hi} onChange={e => setDiseaseForm({ ...diseaseForm, description_hi: e.target.value })} placeholder="Write clinical description in Hindi..." />
                   </div>
                   <ChipsInput 
                     label="Symptoms in Hindi (हिंदी लक्षण)" 
