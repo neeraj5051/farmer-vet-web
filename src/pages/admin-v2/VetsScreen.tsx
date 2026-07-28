@@ -1,6 +1,24 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getVets } from '../../services/adminService';
-import { Search, Download, Loader2, Eye, X, UserSquare2, ShieldCheck, Wifi, Star } from 'lucide-react';
+import { 
+  getVets, 
+  updateVetProfile, 
+  approveVet, 
+  blockUser 
+} from '../../services/adminService';
+import { 
+  Search, 
+  Download, 
+  Loader2, 
+  Eye, 
+  X, 
+  UserSquare2, 
+  ShieldCheck, 
+  Wifi, 
+  Star, 
+  Edit3, 
+  Check, 
+  Ban 
+} from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
 
 import { useFilters } from '../../context/FilterContext';
@@ -19,18 +37,36 @@ const VetsScreen = () => {
   const [drawerTab, setDrawerTab] = useState('overview');
   const [page, setPage] = useState(1);
 
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingVet, setEditingVet] = useState<any>(null);
+  const [editForm, setEditForm] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    qualification: '',
+    specialization: '',
+    years_of_experience: 0,
+    license_number: '',
+    registration_state: '',
+    base_location: '',
+    is_active: true
+  });
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const result = await getVets();
+      setData(Array.isArray(result) ? result : []);
+    } catch (err) {
+      console.error('Error fetching vets:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result = await getVets();
-        setData(Array.isArray(result) ? result : []);
-      } catch (err) {
-        console.error('Error fetching vets:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    loadData();
   }, []);
 
   const specializations = useMemo(() => {
@@ -71,7 +107,75 @@ const VetsScreen = () => {
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  if (loading) return (
+  // Edit / Action triggers
+  const startEdit = (vet: any) => {
+    setEditingVet(vet);
+    setEditForm({
+      first_name: vet.first_name || '',
+      last_name: vet.last_name || '',
+      phone: vet.phone || '',
+      qualification: vet.qualification || '',
+      specialization: vet.specialization || '',
+      years_of_experience: vet.years_of_experience || 0,
+      license_number: vet.license_number || '',
+      registration_state: vet.registration_state || '',
+      base_location: vet.base_location || '',
+      is_active: vet.is_active ?? true
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editForm.first_name.trim()) return;
+    try {
+      await updateVetProfile(editingVet.id, {
+        ...editForm,
+        years_of_experience: Number(editForm.years_of_experience)
+      });
+      setIsEditModalOpen(false);
+      if (selectedVet && selectedVet.id === editingVet.id) {
+        setSelectedVet({ ...selectedVet, ...editForm });
+      }
+      await loadData();
+    } catch (err) {
+      console.error("Failed to update vet profile:", err);
+      alert("Failed to update profile.");
+    }
+  };
+
+  const handleVerification = async (id: string, status: 'verified' | 'rejected') => {
+    if (window.confirm(`Are you sure you want to ${status} this veterinarian?`)) {
+      try {
+        await approveVet(id, status);
+        if (selectedVet && selectedVet.id === id) {
+          setSelectedVet((prev: any) => ({ ...prev, verification_status: status }));
+        }
+        await loadData();
+      } catch (err) {
+        console.error("Failed to change verification status:", err);
+        alert("Action failed.");
+      }
+    }
+  };
+
+  const handleBlockToggle = async (id: string, currentActiveStatus: boolean) => {
+    const action = currentActiveStatus ? "block" : "activate";
+    if (window.confirm(`Are you sure you want to ${action} this veterinarian?`)) {
+      try {
+        await blockUser(id, currentActiveStatus); // API blocks when passed true/false based on target state
+        if (selectedVet && selectedVet.id === id) {
+          setSelectedVet((prev: any) => ({ ...prev, is_active: !currentActiveStatus }));
+        }
+        await loadData();
+      } catch (err) {
+        console.error("Failed to toggle block status:", err);
+        alert("Action failed.");
+      }
+    }
+  };
+
+  if (loading && data.length === 0) return (
     <div className="loading-spinner">
       <Loader2 size={36} />
       <p>Loading veterinarians...</p>
@@ -103,6 +207,32 @@ const VetsScreen = () => {
           <option value="pending">Pending Verification</option>
           <option value="active">Active</option>
         </select>
+        {(searchTerm || specFilter !== 'all' || statusFilter !== 'all') && (
+          <button 
+            type="button" 
+            onClick={() => {
+              setSearchTerm('');
+              setSpecFilter('all');
+              setStatusFilter('all');
+              setPage(1);
+            }}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: '#ef4444', 
+              fontSize: '0.82rem', 
+              fontWeight: 600, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '6px 12px',
+              marginLeft: 'auto'
+            }}
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -140,7 +270,7 @@ const VetsScreen = () => {
             </thead>
             <tbody>
               {paginated.map(v => (
-                <tr key={v.id} onClick={() => { setSelectedVet(v); setDrawerTab('overview'); }}>
+                <tr key={v.id}>
                   <td>
                     <div className="list-cell-name">
                       <div className="list-cell-avatar" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>
@@ -148,6 +278,7 @@ const VetsScreen = () => {
                       </div>
                       <div>
                         <div style={{ fontWeight: 500 }}>Dr. {v.first_name} {v.last_name}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{v.phone}</div>
                       </div>
                     </div>
                   </td>
@@ -171,9 +302,27 @@ const VetsScreen = () => {
                     </span>
                   </td>
                   <td>
-                    <button onClick={e => { e.stopPropagation(); setSelectedVet(v); setDrawerTab('overview'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                      <Eye size={18} />
-                    </button>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button onClick={() => { setSelectedVet(v); setDrawerTab('overview'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} title="View Details">
+                        <Eye size={18} />
+                      </button>
+                      <button onClick={() => startEdit(v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--humal-green)' }} title="Edit Profile">
+                        <Edit3 size={18} />
+                      </button>
+                      {v.verification_status === 'pending' && (
+                        <>
+                          <button onClick={() => handleVerification(v.id, 'verified')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#10b981' }} title="Approve Vet">
+                            <Check size={18} />
+                          </button>
+                          <button onClick={() => handleVerification(v.id, 'rejected')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="Reject Vet">
+                            <X size={18} />
+                          </button>
+                        </>
+                      )}
+                      <button onClick={() => handleBlockToggle(v.id, v.is_active)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: v.is_active ? '#ef4444' : '#10b981' }} title={v.is_active ? "Block Vet" : "Unblock Vet"}>
+                        <Ban size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -237,13 +386,24 @@ const VetsScreen = () => {
                     ['Average Rating', selectedVet.rating || '—'],
                     ['Total Earnings', selectedVet.total_earnings ? `₹${selectedVet.total_earnings.toLocaleString()}` : '—'],
                     ['Verification', selectedVet.verification_status || 'Pending'],
-                    ['Active', selectedVet.is_active ? 'Yes' : 'No'],
+                    ['Active Status', selectedVet.is_active ? 'Active' : 'Blocked'],
                   ].map(([label, value]) => (
                     <div key={label as string} className="drawer-detail-row">
                       <span className="drawer-detail-label">{label}</span>
                       <span className="drawer-detail-value">{String(value)}</span>
                     </div>
                   ))}
+                  <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+                    <button onClick={() => startEdit(selectedVet)} className="export-btn" style={{ flexGrow: 1, backgroundColor: 'var(--humal-green)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <Edit3 size={16} /> Edit Profile
+                    </button>
+                    {selectedVet.verification_status === 'pending' && (
+                      <>
+                        <button onClick={() => handleVerification(selectedVet.id, 'verified')} className="export-btn" style={{ backgroundColor: '#10b981', color: '#fff', border: 'none' }}>Approve</button>
+                        <button onClick={() => handleVerification(selectedVet.id, 'rejected')} className="export-btn" style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none' }}>Reject</button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="list-empty" style={{ padding: '40px 0' }}>
@@ -253,6 +413,155 @@ const VetsScreen = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* EDIT PROFILE MODAL */}
+      {isEditModalOpen && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(15, 23, 42, 0.4)', 
+            backdropFilter: 'blur(8px)', 
+            zIndex: 9999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            padding: 24 
+          }}
+          onClick={() => setIsEditModalOpen(false)}
+        >
+          <div 
+            style={{ 
+              backgroundColor: '#fff', 
+              borderRadius: 16, 
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', 
+              width: '100%', 
+              maxWidth: 580, 
+              maxHeight: '85vh', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden',
+              border: '1px solid var(--border-color)' 
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div 
+              style={{ 
+                padding: '20px 24px', 
+                borderBottom: '1px solid var(--border-color)', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                backgroundColor: '#fafafa'
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Edit Veterinarian Profile
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  Modify professional qualification credentials and active status.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsEditModalOpen(false)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+              <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>First Name *</label>
+                    <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Last Name</label>
+                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Phone *</label>
+                  <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Qualification</label>
+                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.qualification} onChange={e => setEditForm({ ...editForm, qualification: e.target.value })} placeholder="e.g. BVSc & AH" />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Years of Experience</label>
+                    <input type="number" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.years_of_experience} onChange={e => setEditForm({ ...editForm, years_of_experience: Number(e.target.value) })} />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Specialization</label>
+                  <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.specialization} onChange={e => setEditForm({ ...editForm, specialization: e.target.value })} placeholder="e.g. Surgery, Cattle breeding" />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>License Number</label>
+                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.license_number} onChange={e => setEditForm({ ...editForm, license_number: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Registration State</label>
+                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.registration_state} onChange={e => setEditForm({ ...editForm, registration_state: e.target.value })} />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Base Location (City/District)</label>
+                  <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.base_location} onChange={e => setEditForm({ ...editForm, base_location: e.target.value })} placeholder="e.g. Lucknow" />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" id="vet_is_active" checked={editForm.is_active} onChange={e => setEditForm({ ...editForm, is_active: e.target.checked })} style={{ cursor: 'pointer' }} />
+                  <label htmlFor="vet_is_active" style={{ fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>Active Vet Profile</label>
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div 
+                style={{ 
+                  padding: '16px 24px', 
+                  borderTop: '1px solid var(--border-color)', 
+                  display: 'flex', 
+                  justifyContent: 'flex-end', 
+                  gap: 12,
+                  backgroundColor: '#fafafa'
+                }}
+              >
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditModalOpen(false)} 
+                  className="export-btn" 
+                  style={{ backgroundColor: '#fff', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="export-btn" 
+                  style={{ backgroundColor: 'var(--humal-green)', color: '#fff', border: 'none' }}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
