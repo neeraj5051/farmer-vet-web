@@ -22,12 +22,12 @@ export interface Vaccine {
 }
 
 export const getVaccines = async (): Promise<Vaccine[]> => {
-    const response = await api.get('/vaccines/');
+    const response = await api.get('/vaccines');
     return response.data;
 };
 
 export const createVaccine = async (data: Partial<Vaccine>): Promise<Vaccine> => {
-    const response = await api.post('/vaccines/', data);
+    const response = await api.post('/vaccines', data);
     return response.data;
 };
 

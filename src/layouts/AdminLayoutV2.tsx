@@ -20,7 +20,8 @@ import {
   Percent,
   Headphones,
   Settings2,
-  ChevronDown
+  ChevronDown,
+  X
 } from 'lucide-react';
 import './AdminLayoutV2.css';
 import { FilterProvider, useFilters } from '../context/FilterContext';
@@ -68,7 +69,7 @@ const NAV_SECTIONS = [
 ];
 
 const AdminLayoutContent = () => {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const { 
     dateRange, 
     setDateRange, 
@@ -124,9 +125,14 @@ const AdminLayoutContent = () => {
   return (
     <div className="admin-v2-container">
       {/* Sidebar Navigation */}
-      <aside className={`admin-v2-sidebar ${sidebarOpen ? 'open' : ''}`}>
-        <div className="sidebar-logo-v2">
-          <span>🐄</span> Humal Admin
+      <aside className={`admin-v2-sidebar ${sidebarOpen ? 'open' : 'collapsed'}`}>
+        <div className="sidebar-logo-v2" style={{ justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span>🐄</span> Humal Admin
+          </div>
+          <button className="menu-toggle" onClick={() => setSidebarOpen(false)} style={{ border: 'none', background: 'transparent' }} title="Collapse sidebar">
+            <X size={18} />
+          </button>
         </div>
         
         <nav className="sidebar-nav-v2">
@@ -169,12 +175,12 @@ const AdminLayoutContent = () => {
       </aside>
 
       {/* Main Content Area */}
-      <main className="admin-v2-main">
+      <main className={`admin-v2-main ${sidebarOpen ? '' : 'sidebar-collapsed'}`}>
         {/* Topbar */}
         <header className="admin-v2-topbar">
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <Menu size={24} />
+            <button className="menu-toggle" onClick={() => setSidebarOpen(!sidebarOpen)} title={sidebarOpen ? "Collapse Sidebar" : "Expand Sidebar"}>
+              <Menu size={20} />
             </button>
             <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 600 }}>Dashboard</h2>
           </div>

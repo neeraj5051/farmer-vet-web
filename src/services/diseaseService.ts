@@ -115,7 +115,7 @@ export const getDisease = async (id: string): Promise<Disease> => {
 };
 
 export const createDisease = async (data: DiseaseCreate): Promise<Disease> => {
-    const response = await api.post('/diseases/', data);
+    const response = await api.post('/diseases', data);
     return sanitizeDisease(response.data);
 };
 
@@ -137,7 +137,7 @@ export const getDiseaseGroups = async (): Promise<DiseaseGroup[]> => {
 };
 
 export const createDiseaseGroup = async (data: DiseaseGroupCreate): Promise<DiseaseGroup> => {
-    const response = await api.post('/diseases/groups/', data);
+    const response = await api.post('/diseases/groups', data);
     return response.data;
 };
 

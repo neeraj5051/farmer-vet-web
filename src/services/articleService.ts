@@ -35,7 +35,7 @@ export interface ArticleUpdateInput {
 }
 
 export const getArticles = async (): Promise<Article[]> => {
-    const response = await api.get('/articles/');
+    const response = await api.get('/articles');
     return response.data;
 };
 
@@ -45,7 +45,7 @@ export const getAllArticlesAdmin = async (): Promise<Article[]> => {
 };
 
 export const createArticle = async (payload: ArticleCreateInput): Promise<Article> => {
-    const response = await api.post('/articles/', payload);
+    const response = await api.post('/articles', payload);
     return response.data;
 };
 

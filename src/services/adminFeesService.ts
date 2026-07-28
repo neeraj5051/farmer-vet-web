@@ -31,12 +31,12 @@ export interface FeeConfigUpdate {
 }
 
 export const getFees = async (): Promise<FeeConfig[]> => {
-    const response = await api.get('/admin-fees/');
+    const response = await api.get('/admin-fees');
     return response.data;
 };
 
 export const createFee = async (data: FeeConfigCreate): Promise<FeeConfig> => {
-    const response = await api.post('/admin-fees/', data);
+    const response = await api.post('/admin-fees', data);
     return response.data;
 };
 
