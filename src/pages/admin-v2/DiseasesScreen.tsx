@@ -795,6 +795,81 @@ const DiseasesScreen = () => {
               </tbody>
             </table>
           </div>
+
+          {/* Pagination Footer */}
+          {filteredDiseases.length > PAGE_SIZE && (
+            <div 
+              style={{ 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                marginTop: 16, 
+                padding: '12px 16px', 
+                backgroundColor: '#fff', 
+                border: '1px solid var(--border-color)', 
+                borderRadius: 8 
+              }}
+            >
+              <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                Showing <strong style={{ color: 'var(--text-primary)' }}>{Math.min(filteredDiseases.length, (page - 1) * PAGE_SIZE + 1)}</strong> to{' '}
+                <strong style={{ color: 'var(--text-primary)' }}>{Math.min(filteredDiseases.length, page * PAGE_SIZE)}</strong> of{' '}
+                <strong style={{ color: 'var(--text-primary)' }}>{filteredDiseases.length}</strong> diseases
+              </div>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button 
+                  onClick={() => setPage(p => Math.max(1, p - 1))} 
+                  disabled={page === 1}
+                  className="export-btn"
+                  style={{ 
+                    backgroundColor: page === 1 ? '#f5f5f5' : '#fff', 
+                    color: page === 1 ? '#a3a3a3' : 'var(--text-primary)', 
+                    border: '1px solid var(--border-color)',
+                    cursor: page === 1 ? 'not-allowed' : 'pointer',
+                    padding: '6px 12px',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  Previous
+                </button>
+                {[...Array(Math.ceil(filteredDiseases.length / PAGE_SIZE))].map((_, idx) => {
+                  const pNum = idx + 1;
+                  return (
+                    <button
+                      key={pNum}
+                      onClick={() => setPage(pNum)}
+                      style={{
+                        padding: '6px 12px',
+                        fontSize: '0.8rem',
+                        borderRadius: 6,
+                        border: '1px solid var(--border-color)',
+                        cursor: 'pointer',
+                        fontWeight: 600,
+                        backgroundColor: page === pNum ? 'var(--humal-green)' : '#fff',
+                        color: page === pNum ? '#fff' : 'var(--text-primary)'
+                      }}
+                    >
+                      {pNum}
+                    </button>
+                  );
+                })}
+                <button 
+                  onClick={() => setPage(p => Math.min(Math.ceil(filteredDiseases.length / PAGE_SIZE), p + 1))} 
+                  disabled={page === Math.ceil(filteredDiseases.length / PAGE_SIZE)}
+                  className="export-btn"
+                  style={{ 
+                    backgroundColor: page === Math.ceil(filteredDiseases.length / PAGE_SIZE) ? '#f5f5f5' : '#fff', 
+                    color: page === Math.ceil(filteredDiseases.length / PAGE_SIZE) ? '#a3a3a3' : 'var(--text-primary)', 
+                    border: '1px solid var(--border-color)',
+                    cursor: page === Math.ceil(filteredDiseases.length / PAGE_SIZE) ? 'not-allowed' : 'pointer',
+                    padding: '6px 12px',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
