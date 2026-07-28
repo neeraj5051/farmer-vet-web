@@ -20,6 +20,7 @@ export interface Disease {
     pathogen_name: string;
     severity_level: number;
     image_path?: string;
+    is_common?: boolean;
     group_id?: string;
     group?: DiseaseGroup;
     created_at?: string;
@@ -67,6 +68,7 @@ export interface DiseaseCreate {
     pathogen_name?: string | null;
     severity_level: number;
     image_path?: string | null;
+    is_common?: boolean;
     group_id?: string | null;
 }
 
@@ -89,6 +91,7 @@ export interface DiseaseUpdate {
     pathogen_name?: string | null;
     severity_level?: number;
     image_path?: string | null;
+    is_common?: boolean;
     group_id?: string | null;
 }
 

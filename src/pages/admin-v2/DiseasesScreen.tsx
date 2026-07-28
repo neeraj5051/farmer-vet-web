@@ -29,6 +29,94 @@ import '../../components/admin-v2/ListScreens.css';
 import { getImageVariantUrl } from '../../utils/imageUtils';
 import api from '../../services/api';
 
+const ChipsInput = ({ 
+  label, 
+  values, 
+  onChange, 
+  placeholder 
+}: { 
+  label: string, 
+  values: string[], 
+  onChange: (newVals: string[]) => void, 
+  placeholder?: string 
+}) => {
+  const [inputVal, setInputVal] = useState('');
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      const trimmed = inputVal.trim();
+      if (trimmed && !values.includes(trimmed)) {
+        onChange([...values, trimmed]);
+      }
+      setInputVal('');
+    }
+  };
+
+  const removeChip = (idx: number) => {
+    onChange(values.filter((_, i) => i !== idx));
+  };
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>{label}</label>
+      <div 
+        style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: 6, 
+          padding: '6px 10px', 
+          border: '1px solid var(--border-color)', 
+          borderRadius: 6,
+          backgroundColor: '#fff',
+          alignItems: 'center'
+        }}
+      >
+        {values.map((v, i) => (
+          <span 
+            key={i} 
+            style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: 4, 
+              backgroundColor: '#e6f0eb', 
+              color: '#0a4f32', 
+              padding: '2px 8px', 
+              borderRadius: 4, 
+              fontSize: '0.78rem',
+              fontWeight: 500
+            }}
+          >
+            {v}
+            <button 
+              type="button" 
+              onClick={() => removeChip(i)} 
+              style={{ border: 'none', background: 'none', padding: 0, display: 'flex', alignItems: 'center', cursor: 'pointer', color: '#0a4f32' }}
+            >
+              <X size={10} />
+            </button>
+          </span>
+        ))}
+        <input 
+          type="text" 
+          value={inputVal}
+          onChange={e => setInputVal(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder={values.length === 0 ? (placeholder || 'Type and press Enter') : ''}
+          style={{ 
+            border: 'none', 
+            outline: 'none', 
+            fontSize: '0.82rem', 
+            flexGrow: 1, 
+            padding: '2px 4px', 
+            minWidth: 100 
+          }} 
+        />
+      </div>
+    </div>
+  );
+};
+
 const PAGE_SIZE = 10;
 
 const DiseasesScreen = () => {
@@ -181,13 +269,20 @@ const DiseasesScreen = () => {
     description: '',
     description_hi: '',
     species: 'Cattle',
-    symptoms: '',
-    symptoms_hi: '',
-    treatment: '',
-    treatment_hi: '',
+    symptoms: [] as string[],
+    symptoms_hi: [] as string[],
+    treatment: [] as string[],
+    treatment_hi: [] as string[],
     severity_level: 1,
     image_path: '',
-    group_id: ''
+    group_id: '',
+    body_system: 'Respiratory',
+    disease_type: 'Infectious',
+    causes: [] as string[],
+    causes_hi: [] as string[],
+    pathogen_type: 'Virus',
+    pathogen_name: '',
+    is_common: false
   });
 
   // Group Form
@@ -273,15 +368,20 @@ const DiseasesScreen = () => {
         description: diseaseForm.description,
         description_hi: diseaseForm.description_hi || null,
         species: diseaseForm.species,
-        symptoms: diseaseForm.symptoms ? diseaseForm.symptoms.split(',').map(s => s.trim()).filter(Boolean) : [],
-        symptoms_hi: diseaseForm.symptoms_hi ? diseaseForm.symptoms_hi.split(',').map(s => s.trim()).filter(Boolean) : null,
-        causes: [],
-        causes_hi: null,
-        treatments: diseaseForm.treatment ? [diseaseForm.treatment] : [],
-        treatments_hi: diseaseForm.treatment_hi ? [diseaseForm.treatment_hi] : null,
+        symptoms: diseaseForm.symptoms || [],
+        symptoms_hi: diseaseForm.symptoms_hi || [],
+        causes: diseaseForm.causes || [],
+        causes_hi: diseaseForm.causes_hi || [],
+        treatments: diseaseForm.treatment || [],
+        treatments_hi: diseaseForm.treatment_hi || [],
         severity_level: Number(diseaseForm.severity_level),
         image_path: diseaseForm.image_path || null,
         group_id: diseaseForm.group_id || null,
+        body_system: diseaseForm.body_system || null,
+        disease_type: diseaseForm.disease_type || null,
+        pathogen_type: diseaseForm.pathogen_type || null,
+        pathogen_name: diseaseForm.pathogen_name || null,
+        is_common: diseaseForm.is_common || false
       };
 
       if (editingDisease) {
@@ -345,13 +445,20 @@ const DiseasesScreen = () => {
       description: '',
       description_hi: '',
       species: 'Cattle',
-      symptoms: '',
-      symptoms_hi: '',
-      treatment: '',
-      treatment_hi: '',
+      symptoms: [] as string[],
+      symptoms_hi: [] as string[],
+      treatment: [] as string[],
+      treatment_hi: [] as string[],
       severity_level: 1,
       image_path: '',
-      group_id: ''
+      group_id: '',
+      body_system: 'Respiratory',
+      disease_type: 'Infectious',
+      causes: [] as string[],
+      causes_hi: [] as string[],
+      pathogen_type: 'Virus',
+      pathogen_name: '',
+      is_common: false
     });
     setModalLang('en');
     setIsDiseaseModalOpen(true);
@@ -366,13 +473,20 @@ const DiseasesScreen = () => {
       description: d.description || '',
       description_hi: d.description_hi || '',
       species: d.species || 'Cattle',
-      symptoms: (d.symptoms || []).join(', '),
-      symptoms_hi: (d.symptoms_hi || []).join(', '),
-      treatment: (d.treatments || [])[0] || '',
-      treatment_hi: (d.treatments_hi || [])[0] || '',
+      symptoms: d.symptoms || [],
+      symptoms_hi: d.symptoms_hi || [],
+      treatment: d.treatments || [],
+      treatment_hi: d.treatments_hi || [],
       severity_level: d.severity_level || 1,
       image_path: d.image_path || '',
-      group_id: d.group_id || ''
+      group_id: d.group_id || '',
+      body_system: d.body_system || 'Respiratory',
+      disease_type: d.disease_type || 'Infectious',
+      causes: d.causes || [],
+      causes_hi: d.causes_hi || [],
+      pathogen_type: d.pathogen_type || 'Virus',
+      pathogen_name: d.pathogen_name || '',
+      is_common: d.is_common || false
     });
     setModalLang('en');
     setIsDiseaseModalOpen(true);
@@ -653,15 +767,99 @@ const DiseasesScreen = () => {
                       <option value="Nutritional/Toxic">Nutritional/Toxic</option>
                     </select>
                   </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Body System</label>
+                      <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.body_system} onChange={e => setDiseaseForm({ ...diseaseForm, body_system: e.target.value })}>
+                        <option value="Respiratory">Respiratory</option>
+                        <option value="Digestive">Digestive</option>
+                        <option value="Musculoskeletal">Musculoskeletal</option>
+                        <option value="Nervous">Nervous</option>
+                        <option value="Integumentary">Integumentary</option>
+                        <option value="Reproductive">Reproductive</option>
+                        <option value="Circulatory">Circulatory</option>
+                        <option value="Urinary">Urinary</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Type</label>
+                      <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.disease_type} onChange={e => setDiseaseForm({ ...diseaseForm, disease_type: e.target.value })}>
+                        <option value="Infectious">Infectious</option>
+                        <option value="Zoonotic">Zoonotic</option>
+                        <option value="Hereditary">Hereditary</option>
+                        <option value="Metabolic">Metabolic</option>
+                        <option value="Deficiency">Deficiency</option>
+                        <option value="Toxicological">Toxicological</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Target Species</label>
+                      <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.species} onChange={e => setDiseaseForm({ ...diseaseForm, species: e.target.value })} placeholder="e.g. Cattle, Buffalo" />
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Severity Level (1-5)</label>
+                      <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.severity_level} onChange={e => setDiseaseForm({ ...diseaseForm, severity_level: Number(e.target.value) })}>
+                        <option value="1">1 (Mild)</option>
+                        <option value="2">2 (Moderate)</option>
+                        <option value="3">3 (Severe)</option>
+                        <option value="4">4 (Very Severe)</option>
+                        <option value="5">5 (Critical)</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Pathogen Type</label>
+                      <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.pathogen_type} onChange={e => setDiseaseForm({ ...diseaseForm, pathogen_type: e.target.value })}>
+                        <option value="Virus">Virus</option>
+                        <option value="Bacteria">Bacteria</option>
+                        <option value="Fungus">Fungus</option>
+                        <option value="Parasite">Parasite</option>
+                        <option value="Prion">Prion</option>
+                        <option value="Toxin">Toxin</option>
+                        <option value="Unknown">Unknown</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Pathogen Name</label>
+                      <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.pathogen_name} onChange={e => setDiseaseForm({ ...diseaseForm, pathogen_name: e.target.value })} placeholder="e.g. Lyssavirus" />
+                    </div>
+                  </div>
+
+                  <ChipsInput 
+                    label="Causes" 
+                    values={diseaseForm.causes} 
+                    onChange={newVals => setDiseaseForm({ ...diseaseForm, causes: newVals })} 
+                    placeholder="Type a cause and press Enter" 
+                  />
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0' }}>
+                    <input type="checkbox" id="is_common" checked={diseaseForm.is_common} onChange={e => setDiseaseForm({ ...diseaseForm, is_common: e.target.checked })} style={{ cursor: 'pointer' }} />
+                    <label htmlFor="is_common" style={{ fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>Mark as Common Disease</label>
+                  </div>
+
                   {renderImageUploader(diseaseForm.image_path, 'disease')}
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Symptoms (comma separated)</label>
-                    <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 70 }} value={diseaseForm.symptoms} onChange={e => setDiseaseForm({ ...diseaseForm, symptoms: e.target.value })} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Treatment</label>
-                    <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 70 }} value={diseaseForm.treatment} onChange={e => setDiseaseForm({ ...diseaseForm, treatment: e.target.value })} />
-                  </div>
+                  
+                  <ChipsInput 
+                    label="Symptoms" 
+                    values={diseaseForm.symptoms} 
+                    onChange={newVals => setDiseaseForm({ ...diseaseForm, symptoms: newVals })} 
+                    placeholder="Type a symptom and press Enter" 
+                  />
+                  
+                  <ChipsInput 
+                    label="Treatments" 
+                    values={diseaseForm.treatment} 
+                    onChange={newVals => setDiseaseForm({ ...diseaseForm, treatment: newVals })} 
+                    placeholder="Type a treatment and press Enter" 
+                  />
                 </>
               ) : (
                 <>
@@ -669,14 +867,24 @@ const DiseasesScreen = () => {
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Name (Hindi)</label>
                     <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.name_hi} onChange={e => setDiseaseForm({ ...diseaseForm, name_hi: e.target.value })} />
                   </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Symptoms in Hindi (हिंदी लक्षण)</label>
-                    <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 70 }} value={diseaseForm.symptoms_hi} onChange={e => setDiseaseForm({ ...diseaseForm, symptoms_hi: e.target.value })} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Treatment in Hindi (हिंदी उपचार)</label>
-                    <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 70 }} value={diseaseForm.treatment_hi} onChange={e => setDiseaseForm({ ...diseaseForm, treatment_hi: e.target.value })} />
-                  </div>
+                  <ChipsInput 
+                    label="Symptoms in Hindi (हिंदी लक्षण)" 
+                    values={diseaseForm.symptoms_hi} 
+                    onChange={newVals => setDiseaseForm({ ...diseaseForm, symptoms_hi: newVals })} 
+                    placeholder="लक्षण दर्ज करें और Enter दबाएं" 
+                  />
+                  <ChipsInput 
+                    label="Causes in Hindi (हिंदी कारण)" 
+                    values={diseaseForm.causes_hi} 
+                    onChange={newVals => setDiseaseForm({ ...diseaseForm, causes_hi: newVals })} 
+                    placeholder="कारण दर्ज करें और Enter दबाएं" 
+                  />
+                  <ChipsInput 
+                    label="Treatment in Hindi (हिंदी उपचार)" 
+                    values={diseaseForm.treatment_hi} 
+                    onChange={newVals => setDiseaseForm({ ...diseaseForm, treatment_hi: newVals })} 
+                    placeholder="उपचार दर्ज करें और Enter दबाएं" 
+                  />
                 </>
               )}
 
@@ -771,9 +979,18 @@ const DiseasesScreen = () => {
                   ['Name (Hindi)', selectedDisease.name_hi || '—'],
                   ['Category Group', groups.find(g => g.id === selectedDisease.group_id)?.name || 'Unassigned'],
                   ['Category', selectedDisease.category || '—'],
-                  ['Target Species', selectedDisease.species || 'Cattle, Buffalo'],
-                  ['Symptoms', (selectedDisease.symptoms || []).join(', ') || '—'],
-                  ['Treatment', (selectedDisease.treatments || []).join(', ') || '—'],
+                  ['Body System', selectedDisease.body_system || '—'],
+                  ['Disease Type', selectedDisease.disease_type || '—'],
+                  ['Target Species', selectedDisease.species || '—'],
+                  ['Pathogen Type', selectedDisease.pathogen_type || '—'],
+                  ['Pathogen Name', selectedDisease.pathogen_name || '—'],
+                  ['Common Disease', selectedDisease.is_common ? 'Yes' : 'No'],
+                  ['Symptoms (English)', (selectedDisease.symptoms || []).join(', ') || '—'],
+                  ['Symptoms (Hindi)', (selectedDisease.symptoms_hi || []).join(', ') || '—'],
+                  ['Causes (English)', (selectedDisease.causes || []).join(', ') || '—'],
+                  ['Causes (Hindi)', (selectedDisease.causes_hi || []).join(', ') || '—'],
+                  ['Treatment (English)', (selectedDisease.treatments || []).join(', ') || '—'],
+                  ['Treatment (Hindi)', (selectedDisease.treatments_hi || []).join(', ') || '—'],
                 ].map(([label, value]) => (
                   <div key={label as string} className="drawer-detail-row">
                     <span className="drawer-detail-label">{label}</span>
