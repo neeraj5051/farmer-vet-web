@@ -154,6 +154,8 @@ const ArticlesScreen = () => {
   // Image uploader states
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
 
   const loadData = async () => {
     try {
@@ -302,10 +304,17 @@ const ArticlesScreen = () => {
         {uploadError && <div style={{ color: '#ef4444', fontSize: '0.78rem', marginBottom: 6 }}>{uploadError}</div>}
         
         {imgUrl ? (
-          <div style={{ position: 'relative', width: '100%', height: 180, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+          <div 
+            style={{ position: 'relative', width: '100%', height: 180, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-color)', cursor: 'pointer' }}
+            onClick={() => setLightboxUrl(getImageVariantUrl(currentPath, 'large'))}
+          >
             <img src={imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.3)', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 12 }}>
-              <div style={{ display: 'flex', gap: 8 }}>
+            <div 
+              style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.3)', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 12, opacity: 0, transition: 'opacity 0.2s' }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '1'}
+              onMouseLeave={e => e.currentTarget.style.opacity = '0'}
+            >
+              <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
                 <label className="export-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', cursor: 'pointer', backgroundColor: '#fff', color: '#333', border: '1px solid #ccc' }}>
                   Replace
                   <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
@@ -750,7 +759,10 @@ const ArticlesScreen = () => {
             </div>
             <div className="drawer-body">
               {selectedArticle.image_url && (
-                <div style={{ width: '100%', height: 160, borderRadius: 10, overflow: 'hidden', marginBottom: 16 }}>
+                <div 
+                  style={{ width: '100%', height: 160, borderRadius: 10, overflow: 'hidden', marginBottom: 16, cursor: 'pointer' }}
+                  onClick={() => setLightboxUrl(getImageVariantUrl(selectedArticle.image_url, 'large'))}
+                >
                   <img src={getImageVariantUrl(selectedArticle.image_url, 'medium')} alt={selectedArticle.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </div>
               )}
@@ -786,6 +798,45 @@ const ArticlesScreen = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* Lightbox Zoom Overlay */}
+      {lightboxUrl && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(0, 0, 0, 0.85)', 
+            backdropFilter: 'blur(4px)', 
+            zIndex: 99999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            cursor: 'zoom-out'
+          }}
+          onClick={() => { setLightboxUrl(null); setZoomLevel(1); }}
+        >
+          <div style={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 10 }} onClick={e => e.stopPropagation()}>
+            <a href={lightboxUrl} target="_blank" rel="noreferrer" className="export-btn" style={{ backgroundColor: '#fff', color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>Open Original</a>
+            <button className="export-btn" style={{ backgroundColor: '#ef4444', color: '#fff' }} onClick={() => { setLightboxUrl(null); setZoomLevel(1); }}><X size={16} /></button>
+          </div>
+          <img 
+            src={lightboxUrl} 
+            alt="Preview Zoom" 
+            style={{ 
+              maxHeight: '90vh', 
+              maxWidth: '90vw', 
+              objectFit: 'contain', 
+              transform: `scale(${zoomLevel})`,
+              transition: 'transform 0.1s ease',
+              cursor: 'zoom-in'
+            }} 
+            onClick={e => {
+              e.stopPropagation();
+              setZoomLevel(z => z === 1 ? 1.5 : 1);
+            }}
+          />
+        </div>
       )}
     </div>
   );
