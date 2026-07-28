@@ -120,14 +120,12 @@ const AdvancedTextarea = ({
   label, 
   value, 
   onChange, 
-  placeholder,
-  templates 
+  placeholder
 }: { 
   label: string, 
   value: string, 
   onChange: (val: string) => void, 
-  placeholder?: string,
-  templates?: { name: string, text: string }[] 
+  placeholder?: string
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -158,23 +156,6 @@ const AdvancedTextarea = ({
     <div style={{ marginBottom: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
         <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>{label}</label>
-        {templates && templates.length > 0 && (
-          <select 
-            className="filter-select" 
-            style={{ padding: '2px 8px', fontSize: '0.72rem', height: 'auto', width: 'auto', border: '1px solid var(--border-color)', margin: 0 }}
-            onChange={e => {
-              if (e.target.value) {
-                onChange(e.target.value);
-                e.target.value = '';
-              }
-            }}
-          >
-            <option value="">-- Apply Template --</option>
-            {templates.map((t, idx) => (
-              <option key={idx} value={t.text}>{t.name}</option>
-            ))}
-          </select>
-        )}
       </div>
 
       <div style={{ border: '1px solid var(--border-color)', borderRadius: 8, overflow: 'hidden', backgroundColor: '#fff' }}>
@@ -1091,20 +1072,12 @@ const DiseasesScreen = () => {
                         value={diseaseForm.description} 
                         onChange={val => setDiseaseForm({ ...diseaseForm, description: val })} 
                         placeholder="Write comprehensive clinical description in English..." 
-                        templates={[
-                          { name: 'Infectious Disease', text: 'An infectious [viral/bacterial] disease of livestock characterized by acute onset of [symptoms]. Transmitted primarily via [vectors/contact]. Diagnosis is confirmed through [tests].' },
-                          { name: 'Metabolic Disorder', text: 'A metabolic condition characterized by [deficiency/imbalance]. Primarily affects [lactating cows/calves] during [season/milking cycle]. Prevention involves dietary supplementation of [nutrition].' }
-                        ]}
                       />
                       <AdvancedTextarea 
                         label="Causes (one per line)" 
                         value={diseaseForm.causes} 
                         onChange={val => setDiseaseForm({ ...diseaseForm, causes: val })} 
                         placeholder="Type each cause on a new line..." 
-                        templates={[
-                          { name: 'Primary Photodynamic', text: 'Ingestion of plants containing photodynamic agents (e.g. St. John’s wort).\nAbsorption of fluorescent dyes or chemicals.' },
-                          { name: 'Secondary (Hepatogenous)', text: 'Liver dysfunction due to toxic plants, parasites, or drugs.\nAccumulation of phylloerythrin in the bloodstream.' }
-                        ]}
                       />
                     </div>
 
