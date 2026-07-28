@@ -34,7 +34,6 @@ import DiseasesScreen from './pages/admin-v2/DiseasesScreen';
 import ArticlesScreen from './pages/admin-v2/ArticlesScreen';
 import VaccinesScreen from './pages/admin-v2/VaccinesScreen';
 import FeesScreen from './pages/admin-v2/FeesScreen';
-import ServiceCardsScreen from './pages/admin-v2/ServiceCardsScreen';
 import SupportTicketsScreen from './pages/admin-v2/SupportTicketsScreen';
 import ServicesScreen from './pages/admin-v2/ServicesScreen';
 import ReportsScreen from './pages/admin-v2/ReportsScreen';
@@ -115,7 +114,9 @@ const AppRoutes = () => {
 
       {/* Protected Admin V2 routes (New Redesign) */}
       <Route path="/admin-v2" element={
-        <AdminLayoutV2 />
+        <ProtectedRoute>
+          <AdminLayoutV2 />
+        </ProtectedRoute>
       }>
         <Route index element={<Navigate to="operations" replace />} />
         <Route path="operations" element={<OperationsOverview />} />
@@ -131,7 +132,7 @@ const AppRoutes = () => {
         <Route path="articles" element={<ArticlesScreen />} />
         <Route path="vaccines" element={<VaccinesScreen />} />
         <Route path="fees" element={<FeesScreen />} />
-        <Route path="service-cards" element={<ServiceCardsScreen />} />
+        <Route path="service-cards" element={<Navigate to="/admin-v2/services" replace />} />
         <Route path="support" element={<SupportTicketsScreen />} />
         <Route path="services" element={<ServicesScreen />} />
         <Route path="reports" element={<ReportsScreen />} />

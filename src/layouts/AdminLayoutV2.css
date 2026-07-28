@@ -80,10 +80,20 @@
   font-size: 0.75rem; 
   text-transform: uppercase; 
   color: var(--text-secondary); 
-  padding: 0 24px; 
-  margin-bottom: 0.5rem; 
-  font-weight: 600; 
+  padding: 6px 24px; 
+  margin-bottom: 0.25rem; 
+  font-weight: 700; 
   letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.15s ease;
+}
+
+.nav-title-v2:hover {
+  color: var(--humal-green);
 }
 
 .nav-link-v2 { 

@@ -82,6 +82,7 @@ const ConsultationsScreen = () => {
       result = result.filter(c =>
         c.farmer_name?.toLowerCase().includes(q) ||
         c.vet_name?.toLowerCase().includes(q) ||
+        c.public_id?.toLowerCase().includes(q) ||
         c.id?.toLowerCase().includes(q)
       );
     }
@@ -207,7 +208,7 @@ const ConsultationsScreen = () => {
                 const s = STATUS_MAP[c.status] || { bg: '#f3f4f6', text: '#6b7280', label: c.status };
                 return (
                   <tr key={c.id} onClick={() => handleView(c)}>
-                    <td style={{ fontWeight: 500, fontFamily: 'monospace', fontSize: '0.82rem' }}>{c.id?.slice(0, 13) || '—'}</td>
+                    <td style={{ fontWeight: 600, color: '#0a4f32', fontFamily: 'monospace', fontSize: '0.85rem' }}>{c.public_id || c.id?.slice(0, 13) || '—'}</td>
                     <td>
                       <div className="list-cell-name">
                         <div className="list-cell-avatar" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>

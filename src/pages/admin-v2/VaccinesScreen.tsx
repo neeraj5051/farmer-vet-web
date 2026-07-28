@@ -59,7 +59,7 @@ const VaccinesScreen = () => {
     <div>
       <div className="list-screen-header">
         <div>
-          <h1 className="list-screen-title">Vaccine Catalog</h1>
+          <h1 className="list-screen-title">Manage Vaccines</h1>
           <p className="list-screen-subtitle">Manage mandatory livestock immunization schedules and pricing</p>
         </div>
         <button className="export-btn"><Download size={16} /> Export CSV</button>

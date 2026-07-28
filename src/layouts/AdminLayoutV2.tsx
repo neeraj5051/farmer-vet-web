@@ -18,12 +18,13 @@ import {
   BookOpen,
   Syringe,
   Percent,
-  LayoutGrid,
   Headphones,
-  Settings2
+  Settings2,
+  ChevronDown
 } from 'lucide-react';
 import './AdminLayoutV2.css';
 import { FilterProvider, useFilters } from '../context/FilterContext';
+import { useAuth } from '../context/AuthContext';
 import { DateRangeCalendarModal } from '../components/admin-v2/DateRangeCalendarModal';
 
 const NAV_SECTIONS = [
@@ -51,11 +52,10 @@ const NAV_SECTIONS = [
   {
     label: 'Catalogs & Content',
     items: [
-      { to: '/admin-v2/diseases', label: 'Disease Catalog', icon: Stethoscope },
-      { to: '/admin-v2/vaccines', label: 'Vaccine Catalog', icon: Syringe },
-      { to: '/admin-v2/articles', label: 'Articles & Advisory', icon: BookOpen },
-      { to: '/admin-v2/service-cards', label: 'Service Action Cards', icon: LayoutGrid },
-      { to: '/admin-v2/services', label: 'Global Services', icon: Settings2 },
+      { to: '/admin-v2/diseases', label: 'Manage Diseases', icon: Stethoscope },
+      { to: '/admin-v2/vaccines', label: 'Manage Vaccines', icon: Syringe },
+      { to: '/admin-v2/articles', label: 'Manage Articles', icon: BookOpen },
+      { to: '/admin-v2/services', label: 'Services & Action Cards', icon: Settings2 },
     ],
   },
   {
@@ -84,6 +84,22 @@ const AdminLayoutContent = () => {
   } = useFilters();
 
   const [showCustomDateModal, setShowCustomDateModal] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { logout } = useAuth();
+
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    Operations: true,
+    Financials: true,
+    'Catalogs & Content': true,
+    'Reports & Settings': true,
+  });
+
+  const toggleSection = (label: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [label]: !prev[label]
+    }));
+  };
 
   const formatPillDate = (s?: string, e?: string) => {
     if (!s) return 'Custom Range...';
@@ -114,33 +130,42 @@ const AdminLayoutContent = () => {
         </div>
         
         <nav className="sidebar-nav-v2">
-          {NAV_SECTIONS.map((section) => (
-            <div key={section.label} className="nav-group-v2">
-              <div className="nav-title-v2">{section.label}</div>
-              {section.items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) => `nav-link-v2 ${isActive ? 'active' : ''}`}
+          {NAV_SECTIONS.map((section) => {
+            const isExpanded = expandedSections[section.label] !== false;
+            return (
+              <div key={section.label} className="nav-group-v2">
+                <div 
+                  className="nav-title-v2" 
+                  onClick={() => toggleSection(section.label)}
+                  title={isExpanded ? "Click to collapse" : "Click to expand"}
                 >
-                  <item.icon />
-                  <span>{item.label}</span>
-                </NavLink>
-              ))}
-            </div>
-          ))}
+                  <span>{section.label}</span>
+                  <ChevronDown 
+                    size={14} 
+                    style={{ 
+                      transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', 
+                      transition: 'transform 0.2s ease' 
+                    }} 
+                  />
+                </div>
+                {isExpanded && (
+                  <div className="nav-items-v2">
+                    {section.items.map((item) => (
+                      <NavLink
+                        key={item.to}
+                        to={item.to}
+                        className={({ isActive }) => `nav-link-v2 ${isActive ? 'active' : ''}`}
+                      >
+                        <item.icon />
+                        <span>{item.label}</span>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
-
-        <div className="nav-group-v2" style={{ marginTop: 'auto', marginBottom: '20px' }}>
-          <NavLink to="/admin-v2/settings" className="nav-link-v2">
-            <Settings />
-            <span>Settings</span>
-          </NavLink>
-          <button className="nav-link-v2" style={{ border: 'none', background: 'transparent', width: '100%', cursor: 'pointer' }}>
-            <LogOut color="#ef4444" />
-            <span style={{ color: '#ef4444' }}>Logout</span>
-          </button>
-        </div>
       </aside>
 
       {/* Main Content Area */}
@@ -244,14 +269,76 @@ const AdminLayoutContent = () => {
             onApply={(start, end) => setCustomDateRange(start, end)}
           />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', color: 'var(--text-secondary)', position: 'relative' }}>
             <Bell size={20} style={{ cursor: 'pointer' }} />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            
+            {/* Admin Profile Dropdown Trigger */}
+            <div 
+              onClick={() => setUserMenuOpen(!userMenuOpen)}
+              style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '4px 8px', borderRadius: '8px', position: 'relative' }}
+            >
               <div style={{ width: '32px', height: '32px', backgroundColor: 'var(--humal-green-light)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <User size={16} color="var(--humal-green)" />
               </div>
               <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text-primary)' }}>Admin</span>
+              <ChevronDown size={14} color="var(--text-secondary)" />
             </div>
+
+            {/* Admin Profile Dropdown Menu */}
+            {userMenuOpen && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: '48px',
+                  right: 0,
+                  width: '180px',
+                  backgroundColor: 'var(--card-white)',
+                  border: '1px solid var(--border-color)',
+                  borderRadius: '10px',
+                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)',
+                  zIndex: 100,
+                  overflow: 'hidden',
+                  padding: '4px 0'
+                }}
+              >
+                <NavLink 
+                  to="/admin-v2/settings" 
+                  onClick={() => setUserMenuOpen(false)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '10px 16px',
+                    fontSize: '0.88rem',
+                    color: 'var(--text-primary)',
+                    textDecoration: 'none'
+                  }}
+                >
+                  <Settings size={16} />
+                  <span>Settings</span>
+                </NavLink>
+                <button
+                  onClick={() => { setUserMenuOpen(false); logout(); }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    width: '100%',
+                    padding: '10px 16px',
+                    fontSize: '0.88rem',
+                    color: '#ef4444',
+                    background: 'none',
+                    border: 'none',
+                    borderTop: '1px solid var(--border-color)',
+                    cursor: 'pointer',
+                    textAlign: 'left'
+                  }}
+                >
+                  <LogOut size={16} color="#ef4444" />
+                  <span>Logout</span>
+                </button>
+              </div>
+            )}
           </div>
         </header>
 

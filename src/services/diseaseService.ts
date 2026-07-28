@@ -105,7 +105,8 @@ const sanitizeDisease = (d: Disease): Disease => ({
 
 export const getDiseases = async (): Promise<Disease[]> => {
     const response = await api.get('/diseases');
-    return response.data.map(sanitizeDisease);
+    const raw = Array.isArray(response.data) ? response.data : (response.data?.diseases || response.data?.summary || []);
+    return raw.map(sanitizeDisease);
 };
 
 export const getDisease = async (id: string): Promise<Disease> => {
@@ -131,7 +132,8 @@ export const deleteDisease = async (id: string): Promise<void> => {
 
 export const getDiseaseGroups = async (): Promise<DiseaseGroup[]> => {
     const response = await api.get('/diseases/groups/all');
-    return response.data;
+    const raw = Array.isArray(response.data) ? response.data : (response.data?.groups || response.data?.summary || []);
+    return raw;
 };
 
 export const createDiseaseGroup = async (data: DiseaseGroupCreate): Promise<DiseaseGroup> => {

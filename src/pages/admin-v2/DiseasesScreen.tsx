@@ -293,7 +293,7 @@ const DiseasesScreen = () => {
       {/* Header */}
       <div className="list-screen-header">
         <div>
-          <h1 className="list-screen-title">Disease Directory & Category Groups</h1>
+          <h1 className="list-screen-title">Manage Diseases</h1>
           <p className="list-screen-subtitle">Manage livestock disease database, symptoms, treatments, and category groups</p>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
