@@ -720,6 +720,32 @@ const DiseasesScreen = () => {
             </select>
           </>
         )}
+        {(searchTerm || (activeTab === 'diseases' && (categoryFilter !== 'all' || groupFilter !== 'all'))) && (
+          <button 
+            type="button" 
+            onClick={() => {
+              setSearchTerm('');
+              setCategoryFilter('all');
+              setGroupFilter('all');
+              setPage(1);
+            }}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: '#ef4444', 
+              fontSize: '0.82rem', 
+              fontWeight: 600, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '6px 12px',
+              marginLeft: 'auto'
+            }}
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       {/* TAB 1: DISEASES TABLE */}
