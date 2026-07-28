@@ -727,178 +727,318 @@ const DiseasesScreen = () => {
 
       {/* DISEASE MODAL */}
       {isDiseaseModalOpen && (
-        <>
-          <div className="profile-drawer-overlay" onClick={() => setIsDiseaseModalOpen(false)} />
-          <div className="profile-drawer" style={{ width: 540 }}>
-            <div className="drawer-header">
-              <div className="drawer-name">{editingDisease ? 'Edit Disease' : 'Add New Disease'}</div>
-              <button className="drawer-close" onClick={() => setIsDiseaseModalOpen(false)}><X size={20} /></button>
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(15, 23, 42, 0.4)', 
+            backdropFilter: 'blur(8px)', 
+            zIndex: 9999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            padding: 24 
+          }}
+          onClick={() => setIsDiseaseModalOpen(false)}
+        >
+          <div 
+            style={{ 
+              backgroundColor: '#fff', 
+              borderRadius: 16, 
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', 
+              width: '100%', 
+              maxWidth: 900, 
+              maxHeight: '85vh', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden',
+              border: '1px solid var(--border-color)' 
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div 
+              style={{ 
+                padding: '20px 24px', 
+                borderBottom: '1px solid var(--border-color)', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                backgroundColor: '#fafafa'
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {editingDisease ? 'Edit Disease Details' : 'Add New Disease'}
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                  Provide clinical profiles, pathogen types, symptoms, and treatments.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsDiseaseModalOpen(false)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
             </div>
-            <form onSubmit={handleDiseaseSave} className="drawer-body" style={{ gap: 14, display: 'flex', flexDirection: 'column' }}>
-              <div style={{ display: 'flex', borderBottom: '1px solid var(--border-color)', marginBottom: 12 }}>
-                <button type="button" className={`drawer-tab ${modalLang === 'en' ? 'active' : ''}`} onClick={() => setModalLang('en')}>
-                  <Globe size={14} style={{ display: 'inline', marginRight: 4 }} /> English Details
-                </button>
-                <button type="button" className={`drawer-tab ${modalLang === 'hi' ? 'active' : ''}`} onClick={() => setModalLang('hi')}>
-                  <Globe size={14} style={{ display: 'inline', marginRight: 4 }} /> Hindi Translation (हिंदी)
-                </button>
+
+            {/* Language Selection Tabs */}
+            <div 
+              style={{ 
+                padding: '0 24px', 
+                borderBottom: '1px solid var(--border-color)', 
+                display: 'flex', 
+                backgroundColor: '#fff' 
+              }}
+            >
+              <button 
+                type="button" 
+                onClick={() => setModalLang('en')}
+                style={{ 
+                  padding: '14px 20px', 
+                  fontSize: '0.88rem', 
+                  fontWeight: 600, 
+                  border: 'none', 
+                  background: 'none', 
+                  cursor: 'pointer',
+                  borderBottom: modalLang === 'en' ? '2px solid var(--humal-green)' : '2px solid transparent',
+                  color: modalLang === 'en' ? 'var(--humal-green)' : 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                <Globe size={14} /> English details
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setModalLang('hi')}
+                style={{ 
+                  padding: '14px 20px', 
+                  fontSize: '0.88rem', 
+                  fontWeight: 600, 
+                  border: 'none', 
+                  background: 'none', 
+                  cursor: 'pointer',
+                  borderBottom: modalLang === 'hi' ? '2px solid var(--humal-green)' : '2px solid transparent',
+                  color: modalLang === 'hi' ? 'var(--humal-green)' : 'var(--text-secondary)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6
+                }}
+              >
+                <Globe size={14} /> Hindi Translation (हिंदी)
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleDiseaseSave} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+              <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
+                {modalLang === 'en' ? (
+                  <>
+                    {/* Section 1: General & Classification */}
+                    <div style={{ backgroundColor: '#fcfcfc', border: '1px solid var(--border-color)', borderRadius: 10, padding: 18 }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px dashed var(--border-color)', paddingBottom: 6 }}>General Information</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Name *</label>
+                          <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.name} onChange={e => setDiseaseForm({ ...diseaseForm, name: e.target.value })} placeholder="e.g. Foot and Mouth Disease" />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Category Group</label>
+                          <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.group_id} onChange={e => setDiseaseForm({ ...diseaseForm, group_id: e.target.value })}>
+                            <option value="">-- Unassigned --</option>
+                            {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginTop: 12 }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Category</label>
+                          <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.category} onChange={e => setDiseaseForm({ ...diseaseForm, category: e.target.value })}>
+                            <option value="Viral">Viral</option>
+                            <option value="Bacterial">Bacterial</option>
+                            <option value="Parasitic">Parasitic</option>
+                            <option value="Fungal">Fungal</option>
+                            <option value="Nutritional/Toxic">Nutritional/Toxic</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Target Species</label>
+                          <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.species} onChange={e => setDiseaseForm({ ...diseaseForm, species: e.target.value })} placeholder="e.g. Cattle, Buffalo" />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 2: Systems Affected & Pathogen */}
+                    <div style={{ backgroundColor: '#fcfcfc', border: '1px solid var(--border-color)', borderRadius: 10, padding: 18 }}>
+                      <h4 style={{ margin: '0 0 14px 0', fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px dashed var(--border-color)', paddingBottom: 6 }}>Clinical details</h4>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Body System Affected</label>
+                          <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.body_system} onChange={e => setDiseaseForm({ ...diseaseForm, body_system: e.target.value })}>
+                            <option value="Respiratory">Respiratory</option>
+                            <option value="Digestive">Digestive</option>
+                            <option value="Musculoskeletal">Musculoskeletal</option>
+                            <option value="Nervous">Nervous</option>
+                            <option value="Integumentary">Integumentary</option>
+                            <option value="Reproductive">Reproductive</option>
+                            <option value="Circulatory">Circulatory</option>
+                            <option value="Urinary">Urinary</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Type</label>
+                          <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.disease_type} onChange={e => setDiseaseForm({ ...diseaseForm, disease_type: e.target.value })}>
+                            <option value="Infectious">Infectious</option>
+                            <option value="Zoonotic">Zoonotic</option>
+                            <option value="Hereditary">Hereditary</option>
+                            <option value="Metabolic">Metabolic</option>
+                            <option value="Deficiency">Deficiency</option>
+                            <option value="Toxicological">Toxicological</option>
+                            <option value="Other">Other</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, marginTop: 12 }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Pathogen Type</label>
+                          <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.pathogen_type} onChange={e => setDiseaseForm({ ...diseaseForm, pathogen_type: e.target.value })}>
+                            <option value="Virus">Virus</option>
+                            <option value="Bacteria">Bacteria</option>
+                            <option value="Fungus">Fungus</option>
+                            <option value="Parasite">Parasite</option>
+                            <option value="Prion">Prion</option>
+                            <option value="Toxin">Toxin</option>
+                            <option value="Unknown">Unknown</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Pathogen Name</label>
+                          <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.pathogen_name} onChange={e => setDiseaseForm({ ...diseaseForm, pathogen_name: e.target.value })} placeholder="e.g. Aphthovirus" />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Severity Level (1-5)</label>
+                          <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.severity_level} onChange={e => setDiseaseForm({ ...diseaseForm, severity_level: Number(e.target.value) })}>
+                            <option value="1">1 (Mild)</option>
+                            <option value="2">2 (Moderate)</option>
+                            <option value="3">3 (Severe)</option>
+                            <option value="4">4 (Very Severe)</option>
+                            <option value="5">5 (Critical)</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 14 }}>
+                        <input type="checkbox" id="is_common" checked={diseaseForm.is_common} onChange={e => setDiseaseForm({ ...diseaseForm, is_common: e.target.checked })} style={{ cursor: 'pointer' }} />
+                        <label htmlFor="is_common" style={{ fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>Mark as Common Disease</label>
+                      </div>
+                    </div>
+
+                    {/* Section 3: Media & Descriptions */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description *</label>
+                          <textarea required className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 80 }} value={diseaseForm.description} onChange={e => setDiseaseForm({ ...diseaseForm, description: e.target.value })} placeholder="Write comprehensive clinical description in English..." />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Causes (one per line)</label>
+                          <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 80 }} value={diseaseForm.causes} onChange={e => setDiseaseForm({ ...diseaseForm, causes: e.target.value })} placeholder="Type each cause on a new line..." />
+                        </div>
+                      </div>
+                      <div>
+                        {renderImageUploader(diseaseForm.image_path, 'disease')}
+                      </div>
+                    </div>
+
+                    {/* Section 4: Symptoms & Treatments tag editors */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <ChipsInput 
+                        label="Symptoms" 
+                        values={diseaseForm.symptoms} 
+                        onChange={newVals => setDiseaseForm({ ...diseaseForm, symptoms: newVals })} 
+                        placeholder="Type symptom and press Enter" 
+                      />
+                      <ChipsInput 
+                        label="Treatments" 
+                        values={diseaseForm.treatment} 
+                        onChange={newVals => setDiseaseForm({ ...diseaseForm, treatment: newVals })} 
+                        placeholder="Type treatment and press Enter" 
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Hindi translation fields */}
+                    <div style={{ backgroundColor: '#fcfcfc', border: '1px solid var(--border-color)', borderRadius: 10, padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      <h4 style={{ margin: '0 0 4px 0', fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)' }}>Hindi Translation Info</h4>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Name (Hindi)</label>
+                        <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.name_hi} onChange={e => setDiseaseForm({ ...diseaseForm, name_hi: e.target.value })} placeholder="हिंदी में बीमारी का नाम..." />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description in Hindi (हिंदी विवरण)</label>
+                        <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 90 }} value={diseaseForm.description_hi} onChange={e => setDiseaseForm({ ...diseaseForm, description_hi: e.target.value })} placeholder="हिंदी में बीमारी का विवरण..." />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Causes in Hindi (हिंदी कारण - one per line)</label>
+                        <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 90 }} value={diseaseForm.causes_hi} onChange={e => setDiseaseForm({ ...diseaseForm, causes_hi: e.target.value })} placeholder="हिंदी में बीमारी के कारण..." />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <ChipsInput 
+                        label="Symptoms in Hindi (हिंदी लक्षण)" 
+                        values={diseaseForm.symptoms_hi} 
+                        onChange={newVals => setDiseaseForm({ ...diseaseForm, symptoms_hi: newVals })} 
+                        placeholder="लक्षण दर्ज करें और Enter दबाएं" 
+                      />
+                      <ChipsInput 
+                        label="Treatment in Hindi (हिंदी उपचार)" 
+                        values={diseaseForm.treatment_hi} 
+                        onChange={newVals => setDiseaseForm({ ...diseaseForm, treatment_hi: newVals })} 
+                        placeholder="उपचार दर्ज करें और Enter दबाएं" 
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
-              {modalLang === 'en' ? (
-                <>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Name *</label>
-                    <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.name} onChange={e => setDiseaseForm({ ...diseaseForm, name: e.target.value })} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Category Group</label>
-                    <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.group_id} onChange={e => setDiseaseForm({ ...diseaseForm, group_id: e.target.value })}>
-                      <option value="">-- Unassigned --</option>
-                      {groups.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Category</label>
-                    <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.category} onChange={e => setDiseaseForm({ ...diseaseForm, category: e.target.value })}>
-                      <option value="Viral">Viral</option>
-                      <option value="Bacterial">Bacterial</option>
-                      <option value="Parasitic">Parasitic</option>
-                      <option value="Fungal">Fungal</option>
-                      <option value="Nutritional/Toxic">Nutritional/Toxic</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description *</label>
-                    <textarea required className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 80 }} value={diseaseForm.description} onChange={e => setDiseaseForm({ ...diseaseForm, description: e.target.value })} placeholder="Write comprehensive clinical description in English..." />
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Body System</label>
-                      <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.body_system} onChange={e => setDiseaseForm({ ...diseaseForm, body_system: e.target.value })}>
-                        <option value="Respiratory">Respiratory</option>
-                        <option value="Digestive">Digestive</option>
-                        <option value="Musculoskeletal">Musculoskeletal</option>
-                        <option value="Nervous">Nervous</option>
-                        <option value="Integumentary">Integumentary</option>
-                        <option value="Reproductive">Reproductive</option>
-                        <option value="Circulatory">Circulatory</option>
-                        <option value="Urinary">Urinary</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Type</label>
-                      <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.disease_type} onChange={e => setDiseaseForm({ ...diseaseForm, disease_type: e.target.value })}>
-                        <option value="Infectious">Infectious</option>
-                        <option value="Zoonotic">Zoonotic</option>
-                        <option value="Hereditary">Hereditary</option>
-                        <option value="Metabolic">Metabolic</option>
-                        <option value="Deficiency">Deficiency</option>
-                        <option value="Toxicological">Toxicological</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Target Species</label>
-                      <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.species} onChange={e => setDiseaseForm({ ...diseaseForm, species: e.target.value })} placeholder="e.g. Cattle, Buffalo" />
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Severity Level (1-5)</label>
-                      <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.severity_level} onChange={e => setDiseaseForm({ ...diseaseForm, severity_level: Number(e.target.value) })}>
-                        <option value="1">1 (Mild)</option>
-                        <option value="2">2 (Moderate)</option>
-                        <option value="3">3 (Severe)</option>
-                        <option value="4">4 (Very Severe)</option>
-                        <option value="5">5 (Critical)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Pathogen Type</label>
-                      <select className="filter-select" style={{ width: '100%' }} value={diseaseForm.pathogen_type} onChange={e => setDiseaseForm({ ...diseaseForm, pathogen_type: e.target.value })}>
-                        <option value="Virus">Virus</option>
-                        <option value="Bacteria">Bacteria</option>
-                        <option value="Fungus">Fungus</option>
-                        <option value="Parasite">Parasite</option>
-                        <option value="Prion">Prion</option>
-                        <option value="Toxin">Toxin</option>
-                        <option value="Unknown">Unknown</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Pathogen Name</label>
-                      <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.pathogen_name} onChange={e => setDiseaseForm({ ...diseaseForm, pathogen_name: e.target.value })} placeholder="e.g. Lyssavirus" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Causes (one per line)</label>
-                    <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 100 }} value={diseaseForm.causes} onChange={e => setDiseaseForm({ ...diseaseForm, causes: e.target.value })} placeholder="Type each cause on a new line..." />
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0' }}>
-                    <input type="checkbox" id="is_common" checked={diseaseForm.is_common} onChange={e => setDiseaseForm({ ...diseaseForm, is_common: e.target.checked })} style={{ cursor: 'pointer' }} />
-                    <label htmlFor="is_common" style={{ fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer' }}>Mark as Common Disease</label>
-                  </div>
-
-                  {renderImageUploader(diseaseForm.image_path, 'disease')}
-                  
-                  <ChipsInput 
-                    label="Symptoms" 
-                    values={diseaseForm.symptoms} 
-                    onChange={newVals => setDiseaseForm({ ...diseaseForm, symptoms: newVals })} 
-                    placeholder="Type a symptom and press Enter" 
-                  />
-                  
-                  <ChipsInput 
-                    label="Treatments" 
-                    values={diseaseForm.treatment} 
-                    onChange={newVals => setDiseaseForm({ ...diseaseForm, treatment: newVals })} 
-                    placeholder="Type a treatment and press Enter" 
-                  />
-                </>
-              ) : (
-                <>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Name (Hindi)</label>
-                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.name_hi} onChange={e => setDiseaseForm({ ...diseaseForm, name_hi: e.target.value })} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description in Hindi (हिंदी विवरण)</label>
-                    <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 80 }} value={diseaseForm.description_hi} onChange={e => setDiseaseForm({ ...diseaseForm, description_hi: e.target.value })} placeholder="Write clinical description in Hindi..." />
-                  </div>
-                  <ChipsInput 
-                    label="Symptoms in Hindi (हिंदी लक्षण)" 
-                    values={diseaseForm.symptoms_hi} 
-                    onChange={newVals => setDiseaseForm({ ...diseaseForm, symptoms_hi: newVals })} 
-                    placeholder="लक्षण दर्ज करें और Enter दबाएं" 
-                  />
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Causes in Hindi (हिंदी कारण - one per line)</label>
-                    <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 100 }} value={diseaseForm.causes_hi} onChange={e => setDiseaseForm({ ...diseaseForm, causes_hi: e.target.value })} placeholder="प्रत्येक कारण को एक नई पंक्ति में लिखें..." />
-                  </div>
-                  <ChipsInput 
-                    label="Treatment in Hindi (हिंदी उपचार)" 
-                    values={diseaseForm.treatment_hi} 
-                    onChange={newVals => setDiseaseForm({ ...diseaseForm, treatment_hi: newVals })} 
-                    placeholder="उपचार दर्ज करें और Enter दबाएं" 
-                  />
-                </>
-              )}
-
-              <button type="submit" className="export-btn" style={{ marginTop: 12 }}>
-                {editingDisease ? 'Update Disease' : 'Create Disease'}
-              </button>
+              {/* Modal Footer (Sticky) */}
+              <div 
+                style={{ 
+                  padding: '16px 24px', 
+                  borderTop: '1px solid var(--border-color)', 
+                  display: 'flex', 
+                  justifyContent: 'flex-end', 
+                  gap: 12,
+                  backgroundColor: '#fafafa'
+                }}
+              >
+                <button 
+                  type="button" 
+                  onClick={() => setIsDiseaseModalOpen(false)} 
+                  className="export-btn" 
+                  style={{ backgroundColor: '#fff', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="export-btn" 
+                  style={{ backgroundColor: 'var(--humal-green)', color: '#fff', border: 'none' }}
+                >
+                  {editingDisease ? 'Update Disease' : 'Create Disease'}
+                </button>
+              </div>
             </form>
           </div>
-        </>
+        </div>
       )}
 
       {/* GROUP MODAL */}
