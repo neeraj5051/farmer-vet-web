@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
 import { getImageVariantUrl } from '../../utils/imageUtils';
+import api from '../../services/api';
 
 const PAGE_SIZE = 10;
 
@@ -40,6 +41,130 @@ const DiseasesScreen = () => {
   const [groupFilter, setGroupFilter] = useState('all');
   const [selectedDisease, setSelectedDisease] = useState<Disease | null>(null);
   const [page, setPage] = useState(1);
+
+  // Image Uploader & Lightbox States
+  const [uploadingDiseaseImage, setUploadingDiseaseImage] = useState(false);
+  const [uploadingGroupImage, setUploadingGroupImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+
+  const handleImageUpload = async (file: File, type: 'disease' | 'group') => {
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("File size exceeds 5MB limit");
+      return;
+    }
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("Only JPG, PNG, and WEBP formats are supported");
+      return;
+    }
+
+    setUploadError(null);
+    if (type === 'disease') setUploadingDiseaseImage(true);
+    else setUploadingGroupImage(true);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('folder', type === 'disease' ? 'diseases' : 'diseases_groups');
+      const response = await api.post('/upload/admin-image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const serialized = JSON.stringify(response.data.images);
+      
+      if (type === 'disease') {
+        setDiseaseForm(prev => ({ ...prev, image_path: serialized }));
+      } else {
+        setGroupForm(prev => ({ ...prev, image_path: serialized }));
+      }
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      setUploadError("Image upload failed. Please try again.");
+    } finally {
+      setUploadingDiseaseImage(false);
+      setUploadingGroupImage(false);
+    }
+  };
+
+  const renderImageUploader = (currentPath: string, type: 'disease' | 'group') => {
+    const isUploading = type === 'disease' ? uploadingDiseaseImage : uploadingGroupImage;
+    const imgUrl = getImageVariantUrl(currentPath, 'medium');
+
+    return (
+      <div style={{ marginBottom: 16 }}>
+        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Cover Image</label>
+        {uploadError && <div style={{ color: '#ef4444', fontSize: '0.78rem', marginBottom: 6 }}>{uploadError}</div>}
+        
+        {imgUrl ? (
+          <div style={{ position: 'relative', width: '100%', height: 160, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+            <img src={imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <label className="export-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', cursor: 'pointer', backgroundColor: '#fff', color: '#333' }}>
+                  Replace
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (file) handleImageUpload(file, type);
+                  }} />
+                </label>
+                <button type="button" className="export-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', backgroundColor: '#ef4444', color: '#fff' }} onClick={() => {
+                  if (type === 'disease') setDiseaseForm(prev => ({ ...prev, image_path: '' }));
+                  else setGroupForm(prev => ({ ...prev, image_path: '' }));
+                }}>
+                  Remove
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div 
+            style={{ 
+              width: '100%', 
+              height: 120, 
+              border: '2px dashed var(--border-color)', 
+              borderRadius: 8, 
+              display: 'flex', 
+              flexDirection: 'column', 
+              alignItems: 'center', 
+              justifyContent: 'center', 
+              cursor: 'pointer',
+              backgroundColor: '#fafafa',
+              transition: 'all 0.2s'
+            }}
+            onClick={() => {
+              const el = document.getElementById(`file-input-${type}`);
+              el?.click();
+            }}
+            onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--primary-color)'; }}
+            onDragLeave={e => { e.preventDefault(); e.currentTarget.style.borderColor = 'var(--border-color)'; }}
+            onDrop={e => {
+              e.preventDefault();
+              const file = e.dataTransfer.files?.[0];
+              if (file) handleImageUpload(file, type);
+            }}
+          >
+            {isUploading ? (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                <Loader2 className="animate-spin" size={24} style={{ color: 'var(--primary-color)', marginBottom: 8 }} />
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Uploading image...</span>
+              </div>
+            ) : (
+              <>
+                <Plus size={20} style={{ color: 'var(--text-secondary)', marginBottom: 4 }} />
+                <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Drag & drop or Click to upload cover image</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Supports JPG, PNG, WEBP up to 5MB</span>
+              </>
+            )}
+            <input type="file" id={`file-input-${type}`} accept="image/*" style={{ display: 'none' }} onChange={e => {
+              const file = e.target.files?.[0];
+              if (file) handleImageUpload(file, type);
+            }} />
+          </div>
+        )}
+      </div>
+    );
+  };
 
   // Modals
   const [isDiseaseModalOpen, setIsDiseaseModalOpen] = useState(false);
@@ -528,6 +653,7 @@ const DiseasesScreen = () => {
                       <option value="Nutritional/Toxic">Nutritional/Toxic</option>
                     </select>
                   </div>
+                  {renderImageUploader(diseaseForm.image_path, 'disease')}
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Symptoms (comma separated)</label>
                     <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 70 }} value={diseaseForm.symptoms} onChange={e => setDiseaseForm({ ...diseaseForm, symptoms: e.target.value })} />
@@ -584,6 +710,7 @@ const DiseasesScreen = () => {
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Icon Emoji</label>
                 <input type="text" className="filter-search" style={{ width: 80 }} value={groupForm.icon_emoji} onChange={e => setGroupForm({ ...groupForm, icon_emoji: e.target.value })} />
               </div>
+              {renderImageUploader(groupForm.image_path, 'group')}
               <div>
                 <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description</label>
                 <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 70 }} value={groupForm.description} onChange={e => setGroupForm({ ...groupForm, description: e.target.value })} />
@@ -613,6 +740,30 @@ const DiseasesScreen = () => {
               <button className="drawer-close" onClick={() => setSelectedDisease(null)}><X size={20} /></button>
             </div>
             <div className="drawer-body">
+              {selectedDisease.image_path && (
+                <div 
+                  style={{ 
+                    position: 'relative', 
+                    width: '100%', 
+                    height: 200, 
+                    borderRadius: 8, 
+                    overflow: 'hidden', 
+                    marginBottom: 16, 
+                    cursor: 'pointer',
+                    border: '1px solid var(--border-color)' 
+                  }}
+                  onClick={() => setLightboxUrl(getImageVariantUrl(selectedDisease.image_path, 'large'))}
+                >
+                  <img 
+                    src={getImageVariantUrl(selectedDisease.image_path, 'medium')} 
+                    alt={selectedDisease.name} 
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                  />
+                  <div style={{ position: 'absolute', bottom: 10, right: 10, backgroundColor: 'rgba(0, 0, 0, 0.6)', color: '#fff', padding: '4px 8px', borderRadius: 4, fontSize: '0.72rem' }}>
+                    Click to expand
+                  </div>
+                </div>
+              )}
               <div className="drawer-section">
                 <div className="drawer-section-title">Disease Details</div>
                 {[
@@ -633,6 +784,45 @@ const DiseasesScreen = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* LIGHTBOX / IMAGE VIEWER */}
+      {lightboxUrl && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(0,0,0,0.9)', 
+            zIndex: 9999, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            alignItems: 'center', 
+            justifyContent: 'center' 
+          }}
+          onClick={() => { setLightboxUrl(null); setZoomLevel(1); }}
+        >
+          <div 
+            style={{ position: 'absolute', top: 20, right: 20, display: 'flex', gap: 12 }}
+            onClick={e => e.stopPropagation()}
+          >
+            <button className="export-btn" style={{ backgroundColor: '#fff', color: '#333' }} onClick={() => setZoomLevel(prev => Math.min(prev + 0.5, 3))}>Zoom In</button>
+            <button className="export-btn" style={{ backgroundColor: '#fff', color: '#333' }} onClick={() => setZoomLevel(prev => Math.max(prev - 0.5, 1))}>Zoom Out</button>
+            <a href={lightboxUrl} target="_blank" rel="noreferrer" className="export-btn" style={{ backgroundColor: '#fff', color: '#333', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none' }}>Open Original</a>
+            <button className="export-btn" style={{ backgroundColor: '#ef4444', color: '#fff' }} onClick={() => { setLightboxUrl(null); setZoomLevel(1); }}><X size={16} /></button>
+          </div>
+          <img 
+            src={lightboxUrl} 
+            alt="Disease full screen" 
+            style={{ 
+              maxWidth: '90%', 
+              maxHeight: '80%', 
+              objectFit: 'contain', 
+              transform: `scale(${zoomLevel})`, 
+              transition: 'transform 0.2s ease-in-out' 
+            }} 
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
       )}
     </div>
   );
