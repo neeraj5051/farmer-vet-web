@@ -278,8 +278,8 @@ const DiseasesScreen = () => {
     group_id: '',
     body_system: 'Respiratory',
     disease_type: 'Infectious',
-    causes: [] as string[],
-    causes_hi: [] as string[],
+    causes: '',
+    causes_hi: '',
     pathogen_type: 'Virus',
     pathogen_name: '',
     is_common: false
@@ -370,8 +370,8 @@ const DiseasesScreen = () => {
         species: diseaseForm.species,
         symptoms: diseaseForm.symptoms || [],
         symptoms_hi: diseaseForm.symptoms_hi || [],
-        causes: diseaseForm.causes || [],
-        causes_hi: diseaseForm.causes_hi || [],
+        causes: diseaseForm.causes ? diseaseForm.causes.split('\n').map(c => c.trim()).filter(Boolean) : [],
+        causes_hi: diseaseForm.causes_hi ? diseaseForm.causes_hi.split('\n').map(c => c.trim()).filter(Boolean) : [],
         treatments: diseaseForm.treatment || [],
         treatments_hi: diseaseForm.treatment_hi || [],
         severity_level: Number(diseaseForm.severity_level),
@@ -454,8 +454,8 @@ const DiseasesScreen = () => {
       group_id: '',
       body_system: 'Respiratory',
       disease_type: 'Infectious',
-      causes: [] as string[],
-      causes_hi: [] as string[],
+      causes: '',
+      causes_hi: '',
       pathogen_type: 'Virus',
       pathogen_name: '',
       is_common: false
@@ -482,8 +482,8 @@ const DiseasesScreen = () => {
       group_id: d.group_id || '',
       body_system: d.body_system || 'Respiratory',
       disease_type: d.disease_type || 'Infectious',
-      causes: d.causes || [],
-      causes_hi: d.causes_hi || [],
+      causes: (d.causes || []).join('\n'),
+      causes_hi: (d.causes_hi || []).join('\n'),
       pathogen_type: d.pathogen_type || 'Virus',
       pathogen_name: d.pathogen_name || '',
       is_common: d.is_common || false
@@ -833,12 +833,10 @@ const DiseasesScreen = () => {
                     </div>
                   </div>
 
-                  <ChipsInput 
-                    label="Causes" 
-                    values={diseaseForm.causes} 
-                    onChange={newVals => setDiseaseForm({ ...diseaseForm, causes: newVals })} 
-                    placeholder="Type a cause and press Enter" 
-                  />
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Causes (one per line)</label>
+                    <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 100 }} value={diseaseForm.causes} onChange={e => setDiseaseForm({ ...diseaseForm, causes: e.target.value })} placeholder="Type each cause on a new line..." />
+                  </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0' }}>
                     <input type="checkbox" id="is_common" checked={diseaseForm.is_common} onChange={e => setDiseaseForm({ ...diseaseForm, is_common: e.target.checked })} style={{ cursor: 'pointer' }} />
@@ -873,12 +871,10 @@ const DiseasesScreen = () => {
                     onChange={newVals => setDiseaseForm({ ...diseaseForm, symptoms_hi: newVals })} 
                     placeholder="लक्षण दर्ज करें और Enter दबाएं" 
                   />
-                  <ChipsInput 
-                    label="Causes in Hindi (हिंदी कारण)" 
-                    values={diseaseForm.causes_hi} 
-                    onChange={newVals => setDiseaseForm({ ...diseaseForm, causes_hi: newVals })} 
-                    placeholder="कारण दर्ज करें और Enter दबाएं" 
-                  />
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Causes in Hindi (हिंदी कारण - one per line)</label>
+                    <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 100 }} value={diseaseForm.causes_hi} onChange={e => setDiseaseForm({ ...diseaseForm, causes_hi: e.target.value })} placeholder="प्रत्येक कारण को एक नई पंक्ति में लिखें..." />
+                  </div>
                   <ChipsInput 
                     label="Treatment in Hindi (हिंदी उपचार)" 
                     values={diseaseForm.treatment_hi} 
