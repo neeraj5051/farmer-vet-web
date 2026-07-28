@@ -1,27 +1,150 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { serviceCardService } from '../../services/serviceCardService';
+import {
+  getAdminServices,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  createVariant,
+  updateVariant,
+  deleteVariant,
+  type ServiceCategory,
+  type ServiceVariant
+} from '../../services/servicesService';
 import api from '../../services/api';
 import { 
   LayoutGrid, 
   Eye, 
   Loader2, 
-  Video, 
-  Home, 
-  Syringe, 
-  Dna, 
   Settings2,
   X,
-  Plus
+  Plus,
+  ChevronDown,
+  ChevronRight,
+  Edit3,
+  Trash2,
+  Layers,
+  Sparkles
 } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
 import { getImageVariantUrl } from '../../utils/imageUtils';
 
-const DEFAULT_SERVICES = [
-  { id: 'srv-1', name: 'Online Video Consultation', icon: Video, duration: '15 mins', status: 'Active', category: 'Telemedicine' },
-  { id: 'srv-2', name: 'In-Person Field Visit', icon: Home, duration: 'Variable', status: 'Active', category: 'Field Care' },
-  { id: 'srv-3', name: 'Artificial Insemination (AI)', icon: Dna, duration: '30 mins', status: 'Active', category: 'Breeding' },
-  { id: 'srv-4', name: 'Vaccination Drive', icon: Syringe, duration: '10 mins', status: 'Active', category: 'Immunization' },
-];
+const AdvancedTextarea = ({ 
+  label, 
+  value, 
+  onChange, 
+  placeholder
+}: { 
+  label: string, 
+  value: string, 
+  onChange: (val: string) => void, 
+  placeholder?: string
+}) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertText = (prefix: string, suffix: string = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selected = text.substring(start, end);
+    const replacement = prefix + selected + suffix;
+
+    const newVal = text.substring(0, start) + replacement + text.substring(end);
+    onChange(newVal);
+
+    // Reset cursor position
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+    }, 0);
+  };
+
+  const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
+  const charCount = value.length;
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>{label}</label>
+      </div>
+
+      <div style={{ border: '1px solid var(--border-color)', borderRadius: 8, overflow: 'hidden', backgroundColor: '#fff' }}>
+        {/* Toolbar */}
+        <div style={{ display: 'flex', gap: 6, padding: '6px 10px', borderBottom: '1px solid var(--border-color)', backgroundColor: '#fafafa', alignItems: 'center' }}>
+          <button 
+            type="button" 
+            onClick={() => insertText('**', '**')}
+            style={{ fontWeight: 'bold', width: 28, height: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: '0.82rem' }}
+            title="Bold"
+          >
+            B
+          </button>
+          <button 
+            type="button" 
+            onClick={() => insertText('*', '*')}
+            style={{ fontStyle: 'italic', width: 28, height: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: '0.82rem' }}
+            title="Italic"
+          >
+            I
+          </button>
+          <button 
+            type="button" 
+            onClick={() => insertText('\n- ', '')}
+            style={{ width: 28, height: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: '0.82rem' }}
+            title="Bullet List"
+          >
+            •
+          </button>
+          <button 
+            type="button" 
+            onClick={() => insertText('\n1. ', '')}
+            style={{ width: 28, height: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: '0.82rem' }}
+            title="Numbered List"
+          >
+            1.
+          </button>
+          <div style={{ flexGrow: 1 }} />
+          <button 
+            type="button" 
+            onClick={() => onChange('')}
+            style={{ width: 48, height: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: '0.72rem', color: '#ef4444' }}
+            title="Clear Text"
+          >
+            Clear
+          </button>
+        </div>
+
+        {/* Text Area */}
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{ 
+            width: '100%', 
+            height: 90, 
+            border: 'none', 
+            outline: 'none', 
+            padding: '10px 12px', 
+            fontSize: '0.85rem', 
+            fontFamily: 'inherit', 
+            resize: 'vertical',
+            boxSizing: 'border-box',
+            lineHeight: '1.45'
+          }}
+        />
+
+        {/* Stats footer */}
+        <div style={{ padding: '4px 10px', borderTop: '1px solid var(--border-color)', backgroundColor: '#fafafa', display: 'flex', justifyContent: 'flex-end', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+          {wordCount} words | {charCount} chars
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const DEFAULT_CARDS = [
   { id: 'sc-1', title: 'Online Consultation', title_hi: 'ऑनलाइन परामर्श', subtitle: 'Video call with licensed vet', display_order: 1, is_active: true },
@@ -33,13 +156,13 @@ const DEFAULT_CARDS = [
 const ServicesScreen = () => {
   const [activeTab, setActiveTab] = useState<'cards' | 'global'>('cards');
   const [cardsData, setCardsData] = useState<any[]>([]);
-  const [servicesData] = useState(DEFAULT_SERVICES);
+  const [categories, setCategories] = useState<ServiceCategory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
-  // Edit Modal States
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  // Action Card Modal States
+  const [isCardModalOpen, setIsCardModalOpen] = useState(false);
   const [selectedCard, setSelectedCard] = useState<any>(null);
-  const [modalTab, setModalTab] = useState<'english' | 'hindi'>('english');
   const [cardForm, setCardForm] = useState({
     title: '',
     title_hi: '',
@@ -50,17 +173,55 @@ const ServicesScreen = () => {
     is_active: true
   });
 
+  // Category Modal States
+  const [isCatModalOpen, setIsCatModalOpen] = useState(false);
+  const [editingCat, setEditingCat] = useState<ServiceCategory | null>(null);
+  const [catForm, setCatForm] = useState({
+    name: '',
+    title: '',
+    title_hi: '',
+    description: '',
+    description_hi: '',
+    icon_emoji: '✨',
+    is_active: true
+  });
+
+  // Variant Modal States
+  const [isVarModalOpen, setIsVarModalOpen] = useState(false);
+  const [editingVar, setEditingVar] = useState<ServiceVariant | null>(null);
+  const [parentCategoryId, setParentCategoryId] = useState('');
+  const [varForm, setVarForm] = useState({
+    name: '',
+    name_hi: '',
+    description: '',
+    description_hi: '',
+    base_fee_suggestion: '150',
+    is_active: true
+  });
+
+  const [modalTab, setModalTab] = useState<'english' | 'hindi'>('english');
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const result = await serviceCardService.getAllServiceCardsAdmin();
-      setCardsData(Array.isArray(result) && result.length > 0 ? result : DEFAULT_CARDS);
-    } catch (err) {
-      console.warn('Backend service cards empty. Loading defaults.', err);
-      setCardsData(DEFAULT_CARDS);
+      // Fetch action cards
+      try {
+        const cards = await serviceCardService.getAllServiceCardsAdmin();
+        setCardsData(Array.isArray(cards) && cards.length > 0 ? cards : DEFAULT_CARDS);
+      } catch (e) {
+        console.warn("Failed fetching cards:", e);
+        setCardsData(DEFAULT_CARDS);
+      }
+
+      // Fetch global service categories
+      try {
+        const services = await getAdminServices();
+        setCategories(Array.isArray(services) ? services : []);
+      } catch (e) {
+        console.warn("Failed fetching categories:", e);
+      }
     } finally {
       setLoading(false);
     }
@@ -69,6 +230,14 @@ const ServicesScreen = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  const toggleExpand = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
 
   // Image Upload Logic
   const handleImageUpload = async (file: File) => {
@@ -102,7 +271,137 @@ const ServicesScreen = () => {
     }
   };
 
-  const openEditModal = (card: any) => {
+  // ── Category CRUD ──────────────────────────────────────────────────────────
+  const openAddCategory = () => {
+    setEditingCat(null);
+    setModalTab('english');
+    setCatForm({
+      name: '',
+      title: '',
+      title_hi: '',
+      description: '',
+      description_hi: '',
+      icon_emoji: '✨',
+      is_active: true
+    });
+    setIsCatModalOpen(true);
+  };
+
+  const openEditCategory = (cat: ServiceCategory) => {
+    setEditingCat(cat);
+    setModalTab('english');
+    setCatForm({
+      name: cat.name,
+      title: cat.title,
+      title_hi: cat.title_hi || '',
+      description: cat.description || '',
+      description_hi: cat.description_hi || '',
+      icon_emoji: cat.icon_emoji || '✨',
+      is_active: cat.is_active
+    });
+    setIsCatModalOpen(true);
+  };
+
+  const handleDeleteCategoryClick = async (cat: ServiceCategory) => {
+    if (window.confirm(`Are you sure you want to delete category "${cat.title}" and ALL its variants?`)) {
+      try {
+        await deleteCategory(cat.id);
+        await loadData();
+      } catch (err) {
+        console.error("Delete category failed:", err);
+        alert("Failed to delete category.");
+      }
+    }
+  };
+
+  const handleCategorySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!catForm.title.trim()) return;
+    try {
+      if (editingCat) {
+        await updateCategory(editingCat.id, catForm);
+      } else {
+        const keyName = catForm.name.toUpperCase().replace(/\s+/g, '_');
+        await createCategory({ ...catForm, name: keyName });
+      }
+      setIsCatModalOpen(false);
+      await loadData();
+    } catch (err) {
+      console.error("Save category failed:", err);
+      alert("Failed to save category. Make sure Key Name is unique.");
+    }
+  };
+
+  // ── Variant CRUD ───────────────────────────────────────────────────────────
+  const openAddVariant = (categoryId: string) => {
+    setEditingVar(null);
+    setParentCategoryId(categoryId);
+    setModalTab('english');
+    setVarForm({
+      name: '',
+      name_hi: '',
+      description: '',
+      description_hi: '',
+      base_fee_suggestion: '150',
+      is_active: true
+    });
+    setIsVarModalOpen(true);
+  };
+
+  const openEditVariant = (v: ServiceVariant) => {
+    setEditingVar(v);
+    setParentCategoryId(v.category_id);
+    setModalTab('english');
+    setVarForm({
+      name: v.name,
+      name_hi: v.name_hi || '',
+      description: v.description || '',
+      description_hi: v.description_hi || '',
+      base_fee_suggestion: v.base_fee_suggestion != null ? String(v.base_fee_suggestion) : '150',
+      is_active: v.is_active
+    });
+    setIsVarModalOpen(true);
+  };
+
+  const handleDeleteVariantClick = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this variant?")) {
+      try {
+        await deleteVariant(id);
+        await loadData();
+      } catch (err) {
+        console.error("Delete variant failed:", err);
+        alert("Failed to delete variant.");
+      }
+    }
+  };
+
+  const handleVariantSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!varForm.name.trim()) return;
+    try {
+      const payload = {
+        category_id: parentCategoryId,
+        name: varForm.name,
+        name_hi: varForm.name_hi || undefined,
+        description: varForm.description || undefined,
+        description_hi: varForm.description_hi || undefined,
+        base_fee_suggestion: varForm.base_fee_suggestion ? parseFloat(varForm.base_fee_suggestion) : 150,
+        is_active: varForm.is_active
+      };
+      if (editingVar) {
+        await updateVariant(editingVar.id, payload);
+      } else {
+        await createVariant(payload);
+      }
+      setIsVarModalOpen(false);
+      await loadData();
+    } catch (err) {
+      console.error("Save variant failed:", err);
+      alert("Failed to save variant.");
+    }
+  };
+
+  const openEditCardModal = (card: any) => {
     setSelectedCard(card);
     setModalTab('english');
     setCardForm({
@@ -115,15 +414,15 @@ const ServicesScreen = () => {
       is_active: card.is_active !== false
     });
     setUploadError(null);
-    setIsModalOpen(true);
+    setIsCardModalOpen(true);
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handleCardSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCard) return;
     try {
       await serviceCardService.updateServiceCard(selectedCard.id, cardForm);
-      setIsModalOpen(false);
+      setIsCardModalOpen(false);
       await loadData();
     } catch (err) {
       console.error("Failed to update service card:", err);
@@ -195,7 +494,21 @@ const ServicesScreen = () => {
     );
   };
 
-  if (loading && cardsData.length === 0) return (
+  const stats = useMemo(() => {
+    let totalVar = 0;
+    categories.forEach(c => {
+      if (Array.isArray(c.variants)) {
+        totalVar += c.variants.length;
+      }
+    });
+    return {
+      categories: categories.length,
+      active: categories.filter(c => c.is_active !== false).length,
+      variants: totalVar
+    };
+  }, [categories]);
+
+  if (loading && cardsData.length === 0 && categories.length === 0) return (
     <div className="loading-spinner">
       <Loader2 size={36} />
       <p>Loading services & action cards...</p>
@@ -209,6 +522,11 @@ const ServicesScreen = () => {
           <h1 className="list-screen-title">Service Management</h1>
           <p className="list-screen-subtitle">Manage mobile app action cards, service banners, and global platform offerings</p>
         </div>
+        {activeTab === 'global' && (
+          <button className="export-btn" onClick={openAddCategory}>
+            <Plus size={16} /> New Category
+          </button>
+        )}
       </div>
 
       {/* Top Tabs */}
@@ -225,8 +543,44 @@ const ServicesScreen = () => {
           onClick={() => setActiveTab('global')}
         >
           <Settings2 size={16} style={{ display: 'inline', marginRight: 6 }} />
-          Global Service Offerings ({servicesData.length})
+          Global Service Offerings ({categories.length})
         </button>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="list-kpi-row">
+        {activeTab === 'cards' ? (
+          <>
+            <div className="list-kpi-card">
+              <div className="list-kpi-icon" style={{ backgroundColor: '#dbeafe', color: '#3b82f6' }}><LayoutGrid size={16} /></div>
+              <div className="list-kpi-value">{cardsData.length}</div>
+              <div className="list-kpi-label">Total Action Cards</div>
+            </div>
+            <div className="list-kpi-card">
+              <div className="list-kpi-icon" style={{ backgroundColor: '#dcfce7', color: '#10b981' }}><Sparkles size={16} /></div>
+              <div className="list-kpi-value">{cardsData.filter(c => c.is_active !== false).length}</div>
+              <div className="list-kpi-label">Active Cards</div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="list-kpi-card">
+              <div className="list-kpi-icon" style={{ backgroundColor: '#dbeafe', color: '#3b82f6' }}><Layers size={16} /></div>
+              <div className="list-kpi-value">{stats.categories}</div>
+              <div className="list-kpi-label">Categories</div>
+            </div>
+            <div className="list-kpi-card">
+              <div className="list-kpi-icon" style={{ backgroundColor: '#dcfce7', color: '#10b981' }}><Sparkles size={16} /></div>
+              <div className="list-kpi-value">{stats.active}</div>
+              <div className="list-kpi-label">Active Categories</div>
+            </div>
+            <div className="list-kpi-card">
+              <div className="list-kpi-icon" style={{ backgroundColor: '#fee2e2', color: '#ef4444' }}><Settings2 size={16} /></div>
+              <div className="list-kpi-value">{stats.variants}</div>
+              <div className="list-kpi-label">Total Service Variants</div>
+            </div>
+          </>
+        )}
       </div>
 
       {/* TAB 1: MOBILE APP ACTION CARDS */}
@@ -259,7 +613,7 @@ const ServicesScreen = () => {
                     }}>
                       {card.is_active !== false ? 'Active' : 'Disabled'}
                     </span>
-                    <button onClick={() => openEditModal(card)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <button onClick={() => openEditCardModal(card)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Eye size={16} /> Edit Card
                     </button>
                   </div>
@@ -270,39 +624,148 @@ const ServicesScreen = () => {
         </div>
       )}
 
-      {/* TAB 2: GLOBAL SERVICE OFFERINGS */}
+      {/* TAB 2: GLOBAL SERVICE OFFERINGS (ACCRUING CRUD) */}
       {activeTab === 'global' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
-          {servicesData.map(srv => {
-            const IconComp = srv.icon;
-            return (
-              <div key={srv.id} style={{ background: 'var(--card-white)', border: '1px solid var(--border-color)', borderRadius: 12, padding: 20 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 8, backgroundColor: '#e6f0eb', color: '#0a4f32', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <IconComp size={20} />
-                  </div>
-                  <div>
-                    <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 600 }}>{srv.name}</h3>
-                    <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>{srv.category}</p>
-                  </div>
-                </div>
+        <div className="list-table-card">
+          <div style={{ overflowX: 'auto' }}>
+            <table className="list-table">
+              <thead>
+                <tr>
+                  <th style={{ width: 40 }}></th>
+                  <th>Category Group</th>
+                  <th>Hindi Title</th>
+                  <th>Key ID</th>
+                  <th>Status</th>
+                  <th>Variants Count</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {categories.map(cat => {
+                  const isExpanded = expandedIds.has(cat.id);
+                  const variants = cat.variants || [];
+                  return (
+                    <>
+                      <tr key={cat.id}>
+                        <td>
+                          <button 
+                            type="button" 
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+                            onClick={() => toggleExpand(cat.id)}
+                          >
+                            {isExpanded ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
+                          </button>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 6, backgroundColor: '#e6f0eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem' }}>
+                              {cat.icon_emoji || '✨'}
+                            </div>
+                            <div style={{ fontWeight: 600 }}>{cat.title}</div>
+                          </div>
+                        </td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{cat.title_hi || '—'}</td>
+                        <td style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--text-muted)' }}>{cat.name}</td>
+                        <td>
+                          <span className="list-status-badge" style={{
+                            backgroundColor: cat.is_active !== false ? '#dcfce7' : '#fef3c7',
+                            color: cat.is_active !== false ? '#166534' : '#92400e'
+                          }}>
+                            {cat.is_active !== false ? 'Active' : 'Disabled'}
+                          </span>
+                        </td>
+                        <td>
+                          <span className="list-status-badge" style={{ backgroundColor: '#e2e8f0', color: '#334155' }}>
+                            {variants.length} Variants
+                          </span>
+                        </td>
+                        <td>
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                            <button onClick={() => openEditCategory(cat)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--humal-green)' }} title="Edit category">
+                              <Edit3 size={18} />
+                            </button>
+                            <button onClick={() => handleDeleteCategoryClick(cat)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="Delete category">
+                              <Trash2 size={18} />
+                            </button>
+                            <button onClick={() => openAddVariant(cat.id)} className="export-btn" style={{ padding: '2px 8px', fontSize: '0.72rem', height: 'auto' }}>
+                              + Add Variant
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
 
-                <div style={{ fontSize: '0.88rem', display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: '1px solid var(--border-color)', marginTop: 12 }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Default Duration</span>
-                  <span style={{ fontWeight: 600 }}>{srv.duration}</span>
-                </div>
-                <div style={{ fontSize: '0.88rem', display: 'flex', justifyContent: 'space-between', padding: '8px 0' }}>
-                  <span style={{ color: 'var(--text-secondary)' }}>Status</span>
-                  <span className="list-status-badge" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>{srv.status}</span>
-                </div>
-              </div>
-            );
-          })}
+                      {/* Expanded Variants subtable */}
+                      {isExpanded && (
+                        <tr>
+                          <td colSpan={7} style={{ backgroundColor: '#fafafa', padding: '12px 24px' }}>
+                            <div style={{ borderLeft: '3px solid var(--humal-green)', paddingLeft: 16 }}>
+                              <h4 style={{ margin: '0 0 10px 0', fontSize: '0.88rem', fontWeight: 600 }}>
+                                Service Variants for {cat.title}
+                              </h4>
+                              {variants.length === 0 ? (
+                                <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', padding: '6px 0' }}>
+                                  No variants defined yet. Click "+ Add Variant" to create one.
+                                </div>
+                              ) : (
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
+                                  <thead>
+                                    <tr style={{ borderBottom: '1px solid #e2e8f0', textAlign: 'left', color: 'var(--text-secondary)' }}>
+                                      <th style={{ padding: '6px 8px' }}>Variant Name</th>
+                                      <th style={{ padding: '6px 8px' }}>Hindi Name</th>
+                                      <th style={{ padding: '6px 8px' }}>Base Fee</th>
+                                      <th style={{ padding: '6px 8px' }}>Status</th>
+                                      <th style={{ padding: '6px 8px', textAlign: 'right' }}>Actions</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {variants.map(v => (
+                                      <tr key={v.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                                        <td style={{ padding: '8px', fontWeight: 500 }}>{v.name}</td>
+                                        <td style={{ padding: '8px', color: 'var(--text-secondary)' }}>{v.name_hi || '—'}</td>
+                                        <td style={{ padding: '8px', fontWeight: 600 }}>₹{v.base_fee_suggestion || 0}</td>
+                                        <td style={{ padding: '8px' }}>
+                                          <span className="list-status-badge" style={{
+                                            backgroundColor: v.is_active !== false ? '#dcfce7' : '#fef3c7',
+                                            color: v.is_active !== false ? '#166534' : '#92400e',
+                                            fontSize: '0.72rem',
+                                            padding: '1px 6px'
+                                          }}>
+                                            {v.is_active !== false ? 'Active' : 'Disabled'}
+                                          </span>
+                                        </td>
+                                        <td style={{ padding: '8px', textAlign: 'right' }}>
+                                          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                                            <button onClick={() => openEditVariant(v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--humal-green)' }}>
+                                              <Edit3 size={14} />
+                                            </button>
+                                            <button onClick={() => handleDeleteVariantClick(v.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                                              <Trash2 size={14} />
+                                            </button>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
+                  );
+                })}
+                {categories.length === 0 && (
+                  <tr><td colSpan={7} className="list-empty">No categories found.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* EDIT POPUP MODAL */}
-      {isModalOpen && (
+      {/* EDIT ACTION CARD MODAL */}
+      {isCardModalOpen && (
         <div 
           style={{ 
             position: 'fixed', 
@@ -315,7 +778,7 @@ const ServicesScreen = () => {
             justifyContent: 'center',
             padding: 24 
           }}
-          onClick={() => setIsModalOpen(false)}
+          onClick={() => setIsCardModalOpen(false)}
         >
           <div 
             style={{ 
@@ -352,7 +815,7 @@ const ServicesScreen = () => {
                 </p>
               </div>
               <button 
-                onClick={() => setIsModalOpen(false)} 
+                onClick={() => setIsCardModalOpen(false)} 
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
               >
                 <X size={20} />
@@ -360,7 +823,7 @@ const ServicesScreen = () => {
             </div>
 
             {/* Scrollable Form Body */}
-            <form onSubmit={handleFormSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+            <form onSubmit={handleCardSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
               <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
                 
                 {/* Image uploader banner */}
@@ -435,7 +898,7 @@ const ServicesScreen = () => {
               >
                 <button 
                   type="button" 
-                  onClick={() => setIsModalOpen(false)} 
+                  onClick={() => setIsCardModalOpen(false)} 
                   className="export-btn" 
                   style={{ backgroundColor: '#fff', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
                 >
@@ -447,6 +910,321 @@ const ServicesScreen = () => {
                   style={{ backgroundColor: 'var(--humal-green)', color: '#fff', border: 'none' }}
                 >
                   Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE/EDIT CATEGORY MODAL */}
+      {isCatModalOpen && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(15, 23, 42, 0.4)', 
+            backdropFilter: 'blur(8px)', 
+            zIndex: 9999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            padding: 24 
+          }}
+          onClick={() => setIsCatModalOpen(false)}
+        >
+          <div 
+            style={{ 
+              backgroundColor: '#fff', 
+              borderRadius: 16, 
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', 
+              width: '100%', 
+              maxWidth: 580, 
+              maxHeight: '85vh', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden',
+              border: '1px solid var(--border-color)' 
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div 
+              style={{ 
+                padding: '20px 24px', 
+                borderBottom: '1px solid var(--border-color)', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                backgroundColor: '#fafafa'
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {editingCat ? 'Edit Service Category' : 'Create Service Category'}
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  Configure service categorizations and listings.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsCatModalOpen(false)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleCategorySubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+              <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                
+                {/* English/Hindi Tabs */}
+                <div className="list-tabs" style={{ marginBottom: 4 }}>
+                  <button
+                    type="button"
+                    className={`list-tab ${modalTab === 'english' ? 'active' : ''}`}
+                    onClick={() => setModalTab('english')}
+                  >
+                    English details
+                  </button>
+                  <button
+                    type="button"
+                    className={`list-tab ${modalTab === 'hindi' ? 'active' : ''}`}
+                    onClick={() => setModalTab('hindi')}
+                  >
+                    Hindi Translation (हिंदी)
+                  </button>
+                </div>
+
+                {modalTab === 'english' ? (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Category Title *</label>
+                        <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={catForm.title} onChange={e => setCatForm({ ...catForm, title: e.target.value })} placeholder="e.g. Artificial Insemination" />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Icon Emoji</label>
+                        <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center' }} value={catForm.icon_emoji} onChange={e => setCatForm({ ...catForm, icon_emoji: e.target.value })} placeholder="e.g. 🧬" />
+                      </div>
+                    </div>
+
+                    {!editingCat && (
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Key Name (ID) *</label>
+                        <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={catForm.name} onChange={e => setCatForm({ ...catForm, name: e.target.value })} placeholder="e.g. ARTIFICIAL_INSEMINATION" />
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <input type="checkbox" id="cat_is_active" checked={catForm.is_active} onChange={e => setCatForm({ ...catForm, is_active: e.target.checked })} style={{ cursor: 'pointer' }} />
+                      <label htmlFor="cat_is_active" style={{ fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>Active Category</label>
+                    </div>
+
+                    <AdvancedTextarea 
+                      label="Description" 
+                      value={catForm.description} 
+                      onChange={val => setCatForm({ ...catForm, description: val })} 
+                      placeholder="Write category description..." 
+                    />
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Category Title (Hindi)</label>
+                      <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={catForm.title_hi} onChange={e => setCatForm({ ...catForm, title_hi: e.target.value })} placeholder="हिंदी में श्रेणी का नाम..." />
+                    </div>
+
+                    <AdvancedTextarea 
+                      label="Description in Hindi (हिंदी विवरण)" 
+                      value={catForm.description_hi} 
+                      onChange={val => setCatForm({ ...catForm, description_hi: val })} 
+                      placeholder="हिंदी में विवरण दर्ज करें..." 
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div 
+                style={{ 
+                  padding: '16px 24px', 
+                  borderTop: '1px solid var(--border-color)', 
+                  display: 'flex', 
+                  justifyContent: 'flex-end', 
+                  gap: 12,
+                  backgroundColor: '#fafafa'
+                }}
+              >
+                <button 
+                  type="button" 
+                  onClick={() => setIsCatModalOpen(false)} 
+                  className="export-btn" 
+                  style={{ backgroundColor: '#fff', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="export-btn" 
+                  style={{ backgroundColor: 'var(--humal-green)', color: '#fff', border: 'none' }}
+                >
+                  {editingCat ? 'Save Changes' : 'Create Category'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CREATE/EDIT VARIANT MODAL */}
+      {isVarModalOpen && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(15, 23, 42, 0.4)', 
+            backdropFilter: 'blur(8px)', 
+            zIndex: 9999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            padding: 24 
+          }}
+          onClick={() => setIsVarModalOpen(false)}
+        >
+          <div 
+            style={{ 
+              backgroundColor: '#fff', 
+              borderRadius: 16, 
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', 
+              width: '100%', 
+              maxWidth: 580, 
+              maxHeight: '85vh', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden',
+              border: '1px solid var(--border-color)' 
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div 
+              style={{ 
+                padding: '20px 24px', 
+                borderBottom: '1px solid var(--border-color)', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                backgroundColor: '#fafafa'
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  {editingVar ? 'Edit Service Variant' : 'Create Service Variant'}
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  Configure service variant names, pricing suggestions, and localized translation.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsVarModalOpen(false)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleVariantSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+              <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                
+                {/* English/Hindi Tabs */}
+                <div className="list-tabs" style={{ marginBottom: 4 }}>
+                  <button
+                    type="button"
+                    className={`list-tab ${modalTab === 'english' ? 'active' : ''}`}
+                    onClick={() => setModalTab('english')}
+                  >
+                    English details
+                  </button>
+                  <button
+                    type="button"
+                    className={`list-tab ${modalTab === 'hindi' ? 'active' : ''}`}
+                    onClick={() => setModalTab('hindi')}
+                  >
+                    Hindi Translation (हिंदी)
+                  </button>
+                </div>
+
+                {modalTab === 'english' ? (
+                  <>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Variant Name *</label>
+                      <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={varForm.name} onChange={e => setVarForm({ ...varForm, name: e.target.value })} placeholder="e.g. In-Person Field Visit" />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Base Fee Suggestion (₹) *</label>
+                        <input type="number" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={varForm.base_fee_suggestion} onChange={e => setVarForm({ ...varForm, base_fee_suggestion: e.target.value })} placeholder="150" />
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', marginTop: 22 }}>
+                        <input type="checkbox" id="var_is_active" checked={varForm.is_active} onChange={e => setVarForm({ ...varForm, is_active: e.target.checked })} style={{ cursor: 'pointer' }} />
+                        <label htmlFor="var_is_active" style={{ fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', marginLeft: 8, userSelect: 'none' }}>Active Variant</label>
+                      </div>
+                    </div>
+
+                    <AdvancedTextarea 
+                      label="Description" 
+                      value={varForm.description} 
+                      onChange={val => setVarForm({ ...varForm, description: val })} 
+                      placeholder="Write variant description..." 
+                    />
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Variant Name (Hindi)</label>
+                      <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={varForm.name_hi} onChange={e => setVarForm({ ...varForm, name_hi: e.target.value })} placeholder="हिंदी में उप-विकल्प का नाम..." />
+                    </div>
+
+                    <AdvancedTextarea 
+                      label="Description in Hindi (हिंदी विवरण)" 
+                      value={varForm.description_hi} 
+                      onChange={val => setVarForm({ ...varForm, description_hi: val })} 
+                      placeholder="हिंदी में विवरण दर्ज करें..." 
+                    />
+                  </>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div 
+                style={{ 
+                  padding: '16px 24px', 
+                  borderTop: '1px solid var(--border-color)', 
+                  display: 'flex', 
+                  justifyContent: 'flex-end', 
+                  gap: 12,
+                  backgroundColor: '#fafafa'
+                }}
+              >
+                <button 
+                  type="button" 
+                  onClick={() => setIsVarModalOpen(false)} 
+                  className="export-btn" 
+                  style={{ backgroundColor: '#fff', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="export-btn" 
+                  style={{ backgroundColor: 'var(--humal-green)', color: '#fff', border: 'none' }}
+                >
+                  {editingVar ? 'Save Changes' : 'Create Variant'}
                 </button>
               </div>
             </form>
