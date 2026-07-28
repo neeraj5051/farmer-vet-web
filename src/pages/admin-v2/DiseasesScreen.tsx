@@ -1074,7 +1074,7 @@ const DiseasesScreen = () => {
                         placeholder="Write comprehensive clinical description in English..." 
                       />
                       <AdvancedTextarea 
-                        label="Causes (one per line)" 
+                        label="Causes" 
                         value={diseaseForm.causes} 
                         onChange={val => setDiseaseForm({ ...diseaseForm, causes: val })} 
                         placeholder="Type each cause on a new line..." 
@@ -1113,7 +1113,7 @@ const DiseasesScreen = () => {
                         placeholder="हिंदी में बीमारी का विवरण..." 
                       />
                       <AdvancedTextarea 
-                        label="Causes in Hindi (हिंदी कारण - one per line)" 
+                        label="Causes in Hindi (हिंदी कारण)" 
                         value={diseaseForm.causes_hi} 
                         onChange={val => setDiseaseForm({ ...diseaseForm, causes_hi: val })} 
                         placeholder="हिंदी में बीमारी के कारण..." 
