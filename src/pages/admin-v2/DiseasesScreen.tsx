@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { 
   getDiseases, 
   getDiseaseGroups, 
@@ -112,6 +112,141 @@ const ChipsInput = ({
             minWidth: 100 
           }} 
         />
+      </div>
+    </div>
+  );
+};
+const AdvancedTextarea = ({ 
+  label, 
+  value, 
+  onChange, 
+  placeholder,
+  templates 
+}: { 
+  label: string, 
+  value: string, 
+  onChange: (val: string) => void, 
+  placeholder?: string,
+  templates?: { name: string, text: string }[] 
+}) => {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertText = (prefix: string, suffix: string = '') => {
+    const textarea = textareaRef.current;
+    if (!textarea) return;
+
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const text = textarea.value;
+    const selected = text.substring(start, end);
+    const replacement = prefix + selected + suffix;
+
+    const newVal = text.substring(0, start) + replacement + text.substring(end);
+    onChange(newVal);
+
+    // Reset cursor position
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(start + prefix.length, start + prefix.length + selected.length);
+    }, 0);
+  };
+
+  const wordCount = value.trim() ? value.trim().split(/\s+/).length : 0;
+  const charCount = value.length;
+
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+        <label style={{ fontSize: '0.82rem', fontWeight: 600 }}>{label}</label>
+        {templates && templates.length > 0 && (
+          <select 
+            className="filter-select" 
+            style={{ padding: '2px 8px', fontSize: '0.72rem', height: 'auto', width: 'auto', border: '1px solid var(--border-color)', margin: 0 }}
+            onChange={e => {
+              if (e.target.value) {
+                onChange(e.target.value);
+                e.target.value = '';
+              }
+            }}
+          >
+            <option value="">-- Apply Template --</option>
+            {templates.map((t, idx) => (
+              <option key={idx} value={t.text}>{t.name}</option>
+            ))}
+          </select>
+        )}
+      </div>
+
+      <div style={{ border: '1px solid var(--border-color)', borderRadius: 8, overflow: 'hidden', backgroundColor: '#fff' }}>
+        {/* Toolbar */}
+        <div style={{ display: 'flex', gap: 6, padding: '6px 10px', borderBottom: '1px solid var(--border-color)', backgroundColor: '#fafafa', alignItems: 'center' }}>
+          <button 
+            type="button" 
+            onClick={() => insertText('**', '**')}
+            style={{ fontWeight: 'bold', width: 28, height: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: '0.82rem' }}
+            title="Bold"
+          >
+            B
+          </button>
+          <button 
+            type="button" 
+            onClick={() => insertText('*', '*')}
+            style={{ fontStyle: 'italic', width: 28, height: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: '0.82rem' }}
+            title="Italic"
+          >
+            I
+          </button>
+          <button 
+            type="button" 
+            onClick={() => insertText('\n- ', '')}
+            style={{ width: 28, height: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: '0.82rem' }}
+            title="Bullet List"
+          >
+            •
+          </button>
+          <button 
+            type="button" 
+            onClick={() => insertText('\n1. ', '')}
+            style={{ width: 28, height: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: '0.82rem' }}
+            title="Numbered List"
+          >
+            1.
+          </button>
+          <div style={{ flexGrow: 1 }} />
+          <button 
+            type="button" 
+            onClick={() => onChange('')}
+            style={{ width: 48, height: 24, padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', border: '1px solid #e2e8f0', borderRadius: 4, background: '#fff', fontSize: '0.72rem', color: '#ef4444' }}
+            title="Clear Text"
+          >
+            Clear
+          </button>
+        </div>
+
+        {/* Text Area */}
+        <textarea
+          ref={textareaRef}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{ 
+            width: '100%', 
+            height: 100, 
+            border: 'none', 
+            outline: 'none', 
+            padding: '10px 12px', 
+            fontSize: '0.85rem', 
+            fontFamily: 'inherit', 
+            resize: 'vertical',
+            boxSizing: 'border-box',
+            lineHeight: '1.45'
+          }}
+        />
+
+        {/* Stats footer */}
+        <div style={{ padding: '4px 10px', borderTop: '1px solid var(--border-color)', backgroundColor: '#fafafa', display: 'flex', justifyContent: 'flex-end', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+          {wordCount} words | {charCount} chars
+        </div>
       </div>
     </div>
   );
@@ -951,14 +1086,26 @@ const DiseasesScreen = () => {
 
                     {/* Section 3: Descriptions & Causes side by side */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description *</label>
-                        <textarea required className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 100 }} value={diseaseForm.description} onChange={e => setDiseaseForm({ ...diseaseForm, description: e.target.value })} placeholder="Write comprehensive clinical description in English..." />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Causes (one per line)</label>
-                        <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 100 }} value={diseaseForm.causes} onChange={e => setDiseaseForm({ ...diseaseForm, causes: e.target.value })} placeholder="Type each cause on a new line..." />
-                      </div>
+                      <AdvancedTextarea 
+                        label="Description *" 
+                        value={diseaseForm.description} 
+                        onChange={val => setDiseaseForm({ ...diseaseForm, description: val })} 
+                        placeholder="Write comprehensive clinical description in English..." 
+                        templates={[
+                          { name: 'Infectious Disease', text: 'An infectious [viral/bacterial] disease of livestock characterized by acute onset of [symptoms]. Transmitted primarily via [vectors/contact]. Diagnosis is confirmed through [tests].' },
+                          { name: 'Metabolic Disorder', text: 'A metabolic condition characterized by [deficiency/imbalance]. Primarily affects [lactating cows/calves] during [season/milking cycle]. Prevention involves dietary supplementation of [nutrition].' }
+                        ]}
+                      />
+                      <AdvancedTextarea 
+                        label="Causes (one per line)" 
+                        value={diseaseForm.causes} 
+                        onChange={val => setDiseaseForm({ ...diseaseForm, causes: val })} 
+                        placeholder="Type each cause on a new line..." 
+                        templates={[
+                          { name: 'Primary Photodynamic', text: 'Ingestion of plants containing photodynamic agents (e.g. St. John’s wort).\nAbsorption of fluorescent dyes or chemicals.' },
+                          { name: 'Secondary (Hepatogenous)', text: 'Liver dysfunction due to toxic plants, parasites, or drugs.\nAccumulation of phylloerythrin in the bloodstream.' }
+                        ]}
+                      />
                     </div>
 
                     {/* Section 4: Symptoms & Treatments tag editors */}
@@ -986,14 +1133,18 @@ const DiseasesScreen = () => {
                         <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Disease Name (Hindi)</label>
                         <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={diseaseForm.name_hi} onChange={e => setDiseaseForm({ ...diseaseForm, name_hi: e.target.value })} placeholder="हिंदी में बीमारी का नाम..." />
                       </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description in Hindi (हिंदी विवरण)</label>
-                        <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 90 }} value={diseaseForm.description_hi} onChange={e => setDiseaseForm({ ...diseaseForm, description_hi: e.target.value })} placeholder="हिंदी में बीमारी का विवरण..." />
-                      </div>
-                      <div>
-                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Causes in Hindi (हिंदी कारण - one per line)</label>
-                        <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 90 }} value={diseaseForm.causes_hi} onChange={e => setDiseaseForm({ ...diseaseForm, causes_hi: e.target.value })} placeholder="हिंदी में बीमारी के कारण..." />
-                      </div>
+                      <AdvancedTextarea 
+                        label="Description in Hindi (हिंदी विवरण)" 
+                        value={diseaseForm.description_hi} 
+                        onChange={val => setDiseaseForm({ ...diseaseForm, description_hi: val })} 
+                        placeholder="हिंदी में बीमारी का विवरण..." 
+                      />
+                      <AdvancedTextarea 
+                        label="Causes in Hindi (हिंदी कारण - one per line)" 
+                        value={diseaseForm.causes_hi} 
+                        onChange={val => setDiseaseForm({ ...diseaseForm, causes_hi: val })} 
+                        placeholder="हिंदी में बीमारी के कारण..." 
+                      />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
