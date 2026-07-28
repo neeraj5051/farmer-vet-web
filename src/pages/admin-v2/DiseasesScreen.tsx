@@ -898,8 +898,8 @@ const DiseasesScreen = () => {
                           {imgUrl ? (
                             <img src={imgUrl} alt={g.name} style={{ width: 36, height: 36, borderRadius: 6, objectFit: 'cover' }} />
                           ) : (
-                            <div style={{ width: 36, height: 36, borderRadius: 6, backgroundColor: '#e6f0eb', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem' }}>
-                              {g.icon_emoji || '🐄'}
+                            <div style={{ width: 36, height: 36, borderRadius: 6, backgroundColor: '#e6f0eb', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--humal-green)' }}>
+                              <Layers size={18} />
                             </div>
                           )}
                           <div style={{ fontWeight: 600 }}>{g.name}</div>
@@ -910,7 +910,16 @@ const DiseasesScreen = () => {
                         {g.description || 'No description provided.'}
                       </td>
                       <td>
-                        <span className="list-status-badge" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>
+                        <span 
+                          className="list-status-badge" 
+                          style={{ backgroundColor: '#dbeafe', color: '#1e40af', cursor: 'pointer' }}
+                          title="Click to view associated diseases"
+                          onClick={() => {
+                            setGroupFilter(g.id);
+                            setActiveTab('diseases');
+                            setPage(1);
+                          }}
+                        >
                           {count} {count === 1 ? 'Disease' : 'Diseases'}
                         </span>
                       </td>
@@ -1323,15 +1332,9 @@ const DiseasesScreen = () => {
                 {/* Banner image at the top */}
                 {renderImageUploader(groupForm.image_path, 'group')}
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Group Name *</label>
-                    <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} placeholder="e.g. Digestive Disorders" />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Icon Emoji</label>
-                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box', textAlign: 'center' }} value={groupForm.icon_emoji} onChange={e => setGroupForm({ ...groupForm, icon_emoji: e.target.value })} placeholder="e.g. 🐄" />
-                  </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Group Name *</label>
+                  <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} placeholder="e.g. Digestive Disorders" />
                 </div>
 
                 <div>
