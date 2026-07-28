@@ -185,18 +185,25 @@ const DiseasesScreen = () => {
         {uploadError && <div style={{ color: '#ef4444', fontSize: '0.78rem', marginBottom: 6 }}>{uploadError}</div>}
         
         {imgUrl ? (
-          <div style={{ position: 'relative', width: '100%', height: 160, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-color)' }}>
+          <div 
+            style={{ position: 'relative', width: '100%', height: 180, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border-color)', cursor: 'pointer' }}
+            onClick={() => setLightboxUrl(getImageVariantUrl(currentPath, 'large'))}
+          >
             <img src={imgUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'opacity 0.2s', cursor: 'pointer' }} onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0'}>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <label className="export-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', cursor: 'pointer', backgroundColor: '#fff', color: '#333' }}>
+            <div 
+              style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0, 0, 0, 0.3)', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-end', padding: 12, opacity: 0, transition: 'opacity 0.2s' }} 
+              onMouseEnter={e => e.currentTarget.style.opacity = '1'} 
+              onMouseLeave={e => e.currentTarget.style.opacity = '0'}
+            >
+              <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+                <label className="export-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', cursor: 'pointer', backgroundColor: '#fff', color: '#333', border: '1px solid #ccc' }}>
                   Replace
                   <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
                     const file = e.target.files?.[0];
                     if (file) handleImageUpload(file, type);
                   }} />
                 </label>
-                <button type="button" className="export-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', backgroundColor: '#ef4444', color: '#fff' }} onClick={() => {
+                <button type="button" className="export-btn" style={{ padding: '6px 12px', fontSize: '0.75rem', backgroundColor: '#ef4444', color: '#fff', border: 'none' }} onClick={() => {
                   if (type === 'disease') setDiseaseForm(prev => ({ ...prev, image_path: '' }));
                   else setGroupForm(prev => ({ ...prev, image_path: '' }));
                 }}>
@@ -837,6 +844,9 @@ const DiseasesScreen = () => {
               <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
                 {modalLang === 'en' ? (
                   <>
+                    {/* Cover Image Banner Preview at the Top */}
+                    {renderImageUploader(diseaseForm.image_path, 'disease')}
+
                     {/* Section 1: General & Classification */}
                     <div style={{ backgroundColor: '#fcfcfc', border: '1px solid var(--border-color)', borderRadius: 10, padding: 18 }}>
                       <h4 style={{ margin: '0 0 14px 0', fontSize: '0.92rem', fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px dashed var(--border-color)', paddingBottom: 6 }}>General Information</h4>
@@ -939,20 +949,15 @@ const DiseasesScreen = () => {
                       </div>
                     </div>
 
-                    {/* Section 3: Media & Descriptions */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 16 }}>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description *</label>
-                          <textarea required className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 80 }} value={diseaseForm.description} onChange={e => setDiseaseForm({ ...diseaseForm, description: e.target.value })} placeholder="Write comprehensive clinical description in English..." />
-                        </div>
-                        <div>
-                          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Causes (one per line)</label>
-                          <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 80 }} value={diseaseForm.causes} onChange={e => setDiseaseForm({ ...diseaseForm, causes: e.target.value })} placeholder="Type each cause on a new line..." />
-                        </div>
+                    {/* Section 3: Descriptions & Causes side by side */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Description *</label>
+                        <textarea required className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 100 }} value={diseaseForm.description} onChange={e => setDiseaseForm({ ...diseaseForm, description: e.target.value })} placeholder="Write comprehensive clinical description in English..." />
                       </div>
                       <div>
-                        {renderImageUploader(diseaseForm.image_path, 'disease')}
+                        <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Causes (one per line)</label>
+                        <textarea className="filter-search" style={{ width: '100%', boxSizing: 'border-box', height: 100 }} value={diseaseForm.causes} onChange={e => setDiseaseForm({ ...diseaseForm, causes: e.target.value })} placeholder="Type each cause on a new line..." />
                       </div>
                     </div>
 
