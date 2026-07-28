@@ -216,8 +216,8 @@ const VaccinesScreen = () => {
       const response = await api.post('/upload/admin-image', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      const serialized = JSON.stringify(response.data.images);
-      setVaccineForm(prev => ({ ...prev, image_url: serialized }));
+      const url = response.data.url;
+      setVaccineForm(prev => ({ ...prev, image_url: url }));
     } catch (err) {
       console.error("Image upload failed:", err);
       setUploadError("Image upload failed. Please try again.");
