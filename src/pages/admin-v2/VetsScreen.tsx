@@ -22,12 +22,12 @@ import {
 import '../../components/admin-v2/ListScreens.css';
 
 import { useFilters } from '../../context/FilterContext';
-import { applyGlobalFilters } from '../../utils/filterUtils';
+import { filterByState } from '../../utils/filterUtils';
 
 const PAGE_SIZE = 10;
 
 const VetsScreen = () => {
-  const { dateRange, stateFilter, serviceFilter } = useFilters();
+  const { stateFilter } = useFilters();
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,7 +76,10 @@ const VetsScreen = () => {
   }, [data]);
 
   const filtered = useMemo(() => {
-    let result = applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter });
+    let result = [...data];
+    if (stateFilter && stateFilter !== 'All States' && stateFilter !== 'all') {
+      result = filterByState(result, stateFilter);
+    }
     if (statusFilter === 'verified') result = result.filter(v => v.verification_status === 'verified');
     else if (statusFilter === 'pending') result = result.filter(v => v.verification_status === 'pending');
     else if (statusFilter === 'active') result = result.filter(v => v.is_active === true);
@@ -95,7 +98,7 @@ const VetsScreen = () => {
       );
     }
     return result;
-  }, [data, statusFilter, specFilter, searchTerm, dateRange, stateFilter, serviceFilter]);
+  }, [data, statusFilter, specFilter, searchTerm, stateFilter]);
 
   const stats = useMemo(() => ({
     total: data.length,
