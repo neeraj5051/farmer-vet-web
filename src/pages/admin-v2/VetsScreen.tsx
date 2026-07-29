@@ -67,7 +67,7 @@ const VetsScreen = () => {
         getPayouts()
       ]);
       setData(Array.isArray(vetsData) ? vetsData : []);
-      setAllConsultations(Array.isArray(consultsData) ? consultsData : []);
+      setAllConsultations(consultsData?.summary || (Array.isArray(consultsData) ? consultsData : []));
       setAllPayouts(Array.isArray(payoutsData) ? payoutsData : []);
     } catch (err) {
       console.error('Error fetching vets context:', err);
@@ -124,22 +124,33 @@ const VetsScreen = () => {
   // Filtered Consultations for the active drawer vet
   const vetConsultations = useMemo(() => {
     if (!selectedVet) return [];
-    const vetNameStr = `Dr. ${selectedVet.first_name} ${selectedVet.last_name}`.toLowerCase();
-    const lNameLower = (selectedVet.last_name || '').toLowerCase();
-    return allConsultations.filter(c => 
-      c.vet_name?.toLowerCase().includes(vetNameStr) ||
-      (lNameLower && c.vet_name?.toLowerCase().includes(lNameLower))
-    );
+    const fName = (selectedVet.first_name || '').toLowerCase().trim();
+    const lName = (selectedVet.last_name || '').toLowerCase().trim();
+    return allConsultations.filter(c => {
+      const dbVetId = c.vet_id || c.vetId;
+      if (dbVetId && String(dbVetId) === String(selectedVet.id)) return true;
+      
+      const vName = (c.vet_name || c.vetName || '').toLowerCase();
+      if (fName && vName.includes(fName)) return true;
+      if (lName && vName.includes(lName)) return true;
+      return false;
+    });
   }, [selectedVet, allConsultations]);
 
   // Filtered Payouts for the active drawer vet
   const vetPayouts = useMemo(() => {
     if (!selectedVet) return [];
-    const lNameLower = (selectedVet.last_name || '').toLowerCase();
-    return allPayouts.filter(p => 
-      p.vet_id === selectedVet.id || 
-      (lNameLower && p.vet_name?.toLowerCase().includes(lNameLower))
-    );
+    const fName = (selectedVet.first_name || '').toLowerCase().trim();
+    const lName = (selectedVet.last_name || '').toLowerCase().trim();
+    return allPayouts.filter(p => {
+      const dbVetId = p.vet_id || p.vetId;
+      if (dbVetId && String(dbVetId) === String(selectedVet.id)) return true;
+      
+      const vName = (p.vet_name || p.vetName || '').toLowerCase();
+      if (fName && vName.includes(fName)) return true;
+      if (lName && vName.includes(lName)) return true;
+      return false;
+    });
   }, [selectedVet, allPayouts]);
 
   // Edit / Action triggers
