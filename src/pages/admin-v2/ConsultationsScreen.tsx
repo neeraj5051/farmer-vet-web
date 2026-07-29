@@ -249,12 +249,11 @@ const ConsultationsScreen = () => {
           <div className="list-pagination">
             <span>Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} consultations</span>
             <div className="list-pagination-buttons">
-              <button className="list-pagination-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</button>
-              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
+              <button className="list-pagination-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>Previous</button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(p => (
                 <button key={p} className={`list-pagination-btn ${page === p ? 'active' : ''}`} onClick={() => setPage(p)}>{p}</button>
               ))}
-              {totalPages > 5 && <span style={{ padding: '6px 8px' }}>...</span>}
-              <button className="list-pagination-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>→</button>
+              <button className="list-pagination-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>Next</button>
             </div>
           </div>
         )}
