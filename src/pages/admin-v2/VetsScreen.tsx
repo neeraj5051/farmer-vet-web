@@ -66,6 +66,11 @@ const VetsScreen = () => {
         getConsultations(),
         getPayouts()
       ]);
+      console.log('--- VETS DEBUG START ---');
+      console.log('Vets Data:', vetsData);
+      console.log('Consults Data:', consultsData);
+      console.log('Payouts Data:', payoutsData);
+      console.log('--- VETS DEBUG END ---');
       setData(Array.isArray(vetsData) ? vetsData : []);
       setAllConsultations(consultsData?.summary || (Array.isArray(consultsData) ? consultsData : []));
       setAllPayouts(Array.isArray(payoutsData) ? payoutsData : []);
@@ -124,9 +129,10 @@ const VetsScreen = () => {
   // Filtered Consultations for the active drawer vet
   const vetConsultations = useMemo(() => {
     if (!selectedVet) return [];
+    console.log('Matching consultations for selectedVet:', selectedVet);
     const fName = (selectedVet.first_name || '').toLowerCase().trim();
     const lName = (selectedVet.last_name || '').toLowerCase().trim();
-    return allConsultations.filter(c => {
+    const matches = allConsultations.filter(c => {
       const dbVetId = c.vet_id || c.vetId;
       if (dbVetId && String(dbVetId) === String(selectedVet.id)) return true;
       
@@ -135,14 +141,17 @@ const VetsScreen = () => {
       if (lName && vName.includes(lName)) return true;
       return false;
     });
+    console.log('Matched consultations count:', matches.length, matches);
+    return matches;
   }, [selectedVet, allConsultations]);
 
   // Filtered Payouts for the active drawer vet
   const vetPayouts = useMemo(() => {
     if (!selectedVet) return [];
+    console.log('Matching payouts for selectedVet:', selectedVet);
     const fName = (selectedVet.first_name || '').toLowerCase().trim();
     const lName = (selectedVet.last_name || '').toLowerCase().trim();
-    return allPayouts.filter(p => {
+    const matches = allPayouts.filter(p => {
       const dbVetId = p.vet_id || p.vetId;
       if (dbVetId && String(dbVetId) === String(selectedVet.id)) return true;
       
@@ -151,6 +160,8 @@ const VetsScreen = () => {
       if (lName && vName.includes(lName)) return true;
       return false;
     });
+    console.log('Matched payouts count:', matches.length, matches);
+    return matches;
   }, [selectedVet, allPayouts]);
 
   // Edit / Action triggers
