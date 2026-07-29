@@ -62,9 +62,30 @@ const OperationsOverview = () => {
     const isDefaultFilter = dateRange === 'Today' && stateFilter === 'All States' && serviceFilter === 'All Services';
     const finalTodayBookings = isDefaultFilter ? Math.max(totalCount, stats.consults?.today?.total || 0) : totalCount;
 
-    const totalDurationMins = filteredConsults.reduce((s, c) => s + (Number(c.duration) || 22), 0);
-    const avgDurationMins = filteredConsults.length > 0 ? Math.round(totalDurationMins / filteredConsults.length) : 23;
-    const dynamicDurationStr = `${avgDurationMins}m 15s`;
+    // Dynamically calculate average consultation duration from completed records with positive duration
+    const completedWithDuration = filteredConsults.filter(c => 
+      ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status) && 
+      (Number(c.duration) || Number(c.duration_minutes) || 0) > 0
+    );
+
+    let avgDurationMins = 0;
+    if (completedWithDuration.length > 0) {
+      const sumDuration = completedWithDuration.reduce((s, c) => s + (Number(c.duration) || Number(c.duration_minutes) || 0), 0);
+      avgDurationMins = sumDuration / completedWithDuration.length;
+    } else {
+      // Fallback to the database-wide average from backend stats
+      avgDurationMins = stats.consultation_metrics?.avg_duration_minutes || 0;
+    }
+
+    const finalDurationStr = avgDurationMins > 0 
+      ? `${Math.floor(avgDurationMins)}m ${Math.round((avgDurationMins % 1) * 60)}s` 
+      : '—';
+
+    // Retrieve average response time from backend, default to '—' if unavailable
+    const rawResponseTime = stats.call_chat_metrics?.avg_response_time || stats.call_chat_metrics?.avg_response_seconds;
+    const finalResponseTimeStr = rawResponseTime 
+      ? (typeof rawResponseTime === 'number' ? `${Math.floor(rawResponseTime / 60)}m ${rawResponseTime % 60}s` : String(rawResponseTime)) 
+      : '—';
 
     return {
       todayBookings: finalTodayBookings,
@@ -72,8 +93,8 @@ const OperationsOverview = () => {
       live: isDefaultFilter ? (cm.ongoing || liveCount) : liveCount,
       cancelled: isDefaultFilter ? (cm.cancelled || cancelledCount) : cancelledCount,
       noShow: noShowCount,
-      avgResponseTime: stats.call_chat_metrics?.avg_response_time || '8m 24s',
-      avgDuration: stats.call_chat_metrics?.avg_duration || dynamicDurationStr,
+      avgResponseTime: finalResponseTimeStr,
+      avgDuration: finalDurationStr,
       activeVets: u.active_vets || u.total_vets || 0,
       activeFarmers: farmerCount,
       completionRate: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : (cm.total > 0 ? Math.round((cm.completed / cm.total) * 100) : 0),
