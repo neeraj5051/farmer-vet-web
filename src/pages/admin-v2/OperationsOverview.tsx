@@ -6,7 +6,7 @@ import ConsultationStatusChart from '../../components/admin-v2/ConsultationStatu
 import TopCitiesList from '../../components/admin-v2/TopCitiesList';
 import RecentBookingsTable from '../../components/admin-v2/RecentBookingsTable';
 import { FileText, CheckCircle, Video, UserSquare2, XCircle, Clock, Users, Timer, AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
-import { getAdminStats, getFarmers } from '../../services/adminService';
+import { getAdminStats, getFarmers, getSupportTickets } from '../../services/adminService';
 import { getConsultations } from '../../services/consultationsService';
 
 import { useFilters } from '../../context/FilterContext';
@@ -16,21 +16,24 @@ const OperationsOverview = () => {
   const { dateRange, stateFilter, serviceFilter, customStartDate, customEndDate } = useFilters();
   const [stats, setStats] = useState<any>(null);
   const [consults, setConsults] = useState<any[]>([]);
+  const [tickets, setTickets] = useState<any[]>([]);
   const [farmerCount, setFarmerCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchData = async () => {
     try {
-      const [statsData, consultsData, farmersData] = await Promise.all([
+      const [statsData, consultsData, farmersData, ticketsData] = await Promise.all([
         getAdminStats(),
         getConsultations(),
-        getFarmers()
+        getFarmers(),
+        getSupportTickets().catch(() => [])
       ]);
       setStats(statsData);
       const list = consultsData?.summary || (Array.isArray(consultsData) ? consultsData : []);
       setConsults(list);
       setFarmerCount(Array.isArray(farmersData) ? farmersData.length : 0);
+      setTickets(Array.isArray(ticketsData) ? ticketsData : []);
     } catch (err) {
       console.error('Error fetching operations data:', err);
     } finally {
@@ -46,6 +49,48 @@ const OperationsOverview = () => {
   const filteredConsults = useMemo(() => {
     return applyGlobalFilters(consults, { dateRange, stateFilter, serviceFilter, customStartDate, customEndDate });
   }, [consults, dateRange, stateFilter, serviceFilter, customStartDate, customEndDate]);
+
+  // Apply global filters to support tickets
+  const filteredTickets = useMemo(() => {
+    let result = [...tickets];
+    
+    // Filter by state if stateFilter is active
+    if (stateFilter && stateFilter !== 'All States' && stateFilter !== 'all') {
+      result = result.filter(t => {
+        const tState = (t.state || t.user?.state || '').toLowerCase();
+        return tState === stateFilter.toLowerCase();
+      });
+    }
+    
+    // Filter by date range
+    if (dateRange && dateRange !== 'All Time' && dateRange !== 'all') {
+      const now = new Date();
+      let startDate = new Date(0);
+      if (dateRange === 'Today') {
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      } else if (dateRange === 'Yesterday') {
+        startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+        const endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        result = result.filter(t => {
+          const d = new Date(t.created_at);
+          return d >= startDate && d < endDate;
+        });
+        return result;
+      } else if (dateRange === 'Last 7 Days') {
+        startDate = new Date(now.getTime() - 7 * 86400000);
+      } else if (dateRange === 'Last 30 Days') {
+        startDate = new Date(now.getTime() - 30 * 86400000);
+      } else if (dateRange === 'This Month') {
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      } else if (dateRange === 'Custom' && customStartDate) {
+        startDate = new Date(customStartDate);
+      }
+      
+      result = result.filter(t => new Date(t.created_at) >= startDate);
+    }
+    
+    return result;
+  }, [tickets, dateRange, stateFilter, customStartDate]);
 
   const opStats = useMemo(() => {
     if (!stats) return null;
@@ -73,20 +118,31 @@ const OperationsOverview = () => {
       ? `${Math.floor(avgDurationMins)}m ${Math.round((avgDurationMins % 1) * 60)}s` 
       : '—';
 
-    // Retrieve average response time from backend, default to '—' if unavailable
-    const rawResponseTime = stats.call_chat_metrics?.avg_response_time || stats.call_chat_metrics?.avg_response_seconds;
+    // Calculate response time from filtered tickets
+    const respondedTickets = filteredTickets.filter(t => 
+      t.status?.toLowerCase() !== 'open' && t.status?.toLowerCase() !== 'pending'
+    );
     
+    let avgRespSeconds = 0;
+    if (respondedTickets.length > 0) {
+      const totalDiff = respondedTickets.reduce((sum, t) => {
+        const created = new Date(t.created_at).getTime();
+        const updated = new Date(t.updated_at || t.resolved_at || Date.now()).getTime();
+        return sum + Math.max(0, (updated - created) / 1000);
+      }, 0);
+      avgRespSeconds = totalDiff / respondedTickets.length;
+    } else {
+      // Fallback to database-wide stats response seconds if no tickets in active filter window
+      avgRespSeconds = stats.call_chat_metrics?.avg_response_seconds || 0;
+    }
+
     let finalResponseTimeStr = '—';
-    if (rawResponseTime) {
-      if (typeof rawResponseTime === 'number') {
-        const totalSeconds = Math.round(rawResponseTime);
-        if (totalSeconds < 60) {
-          finalResponseTimeStr = `${totalSeconds}s`;
-        } else {
-          finalResponseTimeStr = `${Math.floor(totalSeconds / 60)}m ${totalSeconds % 60}s`;
-        }
+    if (avgRespSeconds > 0) {
+      const totalSeconds = Math.round(avgRespSeconds);
+      if (totalSeconds < 60) {
+        finalResponseTimeStr = `${totalSeconds}s`;
       } else {
-        finalResponseTimeStr = String(rawResponseTime);
+        finalResponseTimeStr = `${Math.floor(totalSeconds / 60)}m ${totalSeconds % 60}s`;
       }
     }
 
