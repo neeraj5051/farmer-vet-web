@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getFarmers } from '../../services/adminService';
+import { getFarmers, updateFarmerProfile } from '../../services/adminService';
 import { getConsultations } from '../../services/consultationsService';
 import { 
   Search, 
@@ -10,7 +10,8 @@ import {
   Users, 
   UserPlus, 
   UserCheck, 
-  Repeat
+  Repeat,
+  Edit3
 } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
 
@@ -32,6 +33,21 @@ const FarmersScreen = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingFarmer, setEditingFarmer] = useState<any>(null);
+  const [editForm, setEditForm] = useState({
+    first_name: '',
+    last_name: '',
+    phone: '',
+    village: '',
+    district: '',
+    state: '',
+    pincode: '',
+    preferred_language: 'en',
+    is_active: true
+  });
+
   const fetchData = async () => {
     try {
       setLoading(true);
@@ -45,6 +61,37 @@ const FarmersScreen = () => {
       console.error('Error fetching farmers:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const startEdit = (farmer: any) => {
+    setEditingFarmer(farmer);
+    setEditForm({
+      first_name: farmer.first_name || '',
+      last_name: farmer.last_name || '',
+      phone: farmer.phone || '',
+      village: farmer.village || '',
+      district: farmer.district || '',
+      state: farmer.state || '',
+      pincode: farmer.pincode || '',
+      preferred_language: farmer.preferred_language || 'en',
+      is_active: farmer.is_active !== undefined ? farmer.is_active : true
+    });
+    setIsEditModalOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editForm.first_name.trim()) return;
+    try {
+      await updateFarmerProfile(editingFarmer.id, editForm);
+      setIsEditModalOpen(false);
+      if (selectedFarmer && selectedFarmer.id === editingFarmer.id) {
+        setSelectedFarmer({ ...selectedFarmer, ...editForm });
+      }
+      fetchData();
+    } catch (err) {
+      console.error('Error updating farmer profile:', err);
     }
   };
 
@@ -253,9 +300,14 @@ const FarmersScreen = () => {
                     </span>
                   </td>
                   <td style={{ verticalAlign: 'middle' }}>
-                    <button onClick={e => { e.stopPropagation(); setSelectedFarmer(f); setDrawerTab('overview'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
-                      <Eye size={18} />
-                    </button>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button onClick={e => { e.stopPropagation(); startEdit(f); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--humal-green)' }} title="Edit Profile">
+                        <Edit3 size={18} />
+                      </button>
+                      <button onClick={e => { e.stopPropagation(); setSelectedFarmer(f); setDrawerTab('overview'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} title="View Profile">
+                        <Eye size={18} />
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -270,8 +322,7 @@ const FarmersScreen = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span>Showing {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1} to {Math.min(page * pageSize, filtered.length)} of {filtered.length} farmers</span>
             <select 
-              className="filter-select" 
-              style={{ width: '90px !important', minWidth: '95px !important', height: '32px', padding: '0 8px', fontSize: '0.8rem', flex: 'none' }}
+              className="list-pagination-select" 
               value={pageSize}
               onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
             >
@@ -298,7 +349,7 @@ const FarmersScreen = () => {
         <>
           <div className="profile-drawer-overlay" onClick={() => setSelectedFarmer(null)} />
           <div className="profile-drawer">
-            <div className="drawer-header">
+            <div className="drawer-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="drawer-profile">
                 <div className="drawer-avatar">{(selectedFarmer.first_name || 'F')[0]}</div>
                 <div>
@@ -306,7 +357,16 @@ const FarmersScreen = () => {
                   <div className="drawer-meta">{selectedFarmer.phone} · {selectedFarmer.district || selectedFarmer.state || '—'}</div>
                 </div>
               </div>
-              <button className="drawer-close" onClick={() => setSelectedFarmer(null)}><X size={20} /></button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <button 
+                  onClick={() => startEdit(selectedFarmer)} 
+                  className="export-btn" 
+                  style={{ fontSize: '0.8rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6 }}
+                >
+                  <Edit3 size={14} /> Edit Profile
+                </button>
+                <button className="drawer-close" onClick={() => setSelectedFarmer(null)} style={{ margin: 0 }}><X size={20} /></button>
+              </div>
             </div>
             <div className="drawer-tabs">
               {['overview', 'animals', 'bookings', 'payments'].map(tab => (
@@ -425,6 +485,154 @@ const FarmersScreen = () => {
             </div>
           </div>
         </>
+      )}
+
+      {/* EDIT FARMER PROFILE MODAL */}
+      {isEditModalOpen && (
+        <div 
+          style={{ 
+            position: 'fixed', 
+            inset: 0, 
+            backgroundColor: 'rgba(15, 23, 42, 0.4)', 
+            backdropFilter: 'blur(8px)', 
+            zIndex: 9999, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            padding: 24 
+          }}
+          onClick={() => setIsEditModalOpen(false)}
+        >
+          <div 
+            style={{ 
+              backgroundColor: '#fff', 
+              borderRadius: 16, 
+              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', 
+              width: '100%', 
+              maxWidth: 600, 
+              maxHeight: '85vh', 
+              display: 'flex', 
+              flexDirection: 'column', 
+              overflow: 'hidden',
+              border: '1px solid var(--border-color)' 
+            }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div 
+              style={{ 
+                padding: '20px 24px', 
+                borderBottom: '1px solid var(--border-color)', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                backgroundColor: '#fafafa'
+              }}
+            >
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Edit Farmer Profile
+                </h3>
+                <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                  Update farmer details, address records, preferred language, and status.
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsEditModalOpen(false)} 
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleEditSubmit} style={{ display: 'flex', flexDirection: 'column', flexGrow: 1, overflow: 'hidden' }}>
+              <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>First Name *</label>
+                    <input type="text" required className="modal-input" value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Last Name</label>
+                    <input type="text" className="modal-input" value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Phone *</label>
+                    <input type="text" required className="modal-input" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Preferred Language</label>
+                    <select className="modal-input" value={editForm.preferred_language} onChange={e => setEditForm({ ...editForm, preferred_language: e.target.value })}>
+                      <option value="en">English (en)</option>
+                      <option value="hi">Hindi (hi)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Village / Area</label>
+                    <input type="text" className="modal-input" value={editForm.village} onChange={e => setEditForm({ ...editForm, village: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Pincode</label>
+                    <input type="text" className="modal-input" value={editForm.pincode} onChange={e => setEditForm({ ...editForm, pincode: e.target.value })} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>District</label>
+                    <input type="text" className="modal-input" value={editForm.district} onChange={e => setEditForm({ ...editForm, district: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>State</label>
+                    <input type="text" className="modal-input" value={editForm.state} onChange={e => setEditForm({ ...editForm, state: e.target.value })} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <input type="checkbox" id="farmer_is_active" checked={editForm.is_active} onChange={e => setEditForm({ ...editForm, is_active: e.target.checked })} style={{ cursor: 'pointer' }} />
+                  <label htmlFor="farmer_is_active" style={{ fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer', userSelect: 'none' }}>Active Farmer Profile</label>
+                </div>
+
+              </div>
+
+              {/* Modal Footer */}
+              <div 
+                style={{ 
+                  padding: '16px 24px', 
+                  borderTop: '1px solid var(--border-color)', 
+                  display: 'flex', 
+                  justifyContent: 'flex-end', 
+                  gap: 12,
+                  backgroundColor: '#fafafa'
+                }}
+              >
+                <button 
+                  type="button" 
+                  onClick={() => setIsEditModalOpen(false)} 
+                  className="export-btn" 
+                  style={{ backgroundColor: '#fff', border: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="export-btn" 
+                  style={{ backgroundColor: 'var(--humal-green)', color: '#fff', border: 'none' }}
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

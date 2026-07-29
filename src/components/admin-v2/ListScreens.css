@@ -459,3 +459,37 @@
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* Modal Input & Textarea Elements */
+.modal-input {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db !important;
+  background: #ffffff !important;
+  color: var(--text-primary) !important;
+  font-size: 0.88rem;
+  outline: none;
+  width: 100%;
+  box-sizing: border-box;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.modal-input:focus {
+  border-color: var(--humal-green) !important;
+  box-shadow: 0 0 0 2px rgba(22, 101, 52, 0.15);
+}
+
+/* Pagination Row-Selector Dropdown */
+.list-pagination-select {
+  width: 105px !important;
+  min-width: 105px !important;
+  height: 32px !important;
+  padding: 0 8px !important;
+  font-size: 0.8rem !important;
+  flex: none !important;
+  border-radius: 6px !important;
+  border: 1px solid var(--border-color) !important;
+  background: var(--card-white) !important;
+  color: var(--text-primary) !important;
+  cursor: pointer !important;
+}

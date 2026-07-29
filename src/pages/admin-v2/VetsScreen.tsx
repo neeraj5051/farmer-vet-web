@@ -7,6 +7,7 @@ import {
   getPayouts
 } from '../../services/adminService';
 import { getConsultations } from '../../services/consultationsService';
+import { getDiseaseGroups } from '../../services/diseaseService';
 import { 
   Search, 
   Download, 
@@ -33,6 +34,7 @@ const VetsScreen = () => {
   const [data, setData] = useState<any[]>([]);
   const [allConsultations, setAllConsultations] = useState<any[]>([]);
   const [allPayouts, setAllPayouts] = useState<any[]>([]);
+  const [diseaseGroups, setDiseaseGroups] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,6 +48,8 @@ const VetsScreen = () => {
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingVet, setEditingVet] = useState<any>(null);
+  const [selectedSpecs, setSelectedSpecs] = useState<string[]>([]);
+  const [isSpecDropdownOpen, setIsSpecDropdownOpen] = useState(false);
   const [editForm, setEditForm] = useState({
     first_name: '',
     last_name: '',
@@ -62,10 +66,11 @@ const VetsScreen = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [vetsData, consultsData, payoutsData] = await Promise.all([
+      const [vetsData, consultsData, payoutsData, groupsData] = await Promise.all([
         getVets(),
         getConsultations(),
-        getPayouts()
+        getPayouts(),
+        getDiseaseGroups().catch(() => [])
       ]);
       console.log('--- VETS DEBUG START ---');
       console.log('Vets Data:', vetsData);
@@ -75,6 +80,7 @@ const VetsScreen = () => {
       setData(Array.isArray(vetsData) ? vetsData : []);
       setAllConsultations(consultsData?.summary || (Array.isArray(consultsData) ? consultsData : []));
       setAllPayouts(Array.isArray(payoutsData) ? payoutsData : []);
+      setDiseaseGroups(Array.isArray(groupsData) ? groupsData : []);
     } catch (err) {
       console.error('Error fetching vets context:', err);
     } finally {
@@ -211,8 +217,18 @@ const VetsScreen = () => {
   }, [selectedVet, allPayouts]);
 
   // Edit / Action triggers
+  // Edit / Action triggers
+  const toggleSpec = (specName: string) => {
+    setSelectedSpecs(prev => 
+      prev.includes(specName) ? prev.filter(s => s !== specName) : [...prev, specName]
+    );
+  };
+
   const startEdit = (vet: any) => {
     setEditingVet(vet);
+    const specs = vet.specialization ? vet.specialization.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
+    setSelectedSpecs(specs);
+    setIsSpecDropdownOpen(false);
     setEditForm({
       first_name: vet.first_name || '',
       last_name: vet.last_name || '',
@@ -232,13 +248,15 @@ const VetsScreen = () => {
     e.preventDefault();
     if (!editForm.first_name.trim()) return;
     try {
-      await updateVetProfile(editingVet.id, {
+      const payload = {
         ...editForm,
+        specialization: selectedSpecs.join(', '),
         years_of_experience: Number(editForm.years_of_experience)
-      });
+      };
+      await updateVetProfile(editingVet.id, payload);
       setIsEditModalOpen(false);
       if (selectedVet && selectedVet.id === editingVet.id) {
-        setSelectedVet({ ...selectedVet, ...editForm });
+        setSelectedVet({ ...selectedVet, ...payload });
       }
       await loadData();
     } catch (err) {
@@ -451,8 +469,7 @@ const VetsScreen = () => {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <span>Showing {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1} to {Math.min(page * pageSize, filtered.length)} of {filtered.length} vets</span>
             <select 
-              className="filter-select" 
-              style={{ width: '90px !important', minWidth: '95px !important', height: '32px', padding: '0 8px', fontSize: '0.8rem', flex: 'none' }}
+              className="list-pagination-select" 
               value={pageSize}
               onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
             >
@@ -706,63 +723,158 @@ const VetsScreen = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>First Name *</label>
-                    <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} />
+                    <input type="text" required className="modal-input" value={editForm.first_name} onChange={e => setEditForm({ ...editForm, first_name: e.target.value })} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Last Name</label>
-                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} />
+                    <input type="text" className="modal-input" value={editForm.last_name} onChange={e => setEditForm({ ...editForm, last_name: e.target.value })} />
                   </div>
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Phone *</label>
-                  <input type="text" required className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
+                  <input type="text" required className="modal-input" value={editForm.phone} onChange={e => setEditForm({ ...editForm, phone: e.target.value })} />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Qualification</label>
-                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.qualification} onChange={e => setEditForm({ ...editForm, qualification: e.target.value })} placeholder="e.g. BVSc & AH" />
+                    <input type="text" className="modal-input" value={editForm.qualification} onChange={e => setEditForm({ ...editForm, qualification: e.target.value })} placeholder="e.g. BVSc & AH" />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Years of Experience</label>
-                    <input type="number" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.years_of_experience} onChange={e => setEditForm({ ...editForm, years_of_experience: Number(e.target.value) })} />
+                    <input type="number" className="modal-input" value={editForm.years_of_experience} onChange={e => setEditForm({ ...editForm, years_of_experience: Number(e.target.value) })} />
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Specialization</label>
-                  <textarea 
-                    className="filter-search" 
-                    style={{ 
-                      width: '100%', 
-                      boxSizing: 'border-box', 
-                      height: '75px', 
-                      resize: 'vertical',
-                      padding: '8px 12px',
-                      lineHeight: '1.45',
-                      fontFamily: 'inherit'
-                    }} 
-                    value={editForm.specialization} 
-                    onChange={e => setEditForm({ ...editForm, specialization: e.target.value })} 
-                    placeholder="e.g. Surgery, Cattle breeding, General health" 
-                  />
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Specialization *</label>
+                  <div style={{ position: 'relative' }}>
+                    <div 
+                      onClick={() => setIsSpecDropdownOpen(!isSpecDropdownOpen)}
+                      className="modal-input" 
+                      style={{ 
+                        minHeight: '38px',
+                        display: 'flex', 
+                        flexWrap: 'wrap', 
+                        gap: 6, 
+                        alignItems: 'center', 
+                        cursor: 'pointer',
+                        padding: '4px 12px'
+                      }}
+                    >
+                      {selectedSpecs.length === 0 && <span style={{ color: '#9ca3af', fontSize: '0.85rem' }}>Select Specializations</span>}
+                      {selectedSpecs.map(spec => (
+                        <span 
+                          key={spec} 
+                          onClick={e => { e.stopPropagation(); toggleSpec(spec); }}
+                          style={{ 
+                            backgroundColor: '#e6f4ea', 
+                            color: '#166534', 
+                            fontSize: '0.78rem', 
+                            fontWeight: 600, 
+                            padding: '2px 8px', 
+                            borderRadius: '100px', 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: 4 
+                          }}
+                        >
+                          {spec}
+                          <span style={{ fontSize: '10px', color: '#166534', fontWeight: 'bold', marginLeft: 2 }}>✕</span>
+                        </span>
+                      ))}
+                      <span style={{ marginLeft: 'auto', color: '#6b7280', fontSize: '12px' }}>▼</span>
+                    </div>
+
+                    {isSpecDropdownOpen && (
+                      <>
+                        <div style={{ position: 'fixed', inset: 0, zIndex: 998 }} onClick={() => setIsSpecDropdownOpen(false)} />
+                        <div 
+                          style={{ 
+                            position: 'absolute', 
+                            top: '100%', 
+                            left: 0, 
+                            right: 0, 
+                            backgroundColor: '#fff', 
+                            border: '1px solid #d1d5db', 
+                            borderRadius: 8, 
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)', 
+                            maxHeight: 200, 
+                            overflowY: 'auto', 
+                            zIndex: 999, 
+                            marginTop: 4,
+                            padding: '6px 0'
+                          }}
+                        >
+                          {diseaseGroups.map(dg => {
+                            const isChecked = selectedSpecs.includes(dg.name);
+                            return (
+                              <div 
+                                key={dg.id} 
+                                onClick={() => toggleSpec(dg.name)}
+                                style={{ 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: 8, 
+                                  padding: '8px 12px', 
+                                  cursor: 'pointer',
+                                  fontSize: '0.85rem',
+                                  backgroundColor: isChecked ? '#f4fbf7' : 'transparent',
+                                  color: 'var(--text-primary)'
+                                }}
+                              >
+                                <input 
+                                  type="checkbox" 
+                                  checked={isChecked} 
+                                  onChange={() => {}}
+                                  style={{ cursor: 'pointer' }}
+                                />
+                                <span>{dg.name}</span>
+                              </div>
+                            );
+                          })}
+                          <div 
+                            onClick={() => toggleSpec("General Practice")}
+                            style={{ 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: 8, 
+                              padding: '8px 12px', 
+                              cursor: 'pointer',
+                              fontSize: '0.85rem',
+                              backgroundColor: selectedSpecs.includes("General Practice") ? '#f4fbf7' : 'transparent',
+                              color: 'var(--text-primary)'
+                            }}
+                          >
+                            <input 
+                              type="checkbox" 
+                              checked={selectedSpecs.includes("General Practice")} 
+                              onChange={() => {}}
+                              style={{ cursor: 'pointer' }}
+                            />
+                            <span>General Practice / Other</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>License Number</label>
-                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.license_number} onChange={e => setEditForm({ ...editForm, license_number: e.target.value })} />
+                    <input type="text" className="modal-input" value={editForm.license_number} onChange={e => setEditForm({ ...editForm, license_number: e.target.value })} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Registration State</label>
-                    <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.registration_state} onChange={e => setEditForm({ ...editForm, registration_state: e.target.value })} />
+                    <input type="text" className="modal-input" value={editForm.registration_state} onChange={e => setEditForm({ ...editForm, registration_state: e.target.value })} />
                   </div>
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Base Location (City/District)</label>
-                  <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.base_location} onChange={e => setEditForm({ ...editForm, base_location: e.target.value })} placeholder="e.g. Lucknow" />
+                  <input type="text" className="modal-input" value={editForm.base_location} onChange={e => setEditForm({ ...editForm, base_location: e.target.value })} placeholder="e.g. Lucknow" />
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
