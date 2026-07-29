@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { NavLink, Outlet } from 'react-router-dom';
+import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Video, 
@@ -69,6 +69,7 @@ const NAV_SECTIONS = [
 ];
 
 const AdminLayoutContent = () => {
+  const { pathname } = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const { 
     dateRange, 
@@ -186,85 +187,91 @@ const AdminLayoutContent = () => {
           </div>
 
           {/* Global Filters */}
-          <div className="topbar-filters" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {dateRange === 'Custom' ? (
-              <button
-                type="button"
-                onClick={() => setShowCustomDateModal(true)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '7px 14px',
-                  borderRadius: '8px',
-                  border: '1.5px solid #0d5c3a',
-                  backgroundColor: '#e6f4ea',
-                  color: '#0d5c3a',
-                  fontSize: '0.85rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  boxShadow: '0 2px 4px rgba(13, 92, 58, 0.1)',
-                  transition: 'all 0.15s ease'
-                }}
-                title="Click to change custom date range"
-              >
-                <Calendar size={15} color="#0d5c3a" />
-                <span>Date: {formatPillDate(customStartDate, customEndDate)}</span>
-              </button>
-            ) : (
-              <select className="filter-select" value={dateRange} onChange={e => handleDateSelectChange(e.target.value)}>
-                <option value="Today">Date: Today</option>
-                <option value="This Week">Date: Last 7 Days</option>
-                <option value="This Month">Date: Last 30 Days</option>
-                <option value="All Time">Date: All Time</option>
-                <option value="Custom">Custom Range... 📅</option>
+          {!['/admin-v2/diseases', '/admin-v2/vaccines', '/admin-v2/articles', '/admin-v2/services', '/admin-v2/settings', '/admin-v2/reports', '/admin-v2/fees'].includes(pathname) && (
+            <div className="topbar-filters" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              {!['/admin-v2/vets', '/admin-v2/farmers'].includes(pathname) && (
+                dateRange === 'Custom' ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowCustomDateModal(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '7px 14px',
+                      borderRadius: '8px',
+                      border: '1.5px solid #0d5c3a',
+                      backgroundColor: '#e6f4ea',
+                      color: '#0d5c3a',
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow: '0 2px 4px rgba(13, 92, 58, 0.1)',
+                      transition: 'all 0.15s ease'
+                    }}
+                    title="Click to change custom date range"
+                  >
+                    <Calendar size={15} color="#0d5c3a" />
+                    <span>Date: {formatPillDate(customStartDate, customEndDate)}</span>
+                  </button>
+                ) : (
+                  <select className="filter-select" value={dateRange} onChange={e => handleDateSelectChange(e.target.value)}>
+                    <option value="Today">Date: Today</option>
+                    <option value="This Week">Date: Last 7 Days</option>
+                    <option value="This Month">Date: Last 30 Days</option>
+                    <option value="All Time">Date: All Time</option>
+                    <option value="Custom">Custom Range... 📅</option>
+                  </select>
+                )
+              )}
+              <select className="filter-select" value={stateFilter} onChange={e => setStateFilter(e.target.value)}>
+                <option value="All States">All States</option>
+                <option value="Bihar">Bihar</option>
+                <option value="Uttar Pradesh">Uttar Pradesh</option>
+                <option value="Rajasthan">Rajasthan</option>
+                <option value="Madhya Pradesh">Madhya Pradesh</option>
+                <option value="Maharashtra">Maharashtra</option>
+                <option value="Karnataka">Karnataka</option>
+                <option value="Tamil Nadu">Tamil Nadu</option>
+                <option value="Punjab">Punjab</option>
+                <option value="Haryana">Haryana</option>
+                <option value="Gujarat">Gujarat</option>
+                <option value="West Bengal">West Bengal</option>
+                <option value="Odisha">Odisha</option>
               </select>
-            )}
-            <select className="filter-select" value={stateFilter} onChange={e => setStateFilter(e.target.value)}>
-              <option value="All States">All States</option>
-              <option value="Bihar">Bihar</option>
-              <option value="Uttar Pradesh">Uttar Pradesh</option>
-              <option value="Rajasthan">Rajasthan</option>
-              <option value="Madhya Pradesh">Madhya Pradesh</option>
-              <option value="Maharashtra">Maharashtra</option>
-              <option value="Karnataka">Karnataka</option>
-              <option value="Tamil Nadu">Tamil Nadu</option>
-              <option value="Punjab">Punjab</option>
-              <option value="Haryana">Haryana</option>
-              <option value="Gujarat">Gujarat</option>
-              <option value="West Bengal">West Bengal</option>
-              <option value="Odisha">Odisha</option>
-            </select>
-            <select className="filter-select" value={serviceFilter} onChange={e => setServiceFilter(e.target.value)}>
-              <option value="All Services">All Services</option>
-              <option value="Online Consultation">Online Consultation</option>
-              <option value="In-Person Visit">In-Person Visit</option>
-              <option value="AI / Insemination">AI / Insemination</option>
-              <option value="Vaccination">Vaccination</option>
-            </select>
+              {!['/admin-v2/vets', '/admin-v2/farmers'].includes(pathname) && (
+                <select className="filter-select" value={serviceFilter} onChange={e => setServiceFilter(e.target.value)}>
+                  <option value="All Services">All Services</option>
+                  <option value="Online Consultation">Online Consultation</option>
+                  <option value="In-Person Visit">In-Person Visit</option>
+                  <option value="AI / Insemination">AI / Insemination</option>
+                  <option value="Vaccination">Vaccination</option>
+                </select>
+              )}
 
-            {isFiltered && (
-              <button 
-                onClick={resetFilters}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  padding: '6px 12px',
-                  borderRadius: '6px',
-                  border: '1px solid var(--border-color)',
-                  backgroundColor: 'var(--humal-green-light)',
-                  color: 'var(--humal-green)',
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  cursor: 'pointer'
-                }}
-                title="Reset all filters"
-              >
-                Reset
-              </button>
-            )}
-          </div>
+              {isFiltered && (
+                <button 
+                  onClick={resetFilters}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '6px 12px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border-color)',
+                    backgroundColor: 'var(--humal-green-light)',
+                    color: 'var(--humal-green)',
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    cursor: 'pointer'
+                  }}
+                  title="Reset all filters"
+                >
+                  Reset
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Custom Visual Interactive Date Range Calendar Modal */}
           <DateRangeCalendarModal
