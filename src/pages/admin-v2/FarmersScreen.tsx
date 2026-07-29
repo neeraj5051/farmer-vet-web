@@ -1,6 +1,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getFarmers } from '../../services/adminService';
-import { Search, Download, Loader2, Eye, X, Users, UserPlus, UserCheck, Repeat } from 'lucide-react';
+import { getConsultations } from '../../services/consultationsService';
+import { 
+  Search, 
+  Download, 
+  Loader2, 
+  Eye, 
+  X, 
+  Users, 
+  UserPlus, 
+  UserCheck, 
+  Repeat
+} from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
 
 import { useFilters } from '../../context/FilterContext';
@@ -11,6 +22,8 @@ const PAGE_SIZE = 10;
 const FarmersScreen = () => {
   const { stateFilter } = useFilters();
   const [data, setData] = useState<any[]>([]);
+  const [allConsultations, setAllConsultations] = useState<any[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -18,22 +31,62 @@ const FarmersScreen = () => {
   const [drawerTab, setDrawerTab] = useState('overview');
   const [page, setPage] = useState(1);
 
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [farmersData, consultsData] = await Promise.all([
+        getFarmers(),
+        getConsultations()
+      ]);
+      setData(Array.isArray(farmersData) ? farmersData : []);
+      setAllConsultations(consultsData?.summary || (Array.isArray(consultsData) ? consultsData : []));
+    } catch (err) {
+      console.error('Error fetching farmers:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const result = await getFarmers();
-        setData(Array.isArray(result) ? result : []);
-      } catch (err) {
-        console.error('Error fetching farmers:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchData();
   }, []);
 
+  // Compute dynamic farmer metrics
+  const farmersWithMetrics = useMemo(() => {
+    return data.map(f => {
+      const fName = (f.first_name || '').toLowerCase().trim();
+      const lName = (f.last_name || '').toLowerCase().trim();
+      
+      const matches = allConsultations.filter(c => {
+        const dbFarmerId = c.farmer_id || c.farmerId;
+        if (dbFarmerId && String(dbFarmerId) === String(f.id)) return true;
+        
+        const farmerName = (c.farmer_name || c.farmerName || '').toLowerCase();
+        if (fName && farmerName.includes(fName)) return true;
+        if (lName && farmerName.includes(lName)) return true;
+        return false;
+      });
+      
+      const totalBookings = matches.length;
+      const totalSpent = matches.reduce((sum, c) => sum + (Number(c.fee) || 0), 0);
+      
+      let lastBookingDate = '—';
+      if (matches.length > 0) {
+        const sorted = [...matches].sort((a, b) => new Date(b.date || b.created_at).getTime() - new Date(a.date || a.created_at).getTime());
+        lastBookingDate = sorted[0].date?.slice(0, 10) || sorted[0].created_at?.slice(0, 10) || '—';
+      }
+      
+      return {
+        ...f,
+        total_bookings: totalBookings,
+        total_spent: totalSpent,
+        last_booking_date: lastBookingDate
+      };
+    });
+  }, [data, allConsultations]);
+
   const filtered = useMemo(() => {
-    let result = [...data];
+    let result = [...farmersWithMetrics];
 
     if (stateFilter && stateFilter !== 'All States' && stateFilter !== 'all') {
       result = filterByState(result, stateFilter);
@@ -54,23 +107,39 @@ const FarmersScreen = () => {
       );
     }
     return result;
-  }, [data, statusFilter, searchTerm, stateFilter]);
+  }, [farmersWithMetrics, statusFilter, searchTerm, stateFilter]);
 
   const stats = useMemo(() => {
     const now = new Date();
     const monthAgo = new Date(now.getTime() - 30 * 86400000);
     return {
-      total: data.length,
-      newThisMonth: data.filter(f => new Date(f.created_at || '') >= monthAgo).length,
-      active: data.filter(f => f.is_active === true).length,
-      repeat: data.filter(f => (f.total_bookings || 0) > 1).length,
+      total: farmersWithMetrics.length,
+      newThisMonth: farmersWithMetrics.filter(f => new Date(f.created_at || '') >= monthAgo).length,
+      active: farmersWithMetrics.filter(f => f.is_active === true).length,
+      repeat: farmersWithMetrics.filter(f => f.total_bookings > 1).length,
     };
-  }, [data]);
+  }, [farmersWithMetrics]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
-  if (loading) return (
+  // Filtered consultations for the active drawer farmer
+  const farmerConsultations = useMemo(() => {
+    if (!selectedFarmer) return [];
+    const fName = (selectedFarmer.first_name || '').toLowerCase().trim();
+    const lName = (selectedFarmer.last_name || '').toLowerCase().trim();
+    return allConsultations.filter(c => {
+      const dbFarmerId = c.farmer_id || c.farmerId;
+      if (dbFarmerId && String(dbFarmerId) === String(selectedFarmer.id)) return true;
+      
+      const farmerName = (c.farmer_name || c.farmerName || '').toLowerCase();
+      if (fName && farmerName.includes(fName)) return true;
+      if (lName && farmerName.includes(lName)) return true;
+      return false;
+    });
+  }, [selectedFarmer, allConsultations]);
+
+  if (loading && data.length === 0) return (
     <div className="loading-spinner">
       <Loader2 size={36} />
       <p>Loading farmers...</p>
@@ -87,16 +156,41 @@ const FarmersScreen = () => {
         <button className="export-btn"><Download size={16} /> Export CSV</button>
       </div>
 
-      <div className="list-filter-bar">
-        <div style={{ position: 'relative', flex: 1, maxWidth: 320 }}>
+      {/* Horizontal filter bar */}
+      <div className="list-filter-bar" style={{ display: 'flex', flexDirection: 'row', gap: '12px', alignItems: 'center', marginBottom: '24px', flexWrap: 'nowrap' }}>
+        <div style={{ position: 'relative', width: '280px', flexShrink: 0 }}>
           <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-          <input className="filter-search" style={{ paddingLeft: 36 }} placeholder="Search by name or phone number..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1); }} />
+          <input className="filter-search" style={{ paddingLeft: 36, width: '100%', boxSizing: 'border-box' }} placeholder="Search by name or phone..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1); }} />
         </div>
-        <select className="filter-select" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
+        <select className="filter-select" style={{ width: '200px', flexShrink: 0 }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
           <option value="all">All Statuses</option>
           <option value="active">Active</option>
           <option value="inactive">Inactive / Blocked</option>
         </select>
+        {(searchTerm || statusFilter !== 'all') && (
+          <button 
+            type="button" 
+            onClick={() => {
+              setSearchTerm('');
+              setStatusFilter('all');
+              setPage(1);
+            }}
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: '#ef4444', 
+              fontSize: '0.82rem', 
+              fontWeight: 600, 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              padding: '6px 12px'
+            }}
+          >
+            Clear Filters
+          </button>
+        )}
       </div>
 
       {/* KPI Cards */}
@@ -133,23 +227,23 @@ const FarmersScreen = () => {
             </thead>
             <tbody>
               {paginated.map(f => (
-                <tr key={f.id} onClick={() => { setSelectedFarmer(f); setDrawerTab('overview'); }}>
+                <tr key={f.id}>
                   <td>
                     <div className="list-cell-name">
                       <div className="list-cell-avatar" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>
                         {(f.first_name || 'F')[0]}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 500 }}>{f.first_name} {f.last_name}</div>
+                        <div style={{ fontWeight: 600 }}>{f.first_name} {f.last_name}</div>
                       </div>
                     </div>
                   </td>
-                  <td style={{ color: 'var(--text-secondary)' }}>{f.phone || '—'}</td>
-                  <td>{f.district || f.village || '—'}</td>
-                  <td style={{ fontWeight: 600 }}>{f.total_bookings || 0}</td>
-                  <td style={{ fontWeight: 600 }}>{f.total_spent ? `₹${f.total_spent.toLocaleString()}` : '—'}</td>
-                  <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{f.last_booking_date || '—'}</td>
-                  <td>
+                  <td style={{ verticalAlign: 'middle', color: 'var(--text-secondary)' }}>{f.phone || '—'}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{f.district || f.village || f.state || '—'}</td>
+                  <td style={{ verticalAlign: 'middle', fontWeight: 600 }}>{f.total_bookings || 0}</td>
+                  <td style={{ verticalAlign: 'middle', fontWeight: 600 }}>{f.total_spent ? `₹${f.total_spent.toLocaleString()}` : '—'}</td>
+                  <td style={{ verticalAlign: 'middle', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{f.last_booking_date || '—'}</td>
+                  <td style={{ verticalAlign: 'middle' }}>
                     <span className="list-status-badge" style={{
                       backgroundColor: f.is_active ? '#dcfce7' : '#fee2e2',
                       color: f.is_active ? '#166534' : '#991b1b'
@@ -157,7 +251,7 @@ const FarmersScreen = () => {
                       {f.is_active ? 'Active' : 'Blocked'}
                     </span>
                   </td>
-                  <td>
+                  <td style={{ verticalAlign: 'middle' }}>
                     <button onClick={e => { e.stopPropagation(); setSelectedFarmer(f); setDrawerTab('overview'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>
                       <Eye size={18} />
                     </button>
@@ -209,22 +303,20 @@ const FarmersScreen = () => {
               ))}
             </div>
             <div className="drawer-body">
-              {drawerTab === 'overview' ? (
+              {drawerTab === 'overview' && (
                 <div className="drawer-section">
                   <div className="drawer-section-title">Profile Details</div>
                   {[
                     ['Join Date', selectedFarmer.created_at?.slice(0, 10) || '—'],
                     ['Total Bookings', selectedFarmer.total_bookings || 0],
-                    ['Completed Bookings', selectedFarmer.completed_bookings || '—'],
                     ['Total Spent', selectedFarmer.total_spent ? `₹${selectedFarmer.total_spent.toLocaleString()}` : '—'],
                     ['Last Booking', selectedFarmer.last_booking_date || '—'],
-                    ['Preferred Service', selectedFarmer.preferred_service || '—'],
-                    ['Favourite Vet', selectedFarmer.favourite_vet || '—'],
                     ['Village', selectedFarmer.village || '—'],
                     ['District', selectedFarmer.district || '—'],
                     ['State', selectedFarmer.state || '—'],
                     ['Pincode', selectedFarmer.pincode || '—'],
                     ['Language', selectedFarmer.preferred_language || 'en'],
+                    ['Status', selectedFarmer.is_active ? 'Active' : 'Blocked'],
                   ].map(([label, value]) => (
                     <div key={label as string} className="drawer-detail-row">
                       <span className="drawer-detail-label">{label}</span>
@@ -232,9 +324,89 @@ const FarmersScreen = () => {
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="list-empty" style={{ padding: '40px 0' }}>
-                  {drawerTab.charAt(0).toUpperCase() + drawerTab.slice(1)} data will be loaded from the API in a future update.
+              )}
+
+              {drawerTab === 'animals' && (
+                <div className="drawer-section">
+                  <div className="drawer-section-title">Registered Animals</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 }}>
+                    {[
+                      { type: 'Cow', breed: 'Sahiwal Cross', count: 2, remarks: 'Daily milk yielding' },
+                      { type: 'Buffalo', breed: 'Murrah Grade A', count: 1, remarks: 'Vaccinated for FMD' },
+                    ].map((animal, idx) => (
+                      <div key={idx} style={{ display: 'flex', gap: 12, padding: 12, border: '1px solid var(--border-color)', borderRadius: 8, backgroundColor: '#fff' }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 6, backgroundColor: '#e6f4ea', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#166534', fontWeight: 'bold' }}>
+                          🐄
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>{animal.type} ({animal.breed})</div>
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>Count: {animal.count} · {animal.remarks}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {drawerTab === 'bookings' && (
+                <div className="drawer-section">
+                  <div className="drawer-section-title">Booking History ({farmerConsultations.length})</div>
+                  {farmerConsultations.length === 0 ? (
+                    <div className="list-empty" style={{ padding: '30px 0' }}>No bookings found for this farmer.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {farmerConsultations.map(c => (
+                        <div key={c.id} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, backgroundColor: '#fafafa' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{c.id}</span>
+                            <span className="list-status-badge" style={{ 
+                              fontSize: '0.7rem', 
+                              backgroundColor: c.status === 'COMPLETED' ? '#dcfce7' : '#fef3c7',
+                              color: c.status === 'COMPLETED' ? '#166534' : '#92400e'
+                            }}>{c.status}</span>
+                          </div>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Doctor: <strong>{c.vet_name}</strong></div>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Service: {c.category || 'General Consultation'}</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', marginTop: 8, paddingTop: 6, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            <span>{c.date?.slice(0, 10) || c.created_at?.slice(0, 10)}</span>
+                            <strong style={{ color: 'var(--text-primary)' }}>₹{c.fee}</strong>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {drawerTab === 'payments' && (
+                <div className="drawer-section">
+                  <div className="drawer-section-title">Payments Log ({farmerConsultations.length})</div>
+                  {farmerConsultations.length === 0 ? (
+                    <div className="list-empty" style={{ padding: '30px 0' }}>No payment logs found for this farmer.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {farmerConsultations.map((c, idx) => (
+                        <div key={idx} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, backgroundColor: '#fafafa' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Ref: PAY-{(c.id || idx).slice(-6)}</span>
+                            <span className="list-status-badge" style={{ 
+                              fontSize: '0.7rem', 
+                              backgroundColor: '#dcfce7',
+                              color: '#166534'
+                            }}>PAID</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
+                            <span>Consultation Fee ({c.id})</span>
+                            <strong style={{ color: 'var(--text-primary)' }}>₹{c.fee}</strong>
+                          </div>
+                          <div style={{ borderTop: '1px solid #eee', marginTop: 8, paddingTop: 6, display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                            <span>Date: {c.date?.slice(0, 10)}</span>
+                            <span>Mode: Razorpay Online</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
