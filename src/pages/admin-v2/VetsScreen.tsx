@@ -262,8 +262,6 @@ const VetsScreen = () => {
                 <th>Vet</th>
                 <th>Specialization</th>
                 <th>City</th>
-                <th>Total Consultations</th>
-                <th>Completed</th>
                 <th>Rating</th>
                 <th>Earnings</th>
                 <th>Status</th>
@@ -279,8 +277,10 @@ const VetsScreen = () => {
                         {(v.first_name || 'V')[0]}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 500 }}>Dr. {v.first_name} {v.last_name}</div>
-                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{v.phone}</div>
+                        <div style={{ fontWeight: 600 }}>Dr. {v.first_name} {v.last_name}</div>
+                        <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                          {v.phone} {v.qualification && `· ${v.qualification}`}
+                        </div>
                       </div>
                     </div>
                   </td>
@@ -312,8 +312,6 @@ const VetsScreen = () => {
                       {v.base_location || v.registration_state || '—'}
                     </div>
                   </td>
-                  <td style={{ verticalAlign: 'middle', fontWeight: 600 }}>{v.total_consultations || 0}</td>
-                  <td style={{ verticalAlign: 'middle' }}>{v.completed_consultations || 0}</td>
                   <td style={{ verticalAlign: 'middle' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Star size={14} color="#f59e0b" fill="#f59e0b" />
@@ -342,7 +340,7 @@ const VetsScreen = () => {
                 </tr>
               ))}
               {paginated.length === 0 && (
-                <tr><td colSpan={9} className="list-empty">No vets found.</td></tr>
+                <tr><td colSpan={7} className="list-empty">No vets found.</td></tr>
               )}
             </tbody>
           </table>
