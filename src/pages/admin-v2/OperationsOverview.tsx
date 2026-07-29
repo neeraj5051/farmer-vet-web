@@ -49,7 +49,6 @@ const OperationsOverview = () => {
 
   const opStats = useMemo(() => {
     if (!stats) return null;
-    const cm = stats.consultation_metrics || {};
     const u = stats.users || {};
 
     const totalCount = filteredConsults.length;
@@ -57,10 +56,6 @@ const OperationsOverview = () => {
     const liveCount = filteredConsults.filter(c => ['AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(c.status)).length;
     const cancelledCount = filteredConsults.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status)).length;
     const noShowCount = filteredConsults.filter(c => ['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(c.status)).length;
-
-    // Fallback to backend defaults if no global filters applied
-    const isDefaultFilter = dateRange === 'Today' && stateFilter === 'All States' && serviceFilter === 'All Services';
-    const finalTodayBookings = isDefaultFilter ? Math.max(totalCount, stats.consults?.today?.total || 0) : totalCount;
 
     // Dynamically calculate average consultation duration from completed records with positive duration
     const completedWithDuration = filteredConsults.filter(c => 
@@ -88,18 +83,18 @@ const OperationsOverview = () => {
       : '—';
 
     return {
-      todayBookings: finalTodayBookings,
-      completed: isDefaultFilter ? (cm.completed || completedCount) : completedCount,
-      live: isDefaultFilter ? (cm.ongoing || liveCount) : liveCount,
-      cancelled: isDefaultFilter ? (cm.cancelled || cancelledCount) : cancelledCount,
+      todayBookings: totalCount,
+      completed: completedCount,
+      live: liveCount,
+      cancelled: cancelledCount,
       noShow: noShowCount,
       avgResponseTime: finalResponseTimeStr,
       avgDuration: finalDurationStr,
       activeVets: u.active_vets || u.total_vets || 0,
       activeFarmers: farmerCount,
-      completionRate: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : (cm.total > 0 ? Math.round((cm.completed / cm.total) * 100) : 0),
+      completionRate: totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0,
     };
-  }, [stats, filteredConsults, farmerCount, dateRange, stateFilter, serviceFilter]);
+  }, [stats, filteredConsults, farmerCount]);
 
   // Booking trends chart data
   const chartData = useMemo(() => {
