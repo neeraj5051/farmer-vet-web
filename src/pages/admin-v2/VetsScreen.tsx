@@ -227,16 +227,17 @@ const VetsScreen = () => {
         <button className="export-btn"><Download size={16} /> Export CSV</button>
       </div>
 
-      <div className="list-filter-bar">
-        <div style={{ position: 'relative', flex: 1, maxWidth: 320 }}>
+      {/* Horizontal filter bar (forced horizontal with flex-wrap: nowrap) */}
+      <div className="list-filter-bar" style={{ display: 'flex', flexDirection: 'row', gap: '12px', alignItems: 'center', marginBottom: '24px', flexWrap: 'nowrap' }}>
+        <div style={{ position: 'relative', width: '280px', flexShrink: 0 }}>
           <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
-          <input className="filter-search" style={{ paddingLeft: 36 }} placeholder="Search by name or phone..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1); }} />
+          <input className="filter-search" style={{ paddingLeft: 36, width: '100%', boxSizing: 'border-box' }} placeholder="Search by name or phone..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1); }} />
         </div>
-        <select className="filter-select" value={specFilter} onChange={e => { setSpecFilter(e.target.value); setPage(1); }}>
+        <select className="filter-select" style={{ width: '200px', flexShrink: 0 }} value={specFilter} onChange={e => { setSpecFilter(e.target.value); setPage(1); }}>
           <option value="all">All Specializations</option>
           {specializations.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select className="filter-select" value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
+        <select className="filter-select" style={{ width: '200px', flexShrink: 0 }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
           <option value="all">All Statuses</option>
           <option value="verified">Verified</option>
           <option value="pending">Pending Verification</option>
@@ -261,8 +262,7 @@ const VetsScreen = () => {
               display: 'flex',
               alignItems: 'center',
               gap: 4,
-              padding: '6px 12px',
-              marginLeft: 'auto'
+              padding: '6px 12px'
             }}
           >
             Clear Filters
