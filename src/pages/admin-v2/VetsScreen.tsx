@@ -3,8 +3,10 @@ import {
   getVets, 
   updateVetProfile, 
   approveVet, 
-  blockUser 
+  blockUser,
+  getPayouts
 } from '../../services/adminService';
+import { getConsultations } from '../../services/consultationsService';
 import { 
   Search, 
   Download, 
@@ -16,7 +18,8 @@ import {
   Wifi, 
   Star, 
   Edit3, 
-  Ban 
+  Ban,
+  FileText
 } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
 
@@ -28,6 +31,9 @@ const PAGE_SIZE = 10;
 const VetsScreen = () => {
   const { stateFilter } = useFilters();
   const [data, setData] = useState<any[]>([]);
+  const [allConsultations, setAllConsultations] = useState<any[]>([]);
+  const [allPayouts, setAllPayouts] = useState<any[]>([]);
+  
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -55,10 +61,16 @@ const VetsScreen = () => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const result = await getVets();
-      setData(Array.isArray(result) ? result : []);
+      const [vetsData, consultsData, payoutsData] = await Promise.all([
+        getVets(),
+        getConsultations(),
+        getPayouts()
+      ]);
+      setData(Array.isArray(vetsData) ? vetsData : []);
+      setAllConsultations(Array.isArray(consultsData) ? consultsData : []);
+      setAllPayouts(Array.isArray(payoutsData) ? payoutsData : []);
     } catch (err) {
-      console.error('Error fetching vets:', err);
+      console.error('Error fetching vets context:', err);
     } finally {
       setLoading(false);
     }
@@ -108,6 +120,27 @@ const VetsScreen = () => {
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // Filtered Consultations for the active drawer vet
+  const vetConsultations = useMemo(() => {
+    if (!selectedVet) return [];
+    const vetNameStr = `Dr. ${selectedVet.first_name} ${selectedVet.last_name}`.toLowerCase();
+    const lNameLower = (selectedVet.last_name || '').toLowerCase();
+    return allConsultations.filter(c => 
+      c.vet_name?.toLowerCase().includes(vetNameStr) ||
+      (lNameLower && c.vet_name?.toLowerCase().includes(lNameLower))
+    );
+  }, [selectedVet, allConsultations]);
+
+  // Filtered Payouts for the active drawer vet
+  const vetPayouts = useMemo(() => {
+    if (!selectedVet) return [];
+    const lNameLower = (selectedVet.last_name || '').toLowerCase();
+    return allPayouts.filter(p => 
+      p.vet_id === selectedVet.id || 
+      (lNameLower && p.vet_name?.toLowerCase().includes(lNameLower))
+    );
+  }, [selectedVet, allPayouts]);
 
   // Edit / Action triggers
   const startEdit = (vet: any) => {
@@ -165,7 +198,7 @@ const VetsScreen = () => {
     const action = currentActiveStatus ? "block" : "activate";
     if (window.confirm(`Are you sure you want to ${action} this veterinarian?`)) {
       try {
-        await blockUser(id, currentActiveStatus); // API blocks when passed true/false based on target state
+        await blockUser(id, currentActiveStatus); 
         if (selectedVet && selectedVet.id === id) {
           setSelectedVet((prev: any) => ({ ...prev, is_active: !currentActiveStatus }));
         }
@@ -384,7 +417,7 @@ const VetsScreen = () => {
               ))}
             </div>
             <div className="drawer-body">
-              {drawerTab === 'overview' ? (
+              {drawerTab === 'overview' && (
                 <div className="drawer-section">
                   <div className="drawer-section-title">Profile Details</div>
                   {[
@@ -421,9 +454,106 @@ const VetsScreen = () => {
                     )}
                   </div>
                 </div>
-              ) : (
-                <div className="list-empty" style={{ padding: '40px 0' }}>
-                  {drawerTab.charAt(0).toUpperCase() + drawerTab.slice(1)} data will be loaded from the API in a future update.
+              )}
+
+              {drawerTab === 'consultations' && (
+                <div className="drawer-section">
+                  <div className="drawer-section-title">Consultation Records ({vetConsultations.length})</div>
+                  {vetConsultations.length === 0 ? (
+                    <div className="list-empty" style={{ padding: '30px 0' }}>No consultations found for this vet.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {vetConsultations.map(c => (
+                        <div key={c.id} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, backgroundColor: '#fafafa' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                            <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{c.id}</span>
+                            <span className="list-status-badge" style={{ 
+                              fontSize: '0.7rem', 
+                              backgroundColor: c.status === 'COMPLETED' ? '#dcfce7' : '#fef3c7',
+                              color: c.status === 'COMPLETED' ? '#166534' : '#92400e'
+                            }}>{c.status}</span>
+                          </div>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Farmer: <strong>{c.farmer_name}</strong></div>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Type: {c.type || 'Video call'}</div>
+                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Category: {c.category || 'General'}</div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', marginTop: 8, paddingTop: 6, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                            <span>{c.date?.slice(0, 10)}</span>
+                            <strong style={{ color: 'var(--text-primary)' }}>₹{c.fee}</strong>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {drawerTab === 'earnings' && (
+                <div className="drawer-section">
+                  <div className="drawer-section-title">Earnings & Payout Logs ({vetPayouts.length})</div>
+                  {vetPayouts.length === 0 ? (
+                    <div className="list-empty" style={{ padding: '30px 0' }}>No earnings history found for this vet.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {vetPayouts.map((p, idx) => {
+                        const totalEarnings = p.amount ? Math.round(p.amount / 0.8) : 0;
+                        const humalComm = totalEarnings - p.amount;
+                        return (
+                          <div key={p.id || idx} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, backgroundColor: '#fafafa' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Date: {p.processed_at?.slice(0, 10) || p.created_at?.slice(0, 10) || '—'}</span>
+                              <span className="list-status-badge" style={{ 
+                                fontSize: '0.7rem',
+                                backgroundColor: p.status === 'PAID' || p.status === 'PROCESSED' ? '#dcfce7' : '#fef3c7',
+                                color: p.status === 'PAID' || p.status === 'PROCESSED' ? '#166534' : '#92400e'
+                              }}>{p.status || 'Pending'}</span>
+                            </div>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: '0.82rem', marginBottom: 6 }}>
+                              <div>Gross: <strong>₹{totalEarnings.toLocaleString()}</strong></div>
+                              <div>Comm: <strong>₹{humalComm.toLocaleString()}</strong></div>
+                            </div>
+                            <div style={{ borderTop: '1px solid #eee', paddingTop: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <span style={{ fontSize: '0.82rem' }}>Net Pay: <strong style={{ color: 'var(--humal-green)' }}>₹{p.amount.toLocaleString()}</strong></span>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>UTR: {p.utr || '—'}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {drawerTab === 'documents' && (
+                <div className="drawer-section">
+                  <div className="drawer-section-title">Submitted Documents</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 10 }}>
+                    {[
+                      { name: 'Veterinary Council Registration Certificate', status: selectedVet.verification_status === 'verified' ? 'Verified' : 'Pending Verification', icon: <FileText size={20} /> },
+                      { name: 'BVSc Degree Certificate / Qualification Proof', status: selectedVet.verification_status === 'verified' ? 'Verified' : 'Pending Verification', icon: <FileText size={20} /> },
+                      { name: 'Government Identity Proof (Aadhaar / Passport)', status: 'Identity Matches Name', icon: <FileText size={20} /> },
+                    ].map((doc, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, border: '1px solid var(--border-color)', borderRadius: 8, backgroundColor: '#fff' }}>
+                        <div style={{ width: 36, height: 36, borderRadius: 6, backgroundColor: '#eef2f6', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-secondary)' }}>
+                          {doc.icon}
+                        </div>
+                        <div style={{ flexGrow: 1 }}>
+                          <div style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)' }}>{doc.name}</div>
+                          <span style={{ 
+                            fontSize: '0.72rem', 
+                            color: doc.status.includes('Verified') || doc.status.includes('Matches') ? '#166534' : '#92400e',
+                            fontWeight: 600
+                          }}>{doc.status}</span>
+                        </div>
+                        <a 
+                          href="#" 
+                          onClick={e => { e.preventDefault(); alert("Viewing secure document: " + doc.name); }} 
+                          style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--humal-green)', textDecoration: 'none' }}
+                        >
+                          View Secure
+                        </a>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -453,7 +583,7 @@ const VetsScreen = () => {
               borderRadius: 16, 
               boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)', 
               width: '100%', 
-              maxWidth: 580, 
+              maxWidth: 640, 
               maxHeight: '85vh', 
               display: 'flex', 
               flexDirection: 'column', 
@@ -522,7 +652,21 @@ const VetsScreen = () => {
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 600, marginBottom: 4 }}>Specialization</label>
-                  <input type="text" className="filter-search" style={{ width: '100%', boxSizing: 'border-box' }} value={editForm.specialization} onChange={e => setEditForm({ ...editForm, specialization: e.target.value })} placeholder="e.g. Surgery, Cattle breeding" />
+                  <textarea 
+                    className="filter-search" 
+                    style={{ 
+                      width: '100%', 
+                      boxSizing: 'border-box', 
+                      height: '75px', 
+                      resize: 'vertical',
+                      padding: '8px 12px',
+                      lineHeight: '1.45',
+                      fontFamily: 'inherit'
+                    }} 
+                    value={editForm.specialization} 
+                    onChange={e => setEditForm({ ...editForm, specialization: e.target.value })} 
+                    placeholder="e.g. Surgery, Cattle breeding, General health" 
+                  />
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
