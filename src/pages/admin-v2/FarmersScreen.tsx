@@ -17,7 +17,7 @@ import '../../components/admin-v2/ListScreens.css';
 import { useFilters } from '../../context/FilterContext';
 import { filterByState } from '../../utils/filterUtils';
 
-const PAGE_SIZE = 10;
+
 
 const FarmersScreen = () => {
   const { stateFilter } = useFilters();
@@ -30,6 +30,7 @@ const FarmersScreen = () => {
   const [selectedFarmer, setSelectedFarmer] = useState<any>(null);
   const [drawerTab, setDrawerTab] = useState('overview');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
   const fetchData = async () => {
     try {
@@ -120,8 +121,8 @@ const FarmersScreen = () => {
     };
   }, [farmersWithMetrics]);
 
-  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.ceil(filtered.length / pageSize);
+  const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 
   // Filtered consultations for the active drawer farmer
   const farmerConsultations = useMemo(() => {
@@ -265,9 +266,21 @@ const FarmersScreen = () => {
           </table>
         </div>
 
-        {totalPages > 1 && (
-          <div className="list-pagination">
-            <span>Showing {(page - 1) * PAGE_SIZE + 1} to {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length} farmers</span>
+        <div className="list-pagination">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <span>Showing {filtered.length === 0 ? 0 : (page - 1) * pageSize + 1} to {Math.min(page * pageSize, filtered.length)} of {filtered.length} farmers</span>
+            <select 
+              className="filter-select" 
+              style={{ width: '90px !important', minWidth: '95px !important', height: '32px', padding: '0 8px', fontSize: '0.8rem', flex: 'none' }}
+              value={pageSize}
+              onChange={e => { setPageSize(Number(e.target.value)); setPage(1); }}
+            >
+              <option value="10">10 / page</option>
+              <option value="20">20 / page</option>
+              <option value="50">50 / page</option>
+            </select>
+          </div>
+          {totalPages > 1 && (
             <div className="list-pagination-buttons">
               <button className="list-pagination-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>←</button>
               {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map(p => (
@@ -276,8 +289,8 @@ const FarmersScreen = () => {
               {totalPages > 5 && <span style={{ padding: '6px 8px' }}>...</span>}
               <button className="list-pagination-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>→</button>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Farmer Profile Drawer */}
