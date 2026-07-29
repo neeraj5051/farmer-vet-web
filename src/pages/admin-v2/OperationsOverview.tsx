@@ -67,9 +67,6 @@ const OperationsOverview = () => {
     if (completedWithDuration.length > 0) {
       const sumDuration = completedWithDuration.reduce((s, c) => s + (Number(c.duration) || Number(c.duration_minutes) || 0), 0);
       avgDurationMins = sumDuration / completedWithDuration.length;
-    } else {
-      // Fallback to the database-wide average from backend stats
-      avgDurationMins = stats.consultation_metrics?.avg_duration_minutes || 0;
     }
 
     const finalDurationStr = avgDurationMins > 0 
