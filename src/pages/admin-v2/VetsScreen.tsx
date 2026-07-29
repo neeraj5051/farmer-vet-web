@@ -16,7 +16,6 @@ import {
   Wifi, 
   Star, 
   Edit3, 
-  Check, 
   Ban 
 } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
@@ -285,18 +284,44 @@ const VetsScreen = () => {
                       </div>
                     </div>
                   </td>
-                  <td>{v.specialization || '—'}</td>
-                  <td>{v.base_location || v.registration_state || '—'}</td>
-                  <td style={{ fontWeight: 600 }}>{v.total_consultations || 0}</td>
-                  <td>{v.completed_consultations || 0}</td>
-                  <td>
+                  <td style={{ verticalAlign: 'middle', maxWidth: '200px' }}>
+                    <div 
+                      style={{ 
+                        textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap', 
+                        overflow: 'hidden',
+                        fontSize: '0.85rem',
+                        color: 'var(--text-primary)'
+                      }} 
+                      title={v.specialization || '—'}
+                    >
+                      {v.specialization || '—'}
+                    </div>
+                  </td>
+                  <td style={{ verticalAlign: 'middle', maxWidth: '140px' }}>
+                    <div 
+                      style={{ 
+                        textOverflow: 'ellipsis', 
+                        whiteSpace: 'nowrap', 
+                        overflow: 'hidden',
+                        fontSize: '0.85rem',
+                        color: 'var(--text-secondary)'
+                      }} 
+                      title={v.base_location || v.registration_state || '—'}
+                    >
+                      {v.base_location || v.registration_state || '—'}
+                    </div>
+                  </td>
+                  <td style={{ verticalAlign: 'middle', fontWeight: 600 }}>{v.total_consultations || 0}</td>
+                  <td style={{ verticalAlign: 'middle' }}>{v.completed_consultations || 0}</td>
+                  <td style={{ verticalAlign: 'middle' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Star size={14} color="#f59e0b" fill="#f59e0b" />
                       <span style={{ fontWeight: 600 }}>{v.rating || '—'}</span>
                     </div>
                   </td>
-                  <td style={{ fontWeight: 600 }}>{v.total_earnings ? `₹${v.total_earnings.toLocaleString()}` : '—'}</td>
-                  <td>
+                  <td style={{ verticalAlign: 'middle', fontWeight: 600 }}>{v.total_earnings ? `₹${v.total_earnings.toLocaleString()}` : '—'}</td>
+                  <td style={{ verticalAlign: 'middle' }}>
                     <span className="list-status-badge" style={{
                       backgroundColor: v.verification_status === 'verified' ? '#dcfce7' : v.verification_status === 'rejected' ? '#fee2e2' : '#fef3c7',
                       color: v.verification_status === 'verified' ? '#166534' : v.verification_status === 'rejected' ? '#991b1b' : '#92400e'
@@ -304,26 +329,13 @@ const VetsScreen = () => {
                       {v.verification_status || 'Pending'}
                     </span>
                   </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <td style={{ verticalAlign: 'middle' }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                       <button onClick={() => { setSelectedVet(v); setDrawerTab('overview'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} title="View Details">
                         <Eye size={18} />
                       </button>
                       <button onClick={() => startEdit(v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--humal-green)' }} title="Edit Profile">
                         <Edit3 size={18} />
-                      </button>
-                      {v.verification_status === 'pending' && (
-                        <>
-                          <button onClick={() => handleVerification(v.id, 'verified')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#10b981' }} title="Approve Vet">
-                            <Check size={18} />
-                          </button>
-                          <button onClick={() => handleVerification(v.id, 'rejected')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }} title="Reject Vet">
-                            <X size={18} />
-                          </button>
-                        </>
-                      )}
-                      <button onClick={() => handleBlockToggle(v.id, v.is_active)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: v.is_active ? '#ef4444' : '#10b981' }} title={v.is_active ? "Block Vet" : "Unblock Vet"}>
-                        <Ban size={18} />
                       </button>
                     </div>
                   </td>
@@ -396,15 +408,18 @@ const VetsScreen = () => {
                       <span className="drawer-detail-value">{String(value)}</span>
                     </div>
                   ))}
-                  <div style={{ marginTop: 24, display: 'flex', gap: 12 }}>
+                  <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                     <button onClick={() => startEdit(selectedVet)} className="export-btn" style={{ flexGrow: 1, backgroundColor: 'var(--humal-green)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                       <Edit3 size={16} /> Edit Profile
                     </button>
+                    <button onClick={() => handleBlockToggle(selectedVet.id, selectedVet.is_active)} className="export-btn" style={{ flexGrow: 1, backgroundColor: selectedVet.is_active ? '#ef4444' : '#10b981', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                      <Ban size={16} /> {selectedVet.is_active ? 'Block Vet' : 'Unblock Vet'}
+                    </button>
                     {selectedVet.verification_status === 'pending' && (
-                      <>
-                        <button onClick={() => handleVerification(selectedVet.id, 'verified')} className="export-btn" style={{ backgroundColor: '#10b981', color: '#fff', border: 'none' }}>Approve</button>
-                        <button onClick={() => handleVerification(selectedVet.id, 'rejected')} className="export-btn" style={{ backgroundColor: '#ef4444', color: '#fff', border: 'none' }}>Reject</button>
-                      </>
+                      <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+                        <button onClick={() => handleVerification(selectedVet.id, 'verified')} className="export-btn" style={{ flexGrow: 1, backgroundColor: '#10b981', color: '#fff', border: 'none' }}>Approve</button>
+                        <button onClick={() => handleVerification(selectedVet.id, 'rejected')} className="export-btn" style={{ flexGrow: 1, backgroundColor: '#ef4444', color: '#fff', border: 'none' }}>Reject</button>
+                      </div>
                     )}
                   </div>
                 </div>
