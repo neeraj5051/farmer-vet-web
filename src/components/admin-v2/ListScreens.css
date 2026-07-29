@@ -201,6 +201,8 @@
   -moz-appearance: none;
   cursor: pointer;
   transition: border-color 0.2s;
+  width: auto !important;
+  min-width: 180px;
 }
 
 .list-filter-bar .filter-search {
