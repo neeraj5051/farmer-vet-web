@@ -75,9 +75,20 @@ const OperationsOverview = () => {
 
     // Retrieve average response time from backend, default to '—' if unavailable
     const rawResponseTime = stats.call_chat_metrics?.avg_response_time || stats.call_chat_metrics?.avg_response_seconds;
-    const finalResponseTimeStr = rawResponseTime 
-      ? (typeof rawResponseTime === 'number' ? `${Math.floor(rawResponseTime / 60)}m ${rawResponseTime % 60}s` : String(rawResponseTime)) 
-      : '—';
+    
+    let finalResponseTimeStr = '—';
+    if (rawResponseTime) {
+      if (typeof rawResponseTime === 'number') {
+        const totalSeconds = Math.round(rawResponseTime);
+        if (totalSeconds < 60) {
+          finalResponseTimeStr = `${totalSeconds}s`;
+        } else {
+          finalResponseTimeStr = `${Math.floor(totalSeconds / 60)}m ${totalSeconds % 60}s`;
+        }
+      } else {
+        finalResponseTimeStr = String(rawResponseTime);
+      }
+    }
 
     return {
       todayBookings: totalCount,
