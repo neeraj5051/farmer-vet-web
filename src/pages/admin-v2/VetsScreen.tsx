@@ -542,12 +542,14 @@ const VetsScreen = () => {
                     <button onClick={() => handleBlockToggle(selectedVet.id, selectedVet.is_active)} className="export-btn" style={{ flexGrow: 1, backgroundColor: selectedVet.is_active ? '#ef4444' : '#10b981', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
                       <Ban size={16} /> {selectedVet.is_active ? 'Block Vet' : 'Unblock Vet'}
                     </button>
-                    {selectedVet.verification_status === 'pending' && (
-                      <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+                    <div style={{ display: 'flex', gap: 12, width: '100%' }}>
+                      {selectedVet.verification_status !== 'verified' && (
                         <button onClick={() => handleVerification(selectedVet.id, 'verified')} className="export-btn" style={{ flexGrow: 1, backgroundColor: '#10b981', color: '#fff', border: 'none' }}>Approve</button>
+                      )}
+                      {selectedVet.verification_status !== 'rejected' && (
                         <button onClick={() => handleVerification(selectedVet.id, 'rejected')} className="export-btn" style={{ flexGrow: 1, backgroundColor: '#ef4444', color: '#fff', border: 'none' }}>Reject</button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
