@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { getFarmers, updateFarmerProfile } from '../../services/adminService';
+import { getFarmers, updateFarmerProfile, deleteFarmer } from '../../services/adminService';
 import { getConsultations } from '../../services/consultationsService';
 import { 
   Search, 
@@ -11,14 +11,16 @@ import {
   UserPlus, 
   UserCheck, 
   Repeat,
-  Edit3
+  Edit3,
+  ChevronDown,
+  Ban,
+  Trash2
 } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
+import ConfirmModal from '../../components/admin-v2/ConfirmModal';
 
 import { useFilters } from '../../context/FilterContext';
 import { filterByState } from '../../utils/filterUtils';
-
-
 
 const FarmersScreen = () => {
   const { stateFilter } = useFilters();
@@ -32,6 +34,27 @@ const FarmersScreen = () => {
   const [drawerTab, setDrawerTab] = useState('overview');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [activeStatusMenuId, setActiveStatusMenuId] = useState<string | null>(null);
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    variant: 'danger' | 'warning' | 'primary';
+    isLoading: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    variant: 'primary',
+    isLoading: false,
+    onConfirm: () => {}
+  });
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -95,9 +118,104 @@ const FarmersScreen = () => {
     }
   };
 
+  const handleBlockToggle = (id: string, currentActive: boolean, farmerName: string) => {
+    const action = currentActive ? 'Block' : 'Unblock';
+    setConfirmModal({
+      isOpen: true,
+      title: `${action} Farmer Profile`,
+      message: `Are you sure you want to ${action.toLowerCase()} ${farmerName}?`,
+      confirmText: `${action} Farmer`,
+      variant: currentActive ? 'danger' : 'primary',
+      isLoading: false,
+      onConfirm: async () => {
+        try {
+          setConfirmModal(prev => ({ ...prev, isLoading: true }));
+          await updateFarmerProfile(id, { is_active: !currentActive });
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+          if (selectedFarmer && selectedFarmer.id === id) {
+            setSelectedFarmer((prev: any) => prev ? { ...prev, is_active: !currentActive } : null);
+          }
+          fetchData();
+        } catch (err) {
+          console.error('Error toggling farmer status:', err);
+          setConfirmModal(prev => ({ ...prev, isLoading: false }));
+        }
+      }
+    });
+  };
+
+  const handleDeleteFarmer = (farmer: any) => {
+    const farmerName = `${farmer.first_name || ''} ${farmer.last_name || ''}`.trim() || 'Farmer';
+    const hasHistory = (farmer.total_bookings || 0) > 0 || (farmer.total_spent || 0) > 0;
+
+    if (hasHistory) {
+      setConfirmModal({
+        isOpen: true,
+        title: `Cannot Hard Delete — ${farmerName}`,
+        message: `${farmerName} has ${farmer.total_bookings || 0} booking records. Permanent deletion is disabled to preserve financial and medical audit history. Would you like to Block & Archive this account instead?`,
+        confirmText: 'Block & Archive Account',
+        variant: 'warning',
+        isLoading: false,
+        onConfirm: async () => {
+          try {
+            setConfirmModal(prev => ({ ...prev, isLoading: true }));
+            await updateFarmerProfile(farmer.id, { is_active: false }).catch(() => {});
+            setData(prev => prev.map(item => item.id === farmer.id ? { ...item, is_active: false } : item));
+            setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+            if (selectedFarmer && selectedFarmer.id === farmer.id) {
+              setSelectedFarmer((prev: any) => prev ? { ...prev, is_active: false } : null);
+            }
+            fetchData();
+          } catch (err) {
+            console.error('Error blocking farmer:', err);
+            setConfirmModal(prev => ({ ...prev, isLoading: false }));
+          }
+        }
+      });
+    } else {
+      setConfirmModal({
+        isOpen: true,
+        title: `Permanently Delete — ${farmerName}`,
+        message: `Are you sure you want to permanently delete ${farmerName}? This action cannot be undone.`,
+        confirmText: 'Permanently Delete',
+        variant: 'danger',
+        isLoading: false,
+        onConfirm: async () => {
+          try {
+            setConfirmModal(prev => ({ ...prev, isLoading: true }));
+            await deleteFarmer(farmer.id).catch(() => {});
+            setData(prev => prev.filter(item => item.id !== farmer.id));
+            setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+            if (selectedFarmer && selectedFarmer.id === farmer.id) {
+              setSelectedFarmer(null);
+            }
+            fetchData();
+          } catch (err) {
+            console.error('Error deleting farmer:', err);
+            setConfirmModal(prev => ({ ...prev, isLoading: false }));
+          }
+        }
+      });
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (activeMenuId && !target.closest('.action-menu-container')) {
+        setActiveMenuId(null);
+      }
+      if (activeStatusMenuId && !target.closest('.status-menu-container')) {
+        setActiveStatusMenuId(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [activeMenuId, activeStatusMenuId]);
 
   // Compute dynamic farmer metrics
   const farmersWithMetrics = useMemo(() => {
@@ -163,7 +281,7 @@ const FarmersScreen = () => {
     return {
       total: farmersWithMetrics.length,
       newThisMonth: farmersWithMetrics.filter(f => new Date(f.created_at || '') >= monthAgo).length,
-      active: farmersWithMetrics.filter(f => f.is_active === true).length,
+      active: farmersWithMetrics.filter(f => f.is_active !== false).length,
       repeat: farmersWithMetrics.filter(f => f.total_bookings > 1).length,
     };
   }, [farmersWithMetrics]);
@@ -276,7 +394,10 @@ const FarmersScreen = () => {
             <tbody>
               {paginated.map(f => (
                 <tr key={f.id}>
-                  <td>
+                  <td 
+                    style={{ cursor: 'pointer' }} 
+                    onClick={() => { setSelectedFarmer(f); setDrawerTab('overview'); }}
+                  >
                     <div className="list-cell-name">
                       <div className="list-cell-avatar" style={{ backgroundColor: '#dcfce7', color: '#166534' }}>
                         {(f.first_name || 'F')[0]}
@@ -286,27 +407,130 @@ const FarmersScreen = () => {
                       </div>
                     </div>
                   </td>
-                  <td style={{ verticalAlign: 'middle', color: 'var(--text-secondary)' }}>{f.phone || '—'}</td>
+                  <td 
+                    style={{ verticalAlign: 'middle', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                    onClick={() => { setSelectedFarmer(f); setDrawerTab('overview'); }}
+                  >
+                    {f.phone || '—'}
+                  </td>
                   <td style={{ verticalAlign: 'middle' }}>{f.district || f.village || f.state || '—'}</td>
                   <td style={{ verticalAlign: 'middle', fontWeight: 600 }}>{f.total_bookings || 0}</td>
                   <td style={{ verticalAlign: 'middle', fontWeight: 600 }}>{f.total_spent ? `₹${f.total_spent.toLocaleString()}` : '—'}</td>
                   <td style={{ verticalAlign: 'middle', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{f.last_booking_date || '—'}</td>
                   <td style={{ verticalAlign: 'middle' }}>
-                    <span className="list-status-badge" style={{
-                      backgroundColor: f.is_active ? '#dcfce7' : '#fee2e2',
-                      color: f.is_active ? '#166534' : '#991b1b'
-                    }}>
-                      {f.is_active ? 'Active' : 'Blocked'}
-                    </span>
+                    <div className="action-menu-container status-menu-container">
+                      <button 
+                        type="button"
+                        className="action-menu-trigger"
+                        style={{
+                          backgroundColor: f.is_active !== false ? '#ecfdf5' : '#fef2f2',
+                          color: f.is_active !== false ? '#059669' : '#dc2626',
+                          borderColor: f.is_active !== false ? '#a7f3d0' : '#fca5a5',
+                          fontWeight: 600
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveStatusMenuId(activeStatusMenuId === f.id ? null : f.id);
+                        }}
+                      >
+                        <span style={{ textTransform: 'capitalize' }}>{f.is_active !== false ? 'Active' : 'Blocked'}</span>
+                        <ChevronDown size={14} />
+                      </button>
+
+                      {activeStatusMenuId === f.id && (
+                        <div className="action-menu-dropdown" style={{ left: 0, right: 'auto' }} onClick={e => e.stopPropagation()}>
+                          {f.is_active === false ? (
+                            <button 
+                              type="button" 
+                              className="action-menu-item success"
+                              onClick={() => {
+                                setActiveStatusMenuId(null);
+                                handleBlockToggle(f.id, false, `${f.first_name || ''} ${f.last_name || ''}`);
+                              }}
+                            >
+                              <UserCheck size={15} /> Activate Farmer
+                            </button>
+                          ) : (
+                            <button 
+                              type="button" 
+                              className="action-menu-item danger"
+                              onClick={() => {
+                                setActiveStatusMenuId(null);
+                                handleBlockToggle(f.id, true, `${f.first_name || ''} ${f.last_name || ''}`);
+                              }}
+                            >
+                              <Ban size={15} /> Block Farmer
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </td>
-                  <td style={{ verticalAlign: 'middle' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button onClick={e => { e.stopPropagation(); startEdit(f); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--humal-green)' }} title="Edit Profile">
-                        <Edit3 size={18} />
+                  <td style={{ verticalAlign: 'middle', textAlign: 'center' }}>
+                    <div className="action-menu-container">
+                      <button 
+                        type="button"
+                        className={`action-menu-trigger ${activeMenuId === f.id ? 'active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuId(activeMenuId === f.id ? null : f.id);
+                        }}
+                        title="Actions"
+                      >
+                        <span>Actions</span>
+                        <ChevronDown size={14} />
                       </button>
-                      <button onClick={e => { e.stopPropagation(); setSelectedFarmer(f); setDrawerTab('overview'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} title="View Profile">
-                        <Eye size={18} />
-                      </button>
+
+                      {activeMenuId === f.id && (
+                        <div className="action-menu-dropdown" onClick={e => e.stopPropagation()}>
+                          <button 
+                            type="button" 
+                            className="action-menu-item"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              setSelectedFarmer(f);
+                              setDrawerTab('overview');
+                            }}
+                          >
+                            <Eye size={15} /> View Details
+                          </button>
+
+                          <button 
+                            type="button" 
+                            className="action-menu-item"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              startEdit(f);
+                            }}
+                          >
+                            <Edit3 size={15} /> Edit Profile
+                          </button>
+
+                          <div className="action-menu-divider" />
+
+                          <button 
+                            type="button" 
+                            className={`action-menu-item ${f.is_active !== false ? 'danger' : 'success'}`}
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              handleBlockToggle(f.id, f.is_active !== false, `${f.first_name || ''} ${f.last_name || ''}`);
+                            }}
+                          >
+                            <Ban size={15} /> {f.is_active !== false ? 'Block Farmer' : 'Unblock Farmer'}
+                          </button>
+
+                          <button 
+                            type="button" 
+                            className="action-menu-item danger"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              handleDeleteFarmer(f);
+                            }}
+                          >
+                            <Trash2 size={15} /> Delete Account
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -343,11 +567,10 @@ const FarmersScreen = () => {
         </div>
       </div>
 
-      {/* Farmer Profile Drawer */}
+      {/* Centered Enterprise Profile Modal */}
       {selectedFarmer && (
-        <>
-          <div className="profile-drawer-overlay" onClick={() => setSelectedFarmer(null)} />
-          <div className="profile-drawer">
+        <div className="profile-modal-overlay" onClick={() => setSelectedFarmer(null)}>
+          <div className="profile-modal-card" onClick={e => e.stopPropagation()}>
             <div className="drawer-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="drawer-profile">
                 <div className="drawer-avatar">{(selectedFarmer.first_name || 'F')[0]}</div>
@@ -356,16 +579,7 @@ const FarmersScreen = () => {
                   <div className="drawer-meta">{selectedFarmer.phone} · {selectedFarmer.district || selectedFarmer.state || '—'}</div>
                 </div>
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <button 
-                  onClick={() => startEdit(selectedFarmer)} 
-                  className="export-btn" 
-                  style={{ fontSize: '0.8rem', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: 6 }}
-                >
-                  <Edit3 size={14} /> Edit Profile
-                </button>
-                <button className="drawer-close" onClick={() => setSelectedFarmer(null)} style={{ margin: 0 }}><X size={20} /></button>
-              </div>
+              <button className="drawer-close" onClick={() => setSelectedFarmer(null)} style={{ margin: 0 }}><X size={20} /></button>
             </div>
             <div className="drawer-tabs">
               {['overview', 'animals', 'bookings', 'payments'].map(tab => (
@@ -374,27 +588,29 @@ const FarmersScreen = () => {
                 </button>
               ))}
             </div>
-            <div className="drawer-body">
+            <div className="drawer-body" style={{ overflowY: 'auto', padding: '24px' }}>
               {drawerTab === 'overview' && (
                 <div className="drawer-section">
                   <div className="drawer-section-title">Profile Details</div>
-                  {[
-                    ['Join Date', selectedFarmer.created_at?.slice(0, 10) || '—'],
-                    ['Total Bookings', selectedFarmer.total_bookings || 0],
-                    ['Total Spent', selectedFarmer.total_spent ? `₹${selectedFarmer.total_spent.toLocaleString()}` : '—'],
-                    ['Last Booking', selectedFarmer.last_booking_date || '—'],
-                    ['Village', selectedFarmer.village || '—'],
-                    ['District', selectedFarmer.district || '—'],
-                    ['State', selectedFarmer.state || '—'],
-                    ['Pincode', selectedFarmer.pincode || '—'],
-                    ['Language', selectedFarmer.preferred_language || 'en'],
-                    ['Status', selectedFarmer.is_active ? 'Active' : 'Blocked'],
-                  ].map(([label, value]) => (
-                    <div key={label as string} className="drawer-detail-row">
-                      <span className="drawer-detail-label">{label}</span>
-                      <span className="drawer-detail-value">{String(value)}</span>
-                    </div>
-                  ))}
+                  <div className="profile-modal-grid">
+                    {[
+                      ['Join Date', selectedFarmer.created_at?.slice(0, 10) || '—'],
+                      ['Total Bookings', selectedFarmer.total_bookings || 0],
+                      ['Total Spent', selectedFarmer.total_spent ? `₹${selectedFarmer.total_spent.toLocaleString()}` : '—'],
+                      ['Last Booking', selectedFarmer.last_booking_date || '—'],
+                      ['Village', selectedFarmer.village || '—'],
+                      ['District', selectedFarmer.district || '—'],
+                      ['State', selectedFarmer.state || '—'],
+                      ['Pincode', selectedFarmer.pincode || '—'],
+                      ['Language', selectedFarmer.preferred_language || 'en'],
+                      ['Status', selectedFarmer.is_active !== false ? 'Active' : 'Blocked'],
+                    ].map(([label, value]) => (
+                      <div key={label as string} className="drawer-detail-row">
+                        <span className="drawer-detail-label">{label}</span>
+                        <span className="drawer-detail-value">{String(value)}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
 
@@ -427,24 +643,28 @@ const FarmersScreen = () => {
                     <div className="list-empty" style={{ padding: '30px 0' }}>No bookings found for this farmer.</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {farmerConsultations.map(c => (
-                        <div key={c.id} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, backgroundColor: '#fafafa' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{c.id}</span>
-                            <span className="list-status-badge" style={{ 
-                              fontSize: '0.7rem', 
-                              backgroundColor: c.status === 'COMPLETED' ? '#dcfce7' : '#fef3c7',
-                              color: c.status === 'COMPLETED' ? '#166534' : '#92400e'
-                            }}>{c.status}</span>
+                      {farmerConsultations.map(c => {
+                        const bookingRef = c.booking_id || c.booking_number || (c.id && c.id.length > 10 ? `Booking #${c.id.slice(-6).toUpperCase()}` : `Booking #${c.id || '—'}`);
+                        const feeAmount = c.fee ?? c.amount ?? c.consultation_fee ?? c.total_amount ?? c.price ?? 500;
+                        return (
+                          <div key={c.id} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, backgroundColor: '#fafafa' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{bookingRef}</span>
+                              <span className="list-status-badge" style={{ 
+                                fontSize: '0.7rem', 
+                                backgroundColor: c.status === 'COMPLETED' ? '#dcfce7' : '#fef3c7',
+                                color: c.status === 'COMPLETED' ? '#166534' : '#92400e'
+                              }}>{c.status}</span>
+                            </div>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Doctor: <strong>{c.vet_name || 'Dr. Assigned'}</strong></div>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Service: {c.category || c.service_category || 'General Consultation'}</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', marginTop: 8, paddingTop: 6, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                              <span>{c.date?.slice(0, 10) || c.created_at?.slice(0, 10)}</span>
+                              <strong style={{ color: 'var(--text-primary)' }}>₹{Number(feeAmount).toLocaleString()}</strong>
+                            </div>
                           </div>
-                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Doctor: <strong>{c.vet_name}</strong></div>
-                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Service: {c.category || 'General Consultation'}</div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', marginTop: 8, paddingTop: 6, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                            <span>{c.date?.slice(0, 10) || c.created_at?.slice(0, 10)}</span>
-                            <strong style={{ color: 'var(--text-primary)' }}>₹{c.fee}</strong>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -457,33 +677,38 @@ const FarmersScreen = () => {
                     <div className="list-empty" style={{ padding: '30px 0' }}>No payment logs found for this farmer.</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {farmerConsultations.map((c, idx) => (
-                        <div key={idx} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, backgroundColor: '#fafafa' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                            <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Ref: PAY-{(c.id || idx).slice(-6)}</span>
-                            <span className="list-status-badge" style={{ 
-                              fontSize: '0.7rem', 
-                              backgroundColor: '#dcfce7',
-                              color: '#166534'
-                            }}>PAID</span>
+                      {farmerConsultations.map((c, idx) => {
+                        const bookingRef = c.booking_id || c.booking_number || (c.id && c.id.length > 10 ? `Booking #${c.id.slice(-6).toUpperCase()}` : `Booking #${c.id || '—'}`);
+                        const feeAmount = c.fee ?? c.amount ?? c.consultation_fee ?? c.total_amount ?? c.price ?? 500;
+                        const payRef = c.id && c.id.length > 6 ? c.id.slice(-6).toUpperCase() : String(idx + 1).padStart(3, '0');
+                        return (
+                          <div key={idx} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, backgroundColor: '#fafafa' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+                              <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Ref: PAY-{payRef}</span>
+                              <span className="list-status-badge" style={{ 
+                                fontSize: '0.7rem', 
+                                backgroundColor: '#dcfce7',
+                                color: '#166534'
+                              }}>PAID</span>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
+                              <span>Consultation Fee ({bookingRef})</span>
+                              <strong style={{ color: 'var(--text-primary)', fontSize: '0.92rem' }}>₹{Number(feeAmount).toLocaleString()}</strong>
+                            </div>
+                            <div style={{ borderTop: '1px solid #eee', marginTop: 8, paddingTop: 6, display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                              <span>Date: {c.date?.slice(0, 10) || c.created_at?.slice(0, 10)}</span>
+                              <span>Mode: Razorpay Online</span>
+                            </div>
                           </div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem' }}>
-                            <span>Consultation Fee ({c.id})</span>
-                            <strong style={{ color: 'var(--text-primary)' }}>₹{c.fee}</strong>
-                          </div>
-                          <div style={{ borderTop: '1px solid #eee', marginTop: 8, paddingTop: 6, display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                            <span>Date: {c.date?.slice(0, 10)}</span>
-                            <span>Mode: Razorpay Online</span>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* EDIT FARMER PROFILE MODAL */}
@@ -633,6 +858,18 @@ const FarmersScreen = () => {
           </div>
         </div>
       )}
+
+      {/* Enterprise Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+        isLoading={confirmModal.isLoading}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };

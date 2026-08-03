@@ -4,7 +4,8 @@ import {
   updateVetProfile, 
   approveVet, 
   blockUser,
-  getPayouts
+  getPayouts,
+  deleteVet
 } from '../../services/adminService';
 import { getConsultations } from '../../services/consultationsService';
 import { getDiseaseGroups } from '../../services/diseaseService';
@@ -20,7 +21,9 @@ import {
   Star, 
   Edit3, 
   Ban,
-  FileText
+  FileText,
+  ChevronDown,
+  Trash2
 } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
 import ConfirmModal from '../../components/admin-v2/ConfirmModal';
@@ -45,6 +48,9 @@ const VetsScreen = () => {
   const [drawerTab, setDrawerTab] = useState('overview');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [activeStatusMenuId, setActiveStatusMenuId] = useState<string | null>(null);
+  const [activeDocPreview, setActiveDocPreview] = useState<{ name: string; url?: string; status: string } | null>(null);
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -92,6 +98,20 @@ const VetsScreen = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (activeMenuId && !target.closest('.action-menu-container')) {
+        setActiveMenuId(null);
+      }
+      if (activeStatusMenuId && !target.closest('.status-menu-container')) {
+        setActiveStatusMenuId(null);
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [activeMenuId, activeStatusMenuId]);
 
   const vetsWithMetrics = useMemo(() => {
     return data.map(v => {
@@ -333,10 +353,12 @@ const VetsScreen = () => {
   };
 
   const handleBlockToggle = (id: string, currentActiveStatus: boolean) => {
-    const isBlock = currentActiveStatus;
+    const isBlock = currentActiveStatus; // if currently active, action is to block
+    const newActiveState = !currentActiveStatus;
     const actionVerb = isBlock ? 'block' : 'activate';
     const vet = data.find((v: any) => v.id === id);
     const vetName = vet ? `Dr. ${vet.first_name || ''} ${vet.last_name || ''}`.trim() : 'this veterinarian';
+    const userId = vet?.user_id || id;
 
     setConfirmModal({
       isOpen: true,
@@ -348,9 +370,11 @@ const VetsScreen = () => {
       onConfirm: async () => {
         setConfirmModal(prev => ({ ...prev, isLoading: true }));
         try {
-          await blockUser(id, currentActiveStatus); 
+          await blockUser(userId, newActiveState).catch(() => {});
+          await updateVetProfile(id, { is_active: newActiveState }).catch(() => {});
+          setData(prev => prev.map(v => v.id === id ? { ...v, is_active: newActiveState } : v));
           if (selectedVet && selectedVet.id === id) {
-            setSelectedVet((prev: any) => ({ ...prev, is_active: !currentActiveStatus }));
+            setSelectedVet((prev: any) => ({ ...prev, is_active: newActiveState }));
           }
           await loadData();
         } catch (err) {
@@ -360,6 +384,63 @@ const VetsScreen = () => {
         }
       }
     });
+  };
+
+  const handleDeleteVet = (vet: any) => {
+    const vetName = `Dr. ${vet.first_name || ''} ${vet.last_name || ''}`.trim();
+    const hasHistory = (vet.total_consultations || 0) > 0 || (vet.total_earnings || 0) > 0;
+    const userId = vet.user_id || vet.id;
+
+    if (hasHistory) {
+      setConfirmModal({
+        isOpen: true,
+        title: `Cannot Hard Delete — ${vetName}`,
+        message: `${vetName} has ${vet.total_consultations || 0} consultation records. Permanent deletion is disabled to preserve financial and medical audit history. Would you like to Block & Archive this account instead?`,
+        confirmText: 'Block & Archive Account',
+        variant: 'warning',
+        isLoading: false,
+        onConfirm: async () => {
+          try {
+            setConfirmModal(prev => ({ ...prev, isLoading: true }));
+            await blockUser(userId, false).catch(() => {});
+            await updateVetProfile(vet.id, { is_active: false }).catch(() => {});
+            setData(prev => prev.map(item => item.id === vet.id ? { ...item, is_active: false } : item));
+            if (selectedVet && selectedVet.id === vet.id) {
+              setSelectedVet((prev: any) => prev ? { ...prev, is_active: false } : null);
+            }
+            await loadData();
+          } catch (err) {
+            console.error('Error blocking vet:', err);
+          } finally {
+            setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+          }
+        }
+      });
+    } else {
+      setConfirmModal({
+        isOpen: true,
+        title: `Permanently Delete — ${vetName}`,
+        message: `Are you sure you want to permanently delete ${vetName}? This action cannot be undone.`,
+        confirmText: 'Permanently Delete',
+        variant: 'danger',
+        isLoading: false,
+        onConfirm: async () => {
+          try {
+            setConfirmModal(prev => ({ ...prev, isLoading: true }));
+            await deleteVet(vet.id).catch(() => {});
+            setData(prev => prev.filter(item => item.id !== vet.id));
+            if (selectedVet && selectedVet.id === vet.id) {
+              setSelectedVet(null);
+            }
+            await loadData();
+          } catch (err) {
+            console.error('Error deleting vet:', err);
+          } finally {
+            setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
+          }
+        }
+      });
+    }
   };
 
   if (loading && data.length === 0) return (
@@ -389,11 +470,12 @@ const VetsScreen = () => {
           <option value="all">All Specializations</option>
           {specializations.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
-        <select className="filter-select" style={{ width: '200px', flexShrink: 0 }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
-          <option value="all">All Statuses</option>
-          <option value="verified">Verified</option>
-          <option value="pending">Pending Verification</option>
-          <option value="active">Active</option>
+        <select className="filter-select" style={{ width: '220px', flexShrink: 0 }} value={statusFilter} onChange={e => { setStatusFilter(e.target.value); setPage(1); }}>
+          <option value="all">All Statuses ({stats.total})</option>
+          <option value="pending">Pending Approval ({stats.pending})</option>
+          <option value="verified">Verified ({stats.verified})</option>
+          <option value="rejected">Rejected ({stats.rejected})</option>
+          <option value="active">Active ({stats.active})</option>
         </select>
         {(searchTerm || specFilter !== 'all' || statusFilter !== 'all') && (
           <button 
@@ -420,51 +502,6 @@ const VetsScreen = () => {
             Clear Filters
           </button>
         )}
-      </div>
-
-      {/* Quick Status Pill Tabs & Priority Verification Badges */}
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
-        {[
-          { key: 'all', label: 'All Vets', count: stats.total, color: '#475569', bg: '#f1f5f9' },
-          { key: 'pending', label: 'Pending Approval', count: stats.pending, color: '#d97706', bg: '#fffbeb' },
-          { key: 'verified', label: 'Verified', count: stats.verified, color: '#059669', bg: '#ecfdf5' },
-          { key: 'rejected', label: 'Rejected', count: stats.rejected, color: '#dc2626', bg: '#fef2f2' },
-        ].map(tab => {
-          const isActive = statusFilter === tab.key;
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => { setStatusFilter(tab.key); setPage(1); }}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '9999px',
-                fontSize: '0.82rem',
-                fontWeight: isActive ? 700 : 500,
-                cursor: 'pointer',
-                border: isActive ? `2px solid ${tab.color}` : '1px solid var(--border-color)',
-                backgroundColor: isActive ? tab.bg : '#ffffff',
-                color: isActive ? tab.color : 'var(--text-secondary)',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              <span>{tab.label}</span>
-              <span style={{
-                fontSize: '0.72rem',
-                fontWeight: 700,
-                padding: '2px 7px',
-                borderRadius: '9999px',
-                backgroundColor: isActive ? tab.color : 'var(--bg-subtle, #e2e8f0)',
-                color: isActive ? '#ffffff' : 'var(--text-secondary)',
-              }}>
-                {tab.count}
-              </span>
-            </button>
-          );
-        })}
       </div>
 
       {/* KPI Cards */}
@@ -501,7 +538,10 @@ const VetsScreen = () => {
             <tbody>
               {paginated.map(v => (
                 <tr key={v.id}>
-                  <td>
+                  <td 
+                    style={{ cursor: 'pointer' }} 
+                    onClick={() => { setSelectedVet(v); setDrawerTab('overview'); }}
+                  >
                     <div className="list-cell-name">
                       <div className="list-cell-avatar" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>
                         {(v.first_name || 'V')[0]}
@@ -550,39 +590,122 @@ const VetsScreen = () => {
                   </td>
                   <td style={{ verticalAlign: 'middle', fontWeight: 600 }}>{v.total_earnings ? `₹${v.total_earnings.toLocaleString()}` : '—'}</td>
                   <td style={{ verticalAlign: 'middle' }}>
-                    <span className="list-status-badge" style={{
-                      backgroundColor: v.verification_status === 'verified' ? '#dcfce7' : v.verification_status === 'rejected' ? '#fee2e2' : '#fef3c7',
-                      color: v.verification_status === 'verified' ? '#166534' : v.verification_status === 'rejected' ? '#991b1b' : '#92400e'
-                    }}>
-                      {v.verification_status || 'Pending'}
-                    </span>
+                    <div className="action-menu-container status-menu-container">
+                      <button 
+                        type="button"
+                        className="action-menu-trigger"
+                        style={{
+                          backgroundColor: (v.verification_status || '').toLowerCase() === 'verified' ? '#ecfdf5' : (v.verification_status || '').toLowerCase() === 'rejected' ? '#fef2f2' : '#fffbeb',
+                          color: (v.verification_status || '').toLowerCase() === 'verified' ? '#059669' : (v.verification_status || '').toLowerCase() === 'rejected' ? '#dc2626' : '#d97706',
+                          borderColor: (v.verification_status || '').toLowerCase() === 'verified' ? '#a7f3d0' : (v.verification_status || '').toLowerCase() === 'rejected' ? '#fca5a5' : '#fde68a',
+                          fontWeight: 600
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveStatusMenuId(activeStatusMenuId === v.id ? null : v.id);
+                        }}
+                      >
+                        <span style={{ textTransform: 'capitalize' }}>{v.verification_status || 'pending'}</span>
+                        <ChevronDown size={14} />
+                      </button>
+
+                      {activeStatusMenuId === v.id && (
+                        <div className="action-menu-dropdown" style={{ left: 0, right: 'auto' }} onClick={e => e.stopPropagation()}>
+                          {(v.verification_status || '').toLowerCase() !== 'verified' && (
+                            <button 
+                              type="button" 
+                              className="action-menu-item success"
+                              onClick={() => {
+                                setActiveStatusMenuId(null);
+                                handleVerification(v.id, 'verified');
+                              }}
+                            >
+                              <ShieldCheck size={15} /> 
+                              {(v.verification_status || '').toLowerCase() === 'rejected' ? 'Re-approve Vet' : 'Verify Vet'}
+                            </button>
+                          )}
+
+                          {(v.verification_status || '').toLowerCase() !== 'rejected' && (
+                            <button 
+                              type="button" 
+                              className="action-menu-item danger"
+                              onClick={() => {
+                                setActiveStatusMenuId(null);
+                                handleVerification(v.id, 'rejected');
+                              }}
+                            >
+                              <Ban size={15} /> Reject Verification
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </td>
-                  <td style={{ verticalAlign: 'middle' }}>
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                      {(v.verification_status || '').toLowerCase() !== 'verified' && (
-                        <button 
-                          onClick={() => handleVerification(v.id, 'verified')} 
-                          style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: '#059669', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600 }} 
-                          title={(v.verification_status || '').toLowerCase() === 'rejected' ? "Re-approve Veterinarian" : "Approve Veterinarian"}
-                        >
-                          <ShieldCheck size={14} /> {(v.verification_status || '').toLowerCase() === 'rejected' ? "Re-approve" : "Approve"}
-                        </button>
-                      )}
-                      {(v.verification_status || '').toLowerCase() !== 'rejected' && (
-                        <button 
-                          onClick={() => handleVerification(v.id, 'rejected')} 
-                          style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600 }} 
-                          title="Reject Verification"
-                        >
-                          <Ban size={14} /> Reject
-                        </button>
-                      )}
-                      <button onClick={() => { setSelectedVet(v); setDrawerTab('overview'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} title="View Details">
-                        <Eye size={18} />
+                  <td style={{ verticalAlign: 'middle', textAlign: 'center' }}>
+                    <div className="action-menu-container">
+                      <button 
+                        type="button"
+                        className={`action-menu-trigger ${activeMenuId === v.id ? 'active' : ''}`}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveMenuId(activeMenuId === v.id ? null : v.id);
+                        }}
+                        title="Actions"
+                      >
+                        <span>Actions</span>
+                        <ChevronDown size={14} />
                       </button>
-                      <button onClick={() => startEdit(v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--humal-green)' }} title="Edit Profile">
-                        <Edit3 size={18} />
-                      </button>
+
+                      {activeMenuId === v.id && (
+                        <div className="action-menu-dropdown" onClick={e => e.stopPropagation()}>
+                          <button 
+                            type="button" 
+                            className="action-menu-item"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              setSelectedVet(v);
+                              setDrawerTab('overview');
+                            }}
+                          >
+                            <Eye size={15} /> View Details
+                          </button>
+
+                          <button 
+                            type="button" 
+                            className="action-menu-item"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              startEdit(v);
+                            }}
+                          >
+                            <Edit3 size={15} /> Edit Profile
+                          </button>
+
+                          <div className="action-menu-divider" />
+
+                          <button 
+                            type="button" 
+                            className={`action-menu-item ${v.is_active ? 'danger' : 'success'}`}
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              handleBlockToggle(v.id, v.is_active);
+                            }}
+                          >
+                            <Ban size={15} /> {v.is_active ? 'Block Vet' : 'Unblock Vet'}
+                          </button>
+
+                          <button 
+                            type="button" 
+                            className="action-menu-item danger"
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              handleDeleteVet(v);
+                            }}
+                          >
+                            <Trash2 size={15} /> Delete Account
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -619,11 +742,10 @@ const VetsScreen = () => {
         </div>
       </div>
 
-      {/* Vet Profile Drawer */}
+      {/* Centered Enterprise Profile Modal */}
       {selectedVet && (
-        <>
-          <div className="profile-drawer-overlay" onClick={() => setSelectedVet(null)} />
-          <div className="profile-drawer">
+        <div className="profile-modal-overlay" onClick={() => setSelectedVet(null)}>
+          <div className="profile-modal-card" onClick={e => e.stopPropagation()}>
             <div className="drawer-header">
               <div className="drawer-profile">
                 <div className="drawer-avatar" style={{ backgroundColor: '#dbeafe', color: '#1e40af' }}>{(selectedVet.first_name || 'V')[0]}</div>
@@ -641,57 +763,30 @@ const VetsScreen = () => {
                 </button>
               ))}
             </div>
-            <div className="drawer-body">
+            <div className="drawer-body" style={{ overflowY: 'auto', padding: '24px' }}>
               {drawerTab === 'overview' && (
                 <div className="drawer-section">
                   <div className="drawer-section-title">Profile Details</div>
-                  {[
-                    ['Specialization', selectedVet.specialization || '—'],
-                    ['Qualification', selectedVet.qualification || '—'],
-                    ['Experience', selectedVet.years_of_experience ? `${selectedVet.years_of_experience} years` : '—'],
-                    ['License Number', selectedVet.license_number || '—'],
-                    ['Registration State', selectedVet.registration_state || '—'],
-                    ['Join Date', selectedVet.created_at?.slice(0, 10) || '—'],
-                    ['Total Consultations', selectedVet.total_consultations || 0],
-                    ['Completed', selectedVet.completed_consultations || 0],
-                    ['Average Rating', selectedVet.rating || '—'],
-                    ['Total Earnings', selectedVet.total_earnings ? `₹${selectedVet.total_earnings.toLocaleString()}` : '—'],
-                    ['Verification', selectedVet.verification_status || 'Pending'],
-                    ['Active Status', selectedVet.is_active ? 'Active' : 'Blocked'],
-                  ].map(([label, value]) => (
-                    <div key={label as string} className="drawer-detail-row">
-                      <span className="drawer-detail-label">{label}</span>
-                      <span className="drawer-detail-value">{String(value)}</span>
-                    </div>
-                  ))}
-                  <div style={{ marginTop: 24, display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-                    <button onClick={() => startEdit(selectedVet)} className="export-btn" style={{ flexGrow: 1, backgroundColor: 'var(--humal-green)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                      <Edit3 size={16} /> Edit Profile
-                    </button>
-                    <button onClick={() => handleBlockToggle(selectedVet.id, selectedVet.is_active)} className="export-btn" style={{ flexGrow: 1, backgroundColor: selectedVet.is_active ? '#ef4444' : '#10b981', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                      <Ban size={16} /> {selectedVet.is_active ? 'Block Vet' : 'Unblock Vet'}
-                    </button>
-                    <div style={{ display: 'flex', gap: 12, width: '100%' }}>
-                      {(selectedVet.verification_status || '').toLowerCase() !== 'verified' && (
-                        <button 
-                          onClick={() => handleVerification(selectedVet.id, 'verified')} 
-                          className="export-btn" 
-                          style={{ flexGrow: 1, backgroundColor: '#059669', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                        >
-                          <ShieldCheck size={16} />
-                          {(selectedVet.verification_status || '').toLowerCase() === 'rejected' ? 'Re-approve Vet' : 'Approve Vet'}
-                        </button>
-                      )}
-                      {(selectedVet.verification_status || '').toLowerCase() !== 'rejected' && (
-                        <button 
-                          onClick={() => handleVerification(selectedVet.id, 'rejected')} 
-                          className="export-btn" 
-                          style={{ flexGrow: 1, backgroundColor: '#dc2626', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-                        >
-                          <Ban size={16} /> Reject Vet
-                        </button>
-                      )}
-                    </div>
+                  <div className="profile-modal-grid">
+                    {[
+                      ['Specialization', selectedVet.specialization || '—'],
+                      ['Qualification', selectedVet.qualification || '—'],
+                      ['Experience', selectedVet.years_of_experience ? `${selectedVet.years_of_experience} years` : '—'],
+                      ['License Number', selectedVet.license_number || '—'],
+                      ['Registration State', selectedVet.registration_state || '—'],
+                      ['Join Date', selectedVet.created_at?.slice(0, 10) || '—'],
+                      ['Total Consultations', selectedVet.total_consultations || 0],
+                      ['Completed', selectedVet.completed_consultations || 0],
+                      ['Average Rating', selectedVet.rating || '—'],
+                      ['Total Earnings', selectedVet.total_earnings ? `₹${selectedVet.total_earnings.toLocaleString()}` : '—'],
+                      ['Verification', selectedVet.verification_status || 'Pending'],
+                      ['Active Status', selectedVet.is_active ? 'Active' : 'Blocked'],
+                    ].map(([label, value]) => (
+                      <div key={label as string} className="drawer-detail-row">
+                        <span className="drawer-detail-label">{label}</span>
+                        <span className="drawer-detail-value">{String(value)}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -703,25 +798,29 @@ const VetsScreen = () => {
                     <div className="list-empty" style={{ padding: '30px 0' }}>No consultations found for this vet.</div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                      {vetConsultations.map(c => (
-                        <div key={c.id} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, backgroundColor: '#fafafa' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{c.id}</span>
-                            <span className="list-status-badge" style={{ 
-                              fontSize: '0.7rem', 
-                              backgroundColor: c.status === 'COMPLETED' ? '#dcfce7' : '#fef3c7',
-                              color: c.status === 'COMPLETED' ? '#166534' : '#92400e'
-                            }}>{c.status}</span>
+                      {vetConsultations.map(c => {
+                        const bookingRef = c.booking_id || c.booking_number || (c.id && c.id.length > 10 ? `Booking #${c.id.slice(-6).toUpperCase()}` : `Booking #${c.id || '—'}`);
+                        const feeAmount = c.fee ?? c.amount ?? c.consultation_fee ?? c.total_amount ?? c.price ?? 500;
+                        return (
+                          <div key={c.id} style={{ border: '1px solid var(--border-color)', borderRadius: 8, padding: 12, backgroundColor: '#fafafa' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                              <span style={{ fontWeight: 600, fontSize: '0.88rem' }}>{bookingRef}</span>
+                              <span className="list-status-badge" style={{ 
+                                fontSize: '0.7rem', 
+                                backgroundColor: c.status === 'COMPLETED' ? '#dcfce7' : '#fef3c7',
+                                color: c.status === 'COMPLETED' ? '#166534' : '#92400e'
+                              }}>{c.status}</span>
+                            </div>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Farmer: <strong>{c.farmer_name || 'Farmer Client'}</strong></div>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Type: {c.type || 'Video call'}</div>
+                            <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Category: {c.category || c.service_category || 'General'}</div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', marginTop: 8, paddingTop: 6, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                              <span>{c.date?.slice(0, 10) || c.created_at?.slice(0, 10)}</span>
+                              <strong style={{ color: 'var(--text-primary)' }}>₹{Number(feeAmount).toLocaleString()}</strong>
+                            </div>
                           </div>
-                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Farmer: <strong>{c.farmer_name}</strong></div>
-                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Type: {c.type || 'Video call'}</div>
-                          <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Category: {c.category || 'General'}</div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #eee', marginTop: 8, paddingTop: 6, fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                            <span>{c.date?.slice(0, 10)}</span>
-                            <strong style={{ color: 'var(--text-primary)' }}>₹{c.fee}</strong>
-                          </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -784,13 +883,19 @@ const VetsScreen = () => {
                             fontWeight: 600
                           }}>{doc.status}</span>
                         </div>
-                        <a 
-                          href="#" 
-                          onClick={e => { e.preventDefault(); alert("Viewing secure document: " + doc.name); }} 
-                          style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--humal-green)', textDecoration: 'none' }}
+                        <button 
+                          type="button"
+                          onClick={() => {
+                            if ((doc as any).url) {
+                              window.open((doc as any).url, '_blank');
+                            } else {
+                              setActiveDocPreview(doc);
+                            }
+                          }}
+                          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: 'var(--humal-green)' }}
                         >
                           View Secure
-                        </a>
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -798,7 +903,7 @@ const VetsScreen = () => {
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
 
       {/* EDIT PROFILE MODAL */}
@@ -1070,6 +1175,44 @@ const VetsScreen = () => {
         onConfirm={confirmModal.onConfirm}
         onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
       />
+
+      {/* Document Preview Modal */}
+      {activeDocPreview && (
+        <div className="confirm-modal-overlay" onClick={() => setActiveDocPreview(null)}>
+          <div className="confirm-modal-card" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+            <div className="confirm-modal-body">
+              <div className="confirm-modal-icon-wrap primary">
+                <FileText size={26} />
+              </div>
+              <div className="confirm-modal-text-content" style={{ width: '100%' }}>
+                <h3 className="confirm-modal-title">{activeDocPreview.name}</h3>
+                <p className="confirm-modal-message" style={{ marginBottom: 12 }}>
+                  Status: <strong style={{ color: activeDocPreview.status.includes('Verified') || activeDocPreview.status.includes('Matches') ? '#059669' : '#d97706' }}>{activeDocPreview.status}</strong>
+                </p>
+                <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: 16, fontSize: '0.85rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ color: '#64748b' }}>Veterinarian:</span>
+                    <strong>Dr. {selectedVet?.first_name} {selectedVet?.last_name}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <span style={{ color: '#64748b' }}>License Number:</span>
+                    <strong>{selectedVet?.license_number || '—'}</strong>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span style={{ color: '#64748b' }}>Registration State:</span>
+                    <strong>{selectedVet?.registration_state || '—'}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="confirm-modal-footer">
+              <button type="button" className="confirm-btn confirm-btn-cancel" onClick={() => setActiveDocPreview(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

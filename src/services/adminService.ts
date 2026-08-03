@@ -204,3 +204,13 @@ export const markConsultationNoShow = async (bookingId: string, target: 'farmer'
     const response = await api.post(`/admin/consults/${bookingId}/mark-no-show`, { target, reason });
     return response.data;
 };
+
+export const deleteVet = async (vetId: string) => {
+    const response = await api.delete(`/admin/vets/${vetId}`);
+    return response.data;
+};
+
+export const deleteFarmer = async (farmerId: string) => {
+    const response = await api.delete(`/admin/farmers/${farmerId}`);
+    return response.data;
+};
