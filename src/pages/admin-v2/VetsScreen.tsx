@@ -965,7 +965,7 @@ const VetsScreen = () => {
                   )}
 
                   {/* Create Defaults button (only shown if default consultation offerings are missing) */}
-                  {vetOfferings.some((o: any) => o.is_fallback && (o.category_name === 'CONSULTATION' || o.variant_name?.toLowerCase().includes('consult') || o.variant_name?.toLowerCase().includes('visit'))) && (
+                  {vetOfferings.some((o: any) => o.is_fallback && (o.category_name?.toUpperCase() === 'CONSULTATION' || o.variant_name?.toLowerCase().includes('consult') || o.variant_name?.toLowerCase().includes('visit'))) && (
                     <button
                       onClick={async () => {
                         if (!selectedVet) return;
