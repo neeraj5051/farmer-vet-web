@@ -57,6 +57,7 @@ const VetsScreen = () => {
   const [vetVaccineOfferings, setVetVaccineOfferings] = useState<any[]>([]);
   const [offeringsLoading, setOfferingsLoading] = useState(false);
   const [creatingDefaults, setCreatingDefaults] = useState(false);
+  const [defaultsCreated, setDefaultsCreated] = useState(false);
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -767,6 +768,7 @@ const VetsScreen = () => {
                 <button key={tab} className={`drawer-tab ${drawerTab === tab ? 'active' : ''}`} onClick={() => {
                   setDrawerTab(tab);
                   if (tab === 'offerings' && selectedVet) {
+                    setDefaultsCreated(false);
                     setOfferingsLoading(true);
                     getVetOfferings(selectedVet.id).then(res => {
                       setVetOfferings(res.service_offerings || []);
@@ -963,7 +965,7 @@ const VetsScreen = () => {
                   )}
 
                   {/* Create Defaults button */}
-                  {vetOfferings.some((o: any) => o.is_fallback) && (
+                  {!defaultsCreated && vetOfferings.some((o: any) => o.is_fallback) && (
                     <button
                       onClick={async () => {
                         if (!selectedVet) return;
@@ -972,6 +974,7 @@ const VetsScreen = () => {
                           const result = await createDefaultOfferings(selectedVet.id);
                           setVetOfferings(result.service_offerings || []);
                           setVetVaccineOfferings(result.vaccine_offerings || []);
+                          setDefaultsCreated(true);
                           alert(result.message || 'Default offerings created');
                         } catch { alert('Failed to create defaults'); }
                         finally { setCreatingDefaults(false); }
