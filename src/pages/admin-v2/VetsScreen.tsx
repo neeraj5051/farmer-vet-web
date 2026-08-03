@@ -23,6 +23,7 @@ import {
   FileText
 } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
+import ConfirmModal from '../../components/admin-v2/ConfirmModal';
 
 import { useFilters } from '../../context/FilterContext';
 import { filterByState } from '../../utils/filterUtils';
@@ -265,35 +266,83 @@ const VetsScreen = () => {
     }
   };
 
-  const handleVerification = async (id: string, status: 'verified' | 'rejected') => {
-    if (window.confirm(`Are you sure you want to ${status} this veterinarian?`)) {
-      try {
-        await approveVet(id, status);
-        if (selectedVet && selectedVet.id === id) {
-          setSelectedVet((prev: any) => ({ ...prev, verification_status: status }));
+  // Confirm Modal State
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText: string;
+    variant: 'primary' | 'success' | 'warning' | 'danger';
+    isLoading: boolean;
+    onConfirm: () => Promise<void>;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    confirmText: 'Confirm',
+    variant: 'primary',
+    isLoading: false,
+    onConfirm: async () => {},
+  });
+
+  const handleVerification = (id: string, status: 'verified' | 'rejected') => {
+    const isApprove = status === 'verified';
+    const actionVerb = isApprove ? 'verify' : 'reject';
+    const vet = data.find((v: any) => v.id === id);
+    const vetName = vet ? `Dr. ${vet.first_name || ''} ${vet.last_name || ''}`.trim() : 'this veterinarian';
+
+    setConfirmModal({
+      isOpen: true,
+      title: isApprove ? 'Verify Veterinarian' : 'Reject Verification',
+      message: `Are you sure you want to ${actionVerb} ${vetName}? ${isApprove ? 'This will mark their profile as verified and allow them to accept patient requests.' : ''}`,
+      confirmText: isApprove ? 'Verify Vet' : 'Reject Vet',
+      variant: isApprove ? 'success' : 'danger',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await approveVet(id, status);
+          if (selectedVet && selectedVet.id === id) {
+            setSelectedVet((prev: any) => ({ ...prev, verification_status: status }));
+          }
+          await loadData();
+        } catch (err) {
+          console.error("Failed to change verification status:", err);
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
         }
-        await loadData();
-      } catch (err) {
-        console.error("Failed to change verification status:", err);
-        alert("Action failed.");
       }
-    }
+    });
   };
 
-  const handleBlockToggle = async (id: string, currentActiveStatus: boolean) => {
-    const action = currentActiveStatus ? "block" : "activate";
-    if (window.confirm(`Are you sure you want to ${action} this veterinarian?`)) {
-      try {
-        await blockUser(id, currentActiveStatus); 
-        if (selectedVet && selectedVet.id === id) {
-          setSelectedVet((prev: any) => ({ ...prev, is_active: !currentActiveStatus }));
+  const handleBlockToggle = (id: string, currentActiveStatus: boolean) => {
+    const isBlock = currentActiveStatus;
+    const actionVerb = isBlock ? 'block' : 'activate';
+    const vet = data.find((v: any) => v.id === id);
+    const vetName = vet ? `Dr. ${vet.first_name || ''} ${vet.last_name || ''}`.trim() : 'this veterinarian';
+
+    setConfirmModal({
+      isOpen: true,
+      title: isBlock ? 'Block Veterinarian' : 'Activate Veterinarian',
+      message: `Are you sure you want to ${actionVerb} ${vetName}? ${isBlock ? 'They will be suspended from logging into the platform.' : 'This will restore their full access to the platform.'}`,
+      confirmText: isBlock ? 'Block Vet' : 'Activate Vet',
+      variant: isBlock ? 'danger' : 'success',
+      isLoading: false,
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isLoading: true }));
+        try {
+          await blockUser(id, currentActiveStatus); 
+          if (selectedVet && selectedVet.id === id) {
+            setSelectedVet((prev: any) => ({ ...prev, is_active: !currentActiveStatus }));
+          }
+          await loadData();
+        } catch (err) {
+          console.error("Failed to toggle block status:", err);
+        } finally {
+          setConfirmModal(prev => ({ ...prev, isOpen: false, isLoading: false }));
         }
-        await loadData();
-      } catch (err) {
-        console.error("Failed to toggle block status:", err);
-        alert("Action failed.");
       }
-    }
+    });
   };
 
   if (loading && data.length === 0) return (
@@ -447,7 +496,25 @@ const VetsScreen = () => {
                     </span>
                   </td>
                   <td style={{ verticalAlign: 'middle' }}>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      {(v.verification_status || '').toLowerCase() !== 'verified' && (
+                        <button 
+                          onClick={() => handleVerification(v.id, 'verified')} 
+                          style={{ background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: '#059669', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600 }} 
+                          title={(v.verification_status || '').toLowerCase() === 'rejected' ? "Re-approve Veterinarian" : "Approve Veterinarian"}
+                        >
+                          <ShieldCheck size={14} /> {(v.verification_status || '').toLowerCase() === 'rejected' ? "Re-approve" : "Approve"}
+                        </button>
+                      )}
+                      {(v.verification_status || '').toLowerCase() !== 'rejected' && (
+                        <button 
+                          onClick={() => handleVerification(v.id, 'rejected')} 
+                          style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 6, padding: '4px 8px', cursor: 'pointer', color: '#dc2626', display: 'flex', alignItems: 'center', gap: 4, fontSize: '0.75rem', fontWeight: 600 }} 
+                          title="Reject Verification"
+                        >
+                          <Ban size={14} /> Reject
+                        </button>
+                      )}
                       <button onClick={() => { setSelectedVet(v); setDrawerTab('overview'); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }} title="View Details">
                         <Eye size={18} />
                       </button>
@@ -543,11 +610,24 @@ const VetsScreen = () => {
                       <Ban size={16} /> {selectedVet.is_active ? 'Block Vet' : 'Unblock Vet'}
                     </button>
                     <div style={{ display: 'flex', gap: 12, width: '100%' }}>
-                      {selectedVet.verification_status !== 'verified' && (
-                        <button onClick={() => handleVerification(selectedVet.id, 'verified')} className="export-btn" style={{ flexGrow: 1, backgroundColor: '#10b981', color: '#fff', border: 'none' }}>Approve</button>
+                      {(selectedVet.verification_status || '').toLowerCase() !== 'verified' && (
+                        <button 
+                          onClick={() => handleVerification(selectedVet.id, 'verified')} 
+                          className="export-btn" 
+                          style={{ flexGrow: 1, backgroundColor: '#059669', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        >
+                          <ShieldCheck size={16} />
+                          {(selectedVet.verification_status || '').toLowerCase() === 'rejected' ? 'Re-approve Vet' : 'Approve Vet'}
+                        </button>
                       )}
-                      {selectedVet.verification_status !== 'rejected' && (
-                        <button onClick={() => handleVerification(selectedVet.id, 'rejected')} className="export-btn" style={{ flexGrow: 1, backgroundColor: '#ef4444', color: '#fff', border: 'none' }}>Reject</button>
+                      {(selectedVet.verification_status || '').toLowerCase() !== 'rejected' && (
+                        <button 
+                          onClick={() => handleVerification(selectedVet.id, 'rejected')} 
+                          className="export-btn" 
+                          style={{ flexGrow: 1, backgroundColor: '#dc2626', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+                        >
+                          <Ban size={16} /> Reject Vet
+                        </button>
                       )}
                     </div>
                   </div>
@@ -916,6 +996,18 @@ const VetsScreen = () => {
           </div>
         </div>
       )}
+
+      {/* Enterprise Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        confirmText={confirmModal.confirmText}
+        variant={confirmModal.variant}
+        isLoading={confirmModal.isLoading}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      />
     </div>
   );
 };
