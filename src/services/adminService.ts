@@ -214,3 +214,13 @@ export const deleteFarmer = async (farmerId: string) => {
     const response = await api.delete(`/admin/farmers/${farmerId}`);
     return response.data;
 };
+
+export const getVetOfferings = async (vetId: string) => {
+    const response = await api.get(`/admin/vets/${vetId}/offerings`);
+    return response.data;
+};
+
+export const createDefaultOfferings = async (vetId: string) => {
+    const response = await api.post(`/admin/vets/${vetId}/offerings/create-defaults`);
+    return response.data;
+};

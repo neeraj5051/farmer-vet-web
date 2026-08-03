@@ -5,7 +5,9 @@ import {
   approveVet, 
   blockUser,
   getPayouts,
-  deleteVet
+  deleteVet,
+  getVetOfferings,
+  createDefaultOfferings
 } from '../../services/adminService';
 import { getConsultations } from '../../services/consultationsService';
 import { getDiseaseGroups } from '../../services/diseaseService';
@@ -51,6 +53,10 @@ const VetsScreen = () => {
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [activeStatusMenuId, setActiveStatusMenuId] = useState<string | null>(null);
   const [activeDocPreview, setActiveDocPreview] = useState<{ name: string; url?: string; status: string } | null>(null);
+  const [vetOfferings, setVetOfferings] = useState<any[]>([]);
+  const [vetVaccineOfferings, setVetVaccineOfferings] = useState<any[]>([]);
+  const [offeringsLoading, setOfferingsLoading] = useState(false);
+  const [creatingDefaults, setCreatingDefaults] = useState(false);
 
   // Edit Modal State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -757,8 +763,17 @@ const VetsScreen = () => {
               <button className="drawer-close" onClick={() => setSelectedVet(null)}><X size={20} /></button>
             </div>
             <div className="drawer-tabs">
-              {['overview', 'consultations', 'earnings', 'documents'].map(tab => (
-                <button key={tab} className={`drawer-tab ${drawerTab === tab ? 'active' : ''}`} onClick={() => setDrawerTab(tab)}>
+              {['overview', 'consultations', 'earnings', 'offerings', 'documents'].map(tab => (
+                <button key={tab} className={`drawer-tab ${drawerTab === tab ? 'active' : ''}`} onClick={() => {
+                  setDrawerTab(tab);
+                  if (tab === 'offerings' && selectedVet) {
+                    setOfferingsLoading(true);
+                    getVetOfferings(selectedVet.id).then(res => {
+                      setVetOfferings(res.service_offerings || []);
+                      setVetVaccineOfferings(res.vaccine_offerings || []);
+                    }).catch(() => {}).finally(() => setOfferingsLoading(false));
+                  }
+                }}>
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
                 </button>
               ))}
@@ -899,6 +914,116 @@ const VetsScreen = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {drawerTab === 'offerings' && (
+                <div className="drawer-section">
+                  <div className="drawer-section-title">Service Offerings</div>
+                  {offeringsLoading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: '30px 0' }}>
+                      <Loader2 size={24} className="animate-spin" style={{ color: 'var(--humal-green)' }} />
+                    </div>
+                  ) : vetOfferings.length === 0 ? (
+                    <div className="list-empty" style={{ padding: '30px 0' }}>No service offerings found for this vet.</div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {vetOfferings.map((o: any, idx: number) => (
+                        <div key={o.variant_id || idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', border: '1px solid var(--border-color)', borderRadius: 8, backgroundColor: '#fafafa' }}>
+                          <div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                              {o.category_icon_emoji || '📋'} {o.variant_name}
+                            </div>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                              {o.category_title || o.category_name}
+                            </div>
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{o.fee}</span>
+                            <span className="list-status-badge" style={{
+                              fontSize: '0.68rem',
+                              backgroundColor: o.is_active ? '#dcfce7' : '#fee2e2',
+                              color: o.is_active ? '#166534' : '#991b1b'
+                            }}>
+                              {o.is_active ? 'Active' : 'Inactive'}
+                            </span>
+                            {o.is_fallback && (
+                              <span className="list-status-badge" style={{
+                                fontSize: '0.68rem',
+                                backgroundColor: '#fef3c7',
+                                color: '#92400e'
+                              }}>
+                                Default
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Create Defaults button */}
+                  {vetOfferings.some((o: any) => o.is_fallback) && (
+                    <button
+                      onClick={async () => {
+                        if (!selectedVet) return;
+                        setCreatingDefaults(true);
+                        try {
+                          const result = await createDefaultOfferings(selectedVet.id);
+                          setVetOfferings(result.service_offerings || []);
+                          setVetVaccineOfferings(result.vaccine_offerings || []);
+                          alert(result.message || 'Default offerings created');
+                        } catch { alert('Failed to create defaults'); }
+                        finally { setCreatingDefaults(false); }
+                      }}
+                      disabled={creatingDefaults}
+                      style={{
+                        marginTop: 16,
+                        width: '100%',
+                        padding: '10px 16px',
+                        backgroundColor: 'var(--humal-green)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 8,
+                        fontWeight: 600,
+                        fontSize: '0.85rem',
+                        cursor: creatingDefaults ? 'not-allowed' : 'pointer',
+                        opacity: creatingDefaults ? 0.6 : 1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 8
+                      }}
+                    >
+                      {creatingDefaults ? 'Creating...' : '➕ Create Default Offerings in DB'}
+                    </button>
+                  )}
+
+                  {/* Vaccine Offerings */}
+                  {vetVaccineOfferings.length > 0 && (
+                    <>
+                      <div className="drawer-section-title" style={{ marginTop: 20 }}>Vaccine Offerings</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                        {vetVaccineOfferings.map((v: any, idx: number) => (
+                          <div key={v.vaccine_id || idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 12px', border: '1px solid var(--border-color)', borderRadius: 8, backgroundColor: '#fafafa' }}>
+                            <div style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+                              💉 {v.name}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>₹{v.fee}</span>
+                              <span className="list-status-badge" style={{
+                                fontSize: '0.68rem',
+                                backgroundColor: v.is_active ? '#dcfce7' : '#fee2e2',
+                                color: v.is_active ? '#166534' : '#991b1b'
+                              }}>
+                                {v.is_active ? 'Active' : 'Inactive'}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
             </div>
