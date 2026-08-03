@@ -975,8 +975,7 @@ const VetsScreen = () => {
                           setVetOfferings(result.service_offerings || []);
                           setVetVaccineOfferings(result.vaccine_offerings || []);
                           setDefaultsCreated(true);
-                          alert(result.message || 'Default offerings created');
-                        } catch { alert('Failed to create defaults'); }
+                        } catch { /* silently handled — button stays visible on failure */ }
                         finally { setCreatingDefaults(false); }
                       }}
                       disabled={creatingDefaults}
