@@ -149,8 +149,9 @@ const VetsScreen = () => {
     if (stateFilter && stateFilter !== 'All States' && stateFilter !== 'all') {
       result = filterByState(result, stateFilter);
     }
-    if (statusFilter === 'verified') result = result.filter(v => v.verification_status === 'verified');
-    else if (statusFilter === 'pending') result = result.filter(v => v.verification_status === 'pending');
+    if (statusFilter === 'verified') result = result.filter(v => (v.verification_status || '').toLowerCase() === 'verified');
+    else if (statusFilter === 'pending') result = result.filter(v => (v.verification_status || 'pending').toLowerCase() === 'pending');
+    else if (statusFilter === 'rejected') result = result.filter(v => (v.verification_status || '').toLowerCase() === 'rejected');
     else if (statusFilter === 'active') result = result.filter(v => v.is_active === true);
 
     if (specFilter !== 'all') {
@@ -166,12 +167,28 @@ const VetsScreen = () => {
         v.specialization?.toLowerCase().includes(q)
       );
     }
+
+    // Priority Sort: Unverified / Pending Vets FIRST at the top of table
+    result.sort((a, b) => {
+      const statusA = (a.verification_status || 'pending').toLowerCase();
+      const statusB = (b.verification_status || 'pending').toLowerCase();
+      if (statusA === 'pending' && statusB !== 'pending') return -1;
+      if (statusA !== 'pending' && statusB === 'pending') return 1;
+
+      // Secondary sort: newest first
+      const dateA = new Date(a.created_at || 0).getTime();
+      const dateB = new Date(b.created_at || 0).getTime();
+      return dateB - dateA;
+    });
+
     return result;
   }, [vetsWithMetrics, statusFilter, specFilter, searchTerm, stateFilter]);
 
   const stats = useMemo(() => ({
     total: vetsWithMetrics.length,
-    verified: vetsWithMetrics.filter(v => v.verification_status === 'verified').length,
+    pending: vetsWithMetrics.filter(v => (v.verification_status || 'pending').toLowerCase() === 'pending').length,
+    verified: vetsWithMetrics.filter(v => (v.verification_status || '').toLowerCase() === 'verified').length,
+    rejected: vetsWithMetrics.filter(v => (v.verification_status || '').toLowerCase() === 'rejected').length,
     active: vetsWithMetrics.filter(v => v.is_active === true).length,
     online: vetsWithMetrics.filter(v => v.is_online === true).length,
   }), [vetsWithMetrics]);
@@ -403,6 +420,51 @@ const VetsScreen = () => {
             Clear Filters
           </button>
         )}
+      </div>
+
+      {/* Quick Status Pill Tabs & Priority Verification Badges */}
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '20px', alignItems: 'center', flexWrap: 'wrap' }}>
+        {[
+          { key: 'all', label: 'All Vets', count: stats.total, color: '#475569', bg: '#f1f5f9' },
+          { key: 'pending', label: 'Pending Approval', count: stats.pending, color: '#d97706', bg: '#fffbeb' },
+          { key: 'verified', label: 'Verified', count: stats.verified, color: '#059669', bg: '#ecfdf5' },
+          { key: 'rejected', label: 'Rejected', count: stats.rejected, color: '#dc2626', bg: '#fef2f2' },
+        ].map(tab => {
+          const isActive = statusFilter === tab.key;
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => { setStatusFilter(tab.key); setPage(1); }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                padding: '6px 14px',
+                borderRadius: '9999px',
+                fontSize: '0.82rem',
+                fontWeight: isActive ? 700 : 500,
+                cursor: 'pointer',
+                border: isActive ? `2px solid ${tab.color}` : '1px solid var(--border-color)',
+                backgroundColor: isActive ? tab.bg : '#ffffff',
+                color: isActive ? tab.color : 'var(--text-secondary)',
+                transition: 'all 0.15s ease',
+              }}
+            >
+              <span>{tab.label}</span>
+              <span style={{
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                padding: '2px 7px',
+                borderRadius: '9999px',
+                backgroundColor: isActive ? tab.color : 'var(--bg-subtle, #e2e8f0)',
+                color: isActive ? '#ffffff' : 'var(--text-secondary)',
+              }}>
+                {tab.count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* KPI Cards */}
