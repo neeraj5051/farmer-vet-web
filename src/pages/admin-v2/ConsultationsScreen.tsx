@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getConsultations, getConsultationDetail } from '../../services/consultationsService';
 import { markConsultationNoShow } from '../../services/adminService';
-import { Search, Download, Loader2, Eye, X, Video, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Search, Download, Loader2, Eye, X, Video, CheckCircle, XCircle, Clock, AlertTriangle, Calendar } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
+import { DateRangeCalendarModal } from '../../components/admin-v2/DateRangeCalendarModal';
 
 const STATUS_MAP: Record<string, { bg: string; text: string; label: string }> = {
   COMPLETED: { bg: '#dcfce7', text: '#166534', label: 'Completed' },
@@ -18,6 +19,13 @@ const STATUS_MAP: Record<string, { bg: string; text: string; label: string }> = 
   NO_SHOW_FARMER: { bg: '#fde8d8', text: '#7c2d12', label: 'No Show (Farmer)' },
 };
 
+const PAYMENT_MAP: Record<string, { bg: string; text: string; label: string }> = {
+  paid: { bg: '#dcfce7', text: '#166534', label: 'Paid' },
+  pending: { bg: '#fef3c7', text: '#92400e', label: 'Pending' },
+  refunded: { bg: '#f3f4f6', text: '#6b7280', label: 'Refunded' },
+  failed: { bg: '#fee2e2', text: '#991b1b', label: 'Failed' },
+};
+
 const getServiceLabel = (type: string, category?: string) => {
   const cat = (category || '').toLowerCase();
   const t = (type || '').toLowerCase();
@@ -27,13 +35,42 @@ const getServiceLabel = (type: string, category?: string) => {
   return 'In-Person Visit';
 };
 
+const formatTime12Hour = (timeStr?: string) => {
+  if (!timeStr) return '';
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  if (isNaN(hours)) return timeStr;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  return `${hours}:${minutes} ${ampm}`;
+};
+
+const formatBookingDateTime = (dateStr?: string, timeStr?: string) => {
+  if (!dateStr) return '—';
+  if (!timeStr) return dateStr;
+  return `${dateStr} • ${formatTime12Hour(timeStr)}`;
+};
+
 import { useFilters } from '../../context/FilterContext';
 import { applyGlobalFilters } from '../../utils/filterUtils';
 
 const PAGE_SIZE = 10;
 
 const ConsultationsScreen = () => {
-  const { dateRange, stateFilter, serviceFilter: globalServiceFilter } = useFilters();
+  const { 
+    dateRange, 
+    setDateRange, 
+    stateFilter, 
+    setStateFilter, 
+    serviceFilter: globalServiceFilter,
+    customStartDate,
+    customEndDate,
+    setCustomDateRange
+  } = useFilters();
+
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,6 +81,27 @@ const ConsultationsScreen = () => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [drawerTab, setDrawerTab] = useState('overview');
   const [page, setPage] = useState(1);
+  const [showCustomDateModal, setShowCustomDateModal] = useState(false);
+
+  const formatPillDate = (s?: string, e?: string) => {
+    if (!s) return 'Custom Range...';
+    const formatSingle = (str: string) => {
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return str;
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    };
+    const startFmt = formatSingle(s);
+    const endFmt = e ? formatSingle(e) : startFmt;
+    return startFmt === endFmt ? startFmt : `${startFmt} – ${endFmt}`;
+  };
+
+  const handleDateSelectChange = (val: string) => {
+    if (val === 'Custom') {
+      setShowCustomDateModal(true);
+    } else {
+      setDateRange(val);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -59,12 +117,8 @@ const ConsultationsScreen = () => {
 
   useEffect(() => { fetchData(); }, []);
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     let result = applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter: globalServiceFilter });
-    if (statusFilter === 'live') result = result.filter(c => ['AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(c.status));
-    else if (statusFilter === 'completed') result = result.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status));
-    else if (statusFilter === 'noshow') result = result.filter(c => ['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(c.status));
-    else if (statusFilter === 'cancelled') result = result.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status));
 
     if (serviceFilter !== 'all') {
       result = result.filter(c => {
@@ -87,15 +141,24 @@ const ConsultationsScreen = () => {
       );
     }
     return result;
-  }, [data, statusFilter, serviceFilter, searchTerm, dateRange, stateFilter, globalServiceFilter]);
+  }, [data, serviceFilter, searchTerm, dateRange, stateFilter, globalServiceFilter]);
+
+  const filtered = useMemo(() => {
+    let result = [...baseFiltered];
+    if (statusFilter === 'live') result = result.filter(c => ['AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(c.status));
+    else if (statusFilter === 'completed') result = result.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status));
+    else if (statusFilter === 'noshow') result = result.filter(c => ['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(c.status));
+    else if (statusFilter === 'cancelled') result = result.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status));
+    return result;
+  }, [baseFiltered, statusFilter]);
 
   const stats = useMemo(() => ({
-    total: data.length,
-    live: data.filter(c => ['AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(c.status)).length,
-    completed: data.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status)).length,
-    noshow: data.filter(c => ['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(c.status)).length,
-    cancelled: data.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status)).length,
-  }), [data]);
+    total: baseFiltered.length,
+    live: baseFiltered.filter(c => ['AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(c.status)).length,
+    completed: baseFiltered.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status)).length,
+    noshow: baseFiltered.filter(c => ['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(c.status)).length,
+    cancelled: baseFiltered.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status)).length,
+  }), [baseFiltered]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -144,7 +207,54 @@ const ConsultationsScreen = () => {
         <button className="export-btn"><Download size={16} /> Export CSV</button>
       </div>
 
-      <div className="list-filter-bar">
+      <div className="list-filter-bar" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Date Filter */}
+        {dateRange === 'Custom' ? (
+          <button
+            type="button"
+            onClick={() => setShowCustomDateModal(true)}
+            className="filter-select"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+            title="Click to change custom date range"
+          >
+            <Calendar size={15} />
+            <span>Date: {formatPillDate(customStartDate, customEndDate)}</span>
+          </button>
+        ) : (
+          <select className="filter-select" value={dateRange} onChange={e => { handleDateSelectChange(e.target.value); setPage(1); }}>
+            <option value="Today">Date: Today</option>
+            <option value="This Week">Date: Last 7 Days</option>
+            <option value="This Month">Date: Last 30 Days</option>
+            <option value="All Time">Date: All Time</option>
+            <option value="Custom">Custom Range... 📅</option>
+          </select>
+        )}
+
+        {/* State Filter */}
+        <select className="filter-select" value={stateFilter} onChange={e => { setStateFilter(e.target.value); setPage(1); }}>
+          <option value="All States">All States</option>
+          <option value="Bihar">Bihar</option>
+          <option value="Uttar Pradesh">Uttar Pradesh</option>
+          <option value="Rajasthan">Rajasthan</option>
+          <option value="Madhya Pradesh">Madhya Pradesh</option>
+          <option value="Maharashtra">Maharashtra</option>
+          <option value="Karnataka">Karnataka</option>
+          <option value="Tamil Nadu">Tamil Nadu</option>
+          <option value="Punjab">Punjab</option>
+          <option value="Haryana">Haryana</option>
+          <option value="Gujarat">Gujarat</option>
+          <option value="West Bengal">West Bengal</option>
+          <option value="Odisha">Odisha</option>
+        </select>
+
+        {/* Service Filter */}
         <select className="filter-select" value={serviceFilter} onChange={e => { setServiceFilter(e.target.value); setPage(1); }}>
           <option value="all">All Services</option>
           <option value="online">Online Consultation</option>
@@ -152,7 +262,8 @@ const ConsultationsScreen = () => {
           <option value="ai">AI / Insemination</option>
           <option value="vaccination">Vaccination</option>
         </select>
-        <div style={{ position: 'relative', flex: 1, maxWidth: 320 }}>
+
+        <div style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 320 }}>
           <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
           <input className="filter-search" style={{ paddingLeft: 36 }} placeholder="Search by ID, farmer or vet..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1); }} />
         </div>
@@ -196,7 +307,7 @@ const ConsultationsScreen = () => {
                 <th>Farmer</th>
                 <th>Vet</th>
                 <th>Service</th>
-                <th>Date</th>
+                <th>Date & Time</th>
                 <th>Duration</th>
                 <th>Status</th>
                 <th>Payment</th>
@@ -226,7 +337,7 @@ const ConsultationsScreen = () => {
                       </div>
                     </td>
                     <td>{getServiceLabel(c.type || c.consultation_type || '', c.category)}</td>
-                    <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{c.date || '—'}</td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatBookingDateTime(c.date, c.time)}</td>
                     <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{c.duration ? `${c.duration} min` : '—'}</td>
                     <td><span className="list-status-badge" style={{ backgroundColor: s.bg, color: s.text }}>{s.label}</span></td>
                     <td style={{ fontWeight: 600 }}>{c.total_paid ? `₹${c.total_paid}` : '—'}</td>
@@ -291,10 +402,12 @@ const ConsultationsScreen = () => {
                     ['Farmer', selectedConsult.farmer_name],
                     ['Vet', selectedConsult.vet_name],
                     ['Service', getServiceLabel(selectedConsult.type || selectedConsult.consultation_type || '', selectedConsult.category)],
-                    ['Date', selectedConsult.date],
+                    ['Date', selectedConsult.date || '—'],
+                    ['Time', formatTime12Hour(selectedConsult.time) || '—'],
                     ['Status', STATUS_MAP[selectedConsult.status]?.label || selectedConsult.status],
                     ['Duration', selectedConsult.duration ? `${selectedConsult.duration} min` : '—'],
                     ['Amount', selectedConsult.total_paid ? `₹${selectedConsult.total_paid}` : '—'],
+                    ['Payment Status', PAYMENT_MAP[(selectedConsult.payment_status || 'pending').toLowerCase()]?.label || selectedConsult.payment_status || 'Pending'],
                     ['Platform Revenue', selectedConsult.platform_revenue ? `₹${selectedConsult.platform_revenue}` : '—'],
                   ].map(([label, value]) => (
                     <div key={label as string} className="drawer-detail-row">
@@ -320,6 +433,18 @@ const ConsultationsScreen = () => {
           </div>
         </>
       )}
+
+      <DateRangeCalendarModal
+        isOpen={showCustomDateModal}
+        onClose={() => setShowCustomDateModal(false)}
+        startDate={customStartDate}
+        endDate={customEndDate}
+        onApply={(start, end) => {
+          setCustomDateRange(start, end);
+          setShowCustomDateModal(false);
+          setPage(1);
+        }}
+      />
     </div>
   );
 };

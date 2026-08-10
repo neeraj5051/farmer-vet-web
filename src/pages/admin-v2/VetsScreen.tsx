@@ -315,6 +315,7 @@ const VetsScreen = () => {
     title: string;
     message: string;
     confirmText: string;
+    cancelText?: string;
     variant: 'primary' | 'success' | 'warning' | 'danger';
     isLoading: boolean;
     onConfirm: () => Promise<void>;
@@ -323,6 +324,7 @@ const VetsScreen = () => {
     title: '',
     message: '',
     confirmText: 'Confirm',
+    cancelText: 'Cancel',
     variant: 'primary',
     isLoading: false,
     onConfirm: async () => {},
@@ -763,7 +765,7 @@ const VetsScreen = () => {
               <button className="drawer-close" onClick={() => setSelectedVet(null)}><X size={20} /></button>
             </div>
             <div className="drawer-tabs">
-              {['overview', 'consultations', 'earnings', 'offerings', 'documents'].map(tab => (
+              {['overview', 'consultations', 'schedule', 'earnings', 'offerings', 'documents'].map(tab => (
                 <button key={tab} className={`drawer-tab ${drawerTab === tab ? 'active' : ''}`} onClick={() => {
                   setDrawerTab(tab);
                   if (tab === 'offerings' && selectedVet) {
@@ -838,6 +840,81 @@ const VetsScreen = () => {
                       })}
                     </div>
                   )}
+                </div>
+              )}
+
+              {drawerTab === 'schedule' && (
+                <div className="drawer-section">
+                  <div className="drawer-section-title">Availability & Schedule</div>
+                  
+                  {/* Working Hours summary cards */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 20 }}>
+                    <div style={{ padding: 12, border: '1px solid var(--border-color)', borderRadius: 8, backgroundColor: '#fcfcfc' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Standard Shift</div>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 600, color: 'var(--text-primary)', marginTop: 4 }}>
+                        {selectedVet.working_start_time || '09:00'} - {selectedVet.working_end_time || '18:00'}
+                      </div>
+                    </div>
+                    <div style={{ padding: 12, border: '1px solid var(--border-color)', borderRadius: 8, backgroundColor: '#fcfcfc' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600 }}>Slot Durations</div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)', marginTop: 4 }}>
+                        Online: <strong>{selectedVet.slot_duration || 20} mins</strong>
+                      </div>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--text-primary)' }}>
+                        In-Person: <strong>{selectedVet.physical_slot_duration || 40} mins</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Languages summary */}
+                  {selectedVet.languages && selectedVet.languages.length > 0 && (
+                    <div style={{ marginBottom: 20, padding: 12, border: '1px solid var(--border-color)', borderRadius: 8, backgroundColor: '#fcfcfc' }}>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', fontWeight: 600, marginBottom: 6 }}>Languages Supported</div>
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                        {selectedVet.languages.map((lang: string) => (
+                          <span key={lang} style={{ padding: '3px 8px', backgroundColor: '#eef2f6', borderRadius: 4, fontSize: '0.8rem', fontWeight: 500 }}>
+                            {lang}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Detailed Weekly Schedule */}
+                  <div className="weekly-schedule-card" style={{ border: '1px solid var(--border-color)', borderRadius: 8, overflow: 'hidden' }}>
+                    <div style={{ backgroundColor: '#f8fafc', padding: '10px 12px', borderBottom: '1px solid var(--border-color)', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                      Weekly Schedule Breakdown
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(day => {
+                        const dayKey = day.toLowerCase();
+                        const sched = selectedVet.weekly_schedule?.[dayKey];
+                        
+                        let timeRange = 'Not Set (Using Standard)';
+                        if (sched) {
+                          if (Array.isArray(sched) && sched.length > 0) {
+                            timeRange = sched.map((s: any) => `${s.start} - ${s.end}`).join(', ');
+                          } else if (sched.start && sched.end && sched.enabled !== false) {
+                            timeRange = `${sched.start} - ${sched.end}`;
+                          } else if (sched.enabled === false || (Array.isArray(sched) && sched.length === 0)) {
+                            timeRange = 'Closed';
+                          }
+                        }
+
+                        return (
+                          <div key={day} style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', borderBottom: '1px solid #f1f5f9', fontSize: '0.85rem' }}>
+                            <span style={{ fontWeight: 500 }}>{day}</span>
+                            <span style={{ 
+                              color: timeRange === 'Closed' ? '#ef4444' : (timeRange.includes('Not Set') ? 'var(--text-muted)' : 'var(--humal-green)'),
+                              fontWeight: timeRange === 'Closed' ? 500 : 600 
+                            }}>
+                              {timeRange}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -965,15 +1042,53 @@ const VetsScreen = () => {
                   {/* Create Defaults button (only shown if default consultation offerings are missing) */}
                   {vetOfferings.some((o: any) => o.is_fallback && (o.category_name?.toUpperCase() === 'CONSULTATION' || o.variant_name?.toLowerCase().includes('consult') || o.variant_name?.toLowerCase().includes('visit'))) && (
                     <button
-                      onClick={async () => {
+                      onClick={() => {
                         if (!selectedVet) return;
-                        setCreatingDefaults(true);
-                        try {
-                          const result = await createDefaultOfferings(selectedVet.id);
-                          setVetOfferings(result.service_offerings || []);
-                          setVetVaccineOfferings(result.vaccine_offerings || []);
-                        } catch { /* silently handled — button stays visible on failure */ }
-                        finally { setCreatingDefaults(false); }
+                        setConfirmModal({
+                          isOpen: true,
+                          title: "Create Default Offerings",
+                          message: `Are you sure you want to create default database offerings for Dr. ${selectedVet.first_name || ''} ${selectedVet.last_name || ''}?`,
+                          confirmText: "Create Offerings",
+                          variant: "primary",
+                          isLoading: false,
+                          onConfirm: async () => {
+                            setConfirmModal(prev => ({ ...prev, isLoading: true }));
+                            setCreatingDefaults(true);
+                            try {
+                              const result = await createDefaultOfferings(selectedVet.id);
+                              setVetOfferings(result.service_offerings || []);
+                              setVetVaccineOfferings(result.vaccine_offerings || []);
+                              setConfirmModal({
+                                isOpen: true,
+                                title: "Success",
+                                message: "Default offerings created successfully in database!",
+                                confirmText: "OK",
+                                cancelText: "Close",
+                                variant: "success",
+                                isLoading: false,
+                                onConfirm: async () => {
+                                  setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                }
+                              });
+                            } catch (err) {
+                              console.error("Failed to create default offerings:", err);
+                              setConfirmModal({
+                                isOpen: true,
+                                title: "Error",
+                                message: "Failed to create default offerings in database.",
+                                confirmText: "OK",
+                                cancelText: "Close",
+                                variant: "danger",
+                                isLoading: false,
+                                onConfirm: async () => {
+                                  setConfirmModal(prev => ({ ...prev, isOpen: false }));
+                                }
+                              });
+                            } finally {
+                              setCreatingDefaults(false);
+                            }
+                          }
+                        });
                       }}
                       disabled={creatingDefaults}
                       style={{
@@ -1294,6 +1409,7 @@ const VetsScreen = () => {
         title={confirmModal.title}
         message={confirmModal.message}
         confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
         variant={confirmModal.variant}
         isLoading={confirmModal.isLoading}
         onConfirm={confirmModal.onConfirm}

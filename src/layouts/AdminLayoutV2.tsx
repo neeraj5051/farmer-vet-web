@@ -186,8 +186,7 @@ const AdminLayoutContent = () => {
             <h2 style={{ fontSize: '1.2rem', margin: 0, fontWeight: 600 }}>Dashboard</h2>
           </div>
 
-          {/* Global Filters */}
-          {!['/admin-v2/diseases', '/admin-v2/vaccines', '/admin-v2/articles', '/admin-v2/services', '/admin-v2/settings', '/admin-v2/reports', '/admin-v2/fees'].includes(pathname) && (
+          {!['/admin-v2/diseases', '/admin-v2/vaccines', '/admin-v2/articles', '/admin-v2/services', '/admin-v2/settings', '/admin-v2/reports', '/admin-v2/fees', '/admin-v2/bookings', '/admin-v2/consultations'].includes(pathname) && (
             <div className="topbar-filters" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {!['/admin-v2/vets', '/admin-v2/farmers'].includes(pathname) && (
                 dateRange === 'Custom' ? (

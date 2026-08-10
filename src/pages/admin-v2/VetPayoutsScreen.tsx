@@ -67,7 +67,7 @@ const VetPayoutsScreen = () => {
       uniqueVets,
       avgPayoutTime: '2.4 Days'
     };
-  }, [stats, payouts]);
+  }, [stats, filteredPayouts]);
 
   // Payout Trend
   const trendData = useMemo(() => {

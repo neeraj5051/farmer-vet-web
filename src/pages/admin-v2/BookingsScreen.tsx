@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getConsultations, getConsultationDetail } from '../../services/consultationsService';
-import { Search, Download, Loader2, Eye, X, FileText, CheckCircle, XCircle, Clock, AlertTriangle } from 'lucide-react';
+import { Search, Download, Loader2, Eye, X, FileText, CheckCircle, XCircle, Clock, AlertTriangle, Calendar } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
+import { DateRangeCalendarModal } from '../../components/admin-v2/DateRangeCalendarModal';
 
 const STATUS_MAP: Record<string, { bg: string; text: string; label: string }> = {
   COMPLETED: { bg: '#dcfce7', text: '#166534', label: 'Completed' },
@@ -33,13 +34,42 @@ const getServiceLabel = (type: string, category?: string) => {
   return 'In-Person Visit';
 };
 
+const formatTime12Hour = (timeStr?: string) => {
+  if (!timeStr) return '';
+  const parts = timeStr.split(':');
+  if (parts.length < 2) return timeStr;
+  let hours = parseInt(parts[0], 10);
+  const minutes = parts[1];
+  if (isNaN(hours)) return timeStr;
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12; // the hour '0' should be '12'
+  return `${hours}:${minutes} ${ampm}`;
+};
+
+const formatBookingDateTime = (dateStr?: string, timeStr?: string) => {
+  if (!dateStr) return '—';
+  if (!timeStr) return dateStr;
+  return `${dateStr} • ${formatTime12Hour(timeStr)}`;
+};
+
 import { useFilters } from '../../context/FilterContext';
 import { applyGlobalFilters } from '../../utils/filterUtils';
 
 const PAGE_SIZE = 10;
 
 const BookingsScreen = () => {
-  const { dateRange, stateFilter, serviceFilter: globalServiceFilter } = useFilters();
+  const { 
+    dateRange, 
+    setDateRange, 
+    stateFilter, 
+    setStateFilter, 
+    serviceFilter: globalServiceFilter,
+    customStartDate,
+    customEndDate,
+    setCustomDateRange
+  } = useFilters();
+
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,6 +80,27 @@ const BookingsScreen = () => {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [drawerTab, setDrawerTab] = useState('overview');
   const [page, setPage] = useState(1);
+  const [showCustomDateModal, setShowCustomDateModal] = useState(false);
+
+  const formatPillDate = (s?: string, e?: string) => {
+    if (!s) return 'Custom Range...';
+    const formatSingle = (str: string) => {
+      const d = new Date(str);
+      if (isNaN(d.getTime())) return str;
+      return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+    };
+    const startFmt = formatSingle(s);
+    const endFmt = e ? formatSingle(e) : startFmt;
+    return startFmt === endFmt ? startFmt : `${startFmt} – ${endFmt}`;
+  };
+
+  const handleDateSelectChange = (val: string) => {
+    if (val === 'Custom') {
+      setShowCustomDateModal(true);
+    } else {
+      setDateRange(val);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -66,13 +117,8 @@ const BookingsScreen = () => {
     fetchData();
   }, []);
 
-  const filtered = useMemo(() => {
+  const baseFiltered = useMemo(() => {
     let result = applyGlobalFilters(data, { dateRange, stateFilter, serviceFilter: globalServiceFilter });
-    if (statusFilter === 'upcoming') result = result.filter(c => ['PENDING', 'CONFIRMED', 'AWAITING_PAYMENT'].includes(c.status));
-    else if (statusFilter === 'completed') result = result.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status));
-    else if (statusFilter === 'cancelled') result = result.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status));
-    else if (statusFilter === 'expired') result = result.filter(c => c.status === 'EXPIRED');
-    else if (statusFilter === 'pending_assignment') result = result.filter(c => c.status === 'PENDING');
 
     if (serviceFilter !== 'all') {
       result = result.filter(c => {
@@ -95,15 +141,26 @@ const BookingsScreen = () => {
       );
     }
     return result;
-  }, [data, statusFilter, serviceFilter, searchTerm, dateRange, stateFilter, globalServiceFilter]);
+  }, [data, serviceFilter, searchTerm, dateRange, stateFilter, globalServiceFilter]);
+
+  const filtered = useMemo(() => {
+    let result = [...baseFiltered];
+    if (statusFilter === 'upcoming') result = result.filter(c => ['PENDING', 'CONFIRMED', 'AWAITING_PAYMENT'].includes(c.status));
+    else if (statusFilter === 'completed') result = result.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status));
+    else if (statusFilter === 'cancelled') result = result.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status));
+    else if (statusFilter === 'expired') result = result.filter(c => c.status === 'EXPIRED');
+    else if (statusFilter === 'pending_assignment') result = result.filter(c => c.status === 'PENDING');
+    return result;
+  }, [baseFiltered, statusFilter]);
 
   const stats = useMemo(() => ({
-    upcoming: data.filter(c => ['PENDING', 'CONFIRMED', 'AWAITING_PAYMENT'].includes(c.status)).length,
-    completed: data.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status)).length,
-    cancelled: data.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status)).length,
-    expired: data.filter(c => c.status === 'EXPIRED').length,
-    pending: data.filter(c => c.status === 'PENDING').length,
-  }), [data]);
+    total: baseFiltered.length,
+    upcoming: baseFiltered.filter(c => ['PENDING', 'CONFIRMED', 'AWAITING_PAYMENT'].includes(c.status)).length,
+    completed: baseFiltered.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status)).length,
+    cancelled: baseFiltered.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status)).length,
+    expired: baseFiltered.filter(c => c.status === 'EXPIRED').length,
+    pending: baseFiltered.filter(c => c.status === 'PENDING').length,
+  }), [baseFiltered]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
   const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
@@ -140,7 +197,54 @@ const BookingsScreen = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="list-filter-bar">
+      <div className="list-filter-bar" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Date Filter */}
+        {dateRange === 'Custom' ? (
+          <button
+            type="button"
+            onClick={() => setShowCustomDateModal(true)}
+            className="filter-select"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+            title="Click to change custom date range"
+          >
+            <Calendar size={15} />
+            <span>Date: {formatPillDate(customStartDate, customEndDate)}</span>
+          </button>
+        ) : (
+          <select className="filter-select" value={dateRange} onChange={e => { handleDateSelectChange(e.target.value); setPage(1); }}>
+            <option value="Today">Date: Today</option>
+            <option value="This Week">Date: Last 7 Days</option>
+            <option value="This Month">Date: Last 30 Days</option>
+            <option value="All Time">Date: All Time</option>
+            <option value="Custom">Custom Range... 📅</option>
+          </select>
+        )}
+
+        {/* State Filter */}
+        <select className="filter-select" value={stateFilter} onChange={e => { setStateFilter(e.target.value); setPage(1); }}>
+          <option value="All States">All States</option>
+          <option value="Bihar">Bihar</option>
+          <option value="Uttar Pradesh">Uttar Pradesh</option>
+          <option value="Rajasthan">Rajasthan</option>
+          <option value="Madhya Pradesh">Madhya Pradesh</option>
+          <option value="Maharashtra">Maharashtra</option>
+          <option value="Karnataka">Karnataka</option>
+          <option value="Tamil Nadu">Tamil Nadu</option>
+          <option value="Punjab">Punjab</option>
+          <option value="Haryana">Haryana</option>
+          <option value="Gujarat">Gujarat</option>
+          <option value="West Bengal">West Bengal</option>
+          <option value="Odisha">Odisha</option>
+        </select>
+
+        {/* Service Filter */}
         <select className="filter-select" value={serviceFilter} onChange={e => { setServiceFilter(e.target.value); setPage(1); }}>
           <option value="all">All Services</option>
           <option value="online">Online Consultation</option>
@@ -148,7 +252,8 @@ const BookingsScreen = () => {
           <option value="ai">AI / Insemination</option>
           <option value="vaccination">Vaccination</option>
         </select>
-        <div style={{ position: 'relative', flex: 1, maxWidth: 320 }}>
+
+        <div style={{ position: 'relative', flex: 1, minWidth: 200, maxWidth: 320 }}>
           <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
           <input className="filter-search" style={{ paddingLeft: 36 }} placeholder="Search booking ID, farmer or vet..." value={searchTerm} onChange={e => { setSearchTerm(e.target.value); setPage(1); }} />
         </div>
@@ -157,7 +262,7 @@ const BookingsScreen = () => {
       {/* KPI Cards */}
       <div className="list-kpi-row">
         {[
-          { key: 'all', label: 'Total Bookings', value: data.length, icon: <FileText size={16} />, bg: '#dbeafe', color: '#3b82f6' },
+          { key: 'all', label: 'Total Bookings', value: stats.total, icon: <FileText size={16} />, bg: '#dbeafe', color: '#3b82f6' },
           { key: 'upcoming', label: 'Upcoming', value: stats.upcoming, icon: <Clock size={16} />, bg: '#fef3c7', color: '#f59e0b' },
           { key: 'completed', label: 'Completed', value: stats.completed, icon: <CheckCircle size={16} />, bg: '#dcfce7', color: '#10b981' },
           { key: 'cancelled', label: 'Cancelled', value: stats.cancelled, icon: <XCircle size={16} />, bg: '#fee2e2', color: '#ef4444' },
@@ -213,7 +318,7 @@ const BookingsScreen = () => {
                     </td>
                     <td>{getServiceLabel(b.type || b.consultation_type || '', b.category)}</td>
                     <td>{b.vet_name || '—'}</td>
-                    <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{b.date || b.scheduled_at?.slice(0, 10) || '—'}</td>
+                    <td style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{formatBookingDateTime(b.date || b.scheduled_at?.slice(0, 10), b.time)}</td>
                     <td><span className="list-status-badge" style={{ backgroundColor: s.bg, color: s.text }}>{s.label}</span></td>
                     <td><span className="list-status-badge" style={{ backgroundColor: p.bg, color: p.text }}>{p.label}</span></td>
                     <td>
@@ -277,9 +382,11 @@ const BookingsScreen = () => {
                     ['Farmer', selectedBooking.farmer_name],
                     ['Vet', selectedBooking.vet_name],
                     ['Service', getServiceLabel(selectedBooking.type || selectedBooking.consultation_type || '', selectedBooking.category)],
-                    ['Date', selectedBooking.date || selectedBooking.scheduled_at?.slice(0, 10)],
+                    ['Date', selectedBooking.date || selectedBooking.scheduled_at?.slice(0, 10) || '—'],
+                    ['Time', formatTime12Hour(selectedBooking.time) || '—'],
                     ['Status', STATUS_MAP[selectedBooking.status]?.label || selectedBooking.status],
                     ['Amount', selectedBooking.total_paid ? `₹${selectedBooking.total_paid}` : '—'],
+                    ['Payment Status', PAYMENT_MAP[(selectedBooking.payment_status || 'pending').toLowerCase()]?.label || selectedBooking.payment_status || 'Pending'],
                     ['City', selectedBooking.city || selectedBooking.district || '—'],
                   ].map(([label, value]) => (
                     <div key={label as string} className="drawer-detail-row">
@@ -293,6 +400,18 @@ const BookingsScreen = () => {
           </div>
         </>
       )}
+
+      <DateRangeCalendarModal
+        isOpen={showCustomDateModal}
+        onClose={() => setShowCustomDateModal(false)}
+        startDate={customStartDate}
+        endDate={customEndDate}
+        onApply={(start, end) => {
+          setCustomDateRange(start, end);
+          setShowCustomDateModal(false);
+          setPage(1);
+        }}
+      />
     </div>
   );
 };
