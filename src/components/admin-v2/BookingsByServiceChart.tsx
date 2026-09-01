@@ -13,7 +13,7 @@ const defaultData = [
 ];
 
 const BookingsByServiceChart: React.FC<BookingsByServiceChartProps> = ({ data }) => {
-  const chartData = data && data.length > 0 ? data : defaultData;
+  const chartData = data !== undefined ? data : defaultData;
 
   return (
     <div style={{

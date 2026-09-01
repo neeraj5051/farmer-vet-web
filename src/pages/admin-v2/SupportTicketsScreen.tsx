@@ -5,13 +5,6 @@ import '../../components/admin-v2/ListScreens.css';
 
 const PAGE_SIZE = 10;
 
-const MOCK_TICKETS = [
-  { id: 'TCK-101', user_name: 'Gurpreet Singh', role: 'Farmer', subject: 'Payment deducted but booking not confirmed', priority: 'High', status: 'Open', created_at: '2026-07-27T10:15:00Z' },
-  { id: 'TCK-102', user_name: 'Dr. Ramesh Kumar', role: 'Vet', subject: 'Bank account verification pending', priority: 'Medium', status: 'In Progress', created_at: '2026-07-26T14:30:00Z' },
-  { id: 'TCK-103', user_name: 'Rajesh Sharma', role: 'Farmer', subject: 'Unable to connect video call', priority: 'Urgent', status: 'Open', created_at: '2026-07-28T08:00:00Z' },
-  { id: 'TCK-104', user_name: 'Dharmendra Yadav', role: 'Farmer', subject: 'Refund query for cancelled appointment', priority: 'Low', status: 'Resolved', created_at: '2026-07-24T16:20:00Z' },
-];
-
 const SupportTicketsScreen = () => {
   const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -24,10 +17,10 @@ const SupportTicketsScreen = () => {
     const fetchData = async () => {
       try {
         const result = await getSupportTickets();
-        setData(Array.isArray(result) && result.length > 0 ? result : MOCK_TICKETS);
+        setData(Array.isArray(result) ? result : []);
       } catch (err) {
-        console.warn('Backend support tickets endpoint offline. Loading defaults.', err);
-        setData(MOCK_TICKETS);
+        console.error('Backend support tickets endpoint offline.', err);
+        setData([]);
       } finally {
         setLoading(false);
       }

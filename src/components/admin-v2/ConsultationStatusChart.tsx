@@ -1,5 +1,5 @@
 import React from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LabelList } from 'recharts';
 
 interface ConsultationStatusChartProps {
   data?: { name: string; completed: number; live: number; cancelled: number; noShow: number; rescheduled: number }[];
@@ -51,11 +51,15 @@ const ConsultationStatusChart: React.FC<ConsultationStatusChartProps> = ({ data 
               iconSize={8}
               wrapperStyle={{ fontSize: '0.75rem', paddingTop: '8px' }}
             />
-            <Bar dataKey="completed" stackId="a" fill={COLORS.completed} name="Completed" radius={[0, 0, 0, 0]} />
-            <Bar dataKey="live" stackId="a" fill={COLORS.live} name="Live" />
-            <Bar dataKey="cancelled" stackId="a" fill={COLORS.cancelled} name="Cancelled" />
-            <Bar dataKey="noShow" stackId="a" fill={COLORS.noShow} name="No Show" />
-            <Bar dataKey="rescheduled" stackId="a" fill={COLORS.rescheduled} name="Rescheduled" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="completed" stackId="a" fill={COLORS.completed} name="Completed" radius={[0, 0, 0, 0]}>
+              <LabelList dataKey="completed" position="center" fill="#ffffff" fontSize={11} fontWeight={700} formatter={(v: any) => (Number(v) > 0 ? v : '')} />
+            </Bar>
+            <Bar dataKey="live" stackId="a" fill={COLORS.live} name="Live">
+              <LabelList dataKey="live" position="center" fill="#ffffff" fontSize={11} fontWeight={700} formatter={(v: any) => (Number(v) > 0 ? v : '')} />
+            </Bar>
+            <Bar dataKey="noShow" stackId="a" fill={COLORS.noShow} name="No Show" radius={[4, 4, 0, 0]}>
+              <LabelList dataKey="noShow" position="center" fill="#ffffff" fontSize={11} fontWeight={700} formatter={(v: any) => (Number(v) > 0 ? v : '')} />
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

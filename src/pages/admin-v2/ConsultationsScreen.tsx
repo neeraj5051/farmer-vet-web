@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getConsultations, getConsultationDetail } from '../../services/consultationsService';
 import { markConsultationNoShow } from '../../services/adminService';
-import { Search, Download, Loader2, Eye, X, Video, CheckCircle, XCircle, Clock, AlertTriangle, Calendar } from 'lucide-react';
+import { Search, Download, Loader2, Eye, X, Video, CheckCircle, Clock, AlertTriangle, Calendar } from 'lucide-react';
 import '../../components/admin-v2/ListScreens.css';
 import { DateRangeCalendarModal } from '../../components/admin-v2/DateRangeCalendarModal';
 
@@ -107,7 +107,13 @@ const ConsultationsScreen = () => {
     try {
       const result = await getConsultations();
       const list = result?.summary || (Array.isArray(result) ? result : []);
-      setData(list);
+      // Filter out CANCELLED/REJECTED/RESCHEDULED as they are booking events, not consultation events
+      const activeConsults = list.filter((c: any) => 
+        c.status !== 'CANCELLED' && 
+        c.status !== 'REJECTED' && 
+        !(c.status || '').toUpperCase().includes('RESCHEDULE')
+      );
+      setData(activeConsults);
     } catch (err) {
       console.error('Error fetching consultations:', err);
     } finally {
@@ -148,7 +154,6 @@ const ConsultationsScreen = () => {
     if (statusFilter === 'live') result = result.filter(c => ['AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(c.status));
     else if (statusFilter === 'completed') result = result.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status));
     else if (statusFilter === 'noshow') result = result.filter(c => ['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(c.status));
-    else if (statusFilter === 'cancelled') result = result.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status));
     return result;
   }, [baseFiltered, statusFilter]);
 
@@ -157,7 +162,6 @@ const ConsultationsScreen = () => {
     live: baseFiltered.filter(c => ['AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(c.status)).length,
     completed: baseFiltered.filter(c => ['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(c.status)).length,
     noshow: baseFiltered.filter(c => ['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(c.status)).length,
-    cancelled: baseFiltered.filter(c => ['CANCELLED', 'REJECTED'].includes(c.status)).length,
   }), [baseFiltered]);
 
   const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
@@ -276,7 +280,6 @@ const ConsultationsScreen = () => {
           { key: 'live', label: 'Live', value: stats.live, icon: <Clock size={16} />, bg: '#fef3c7', color: '#f59e0b' },
           { key: 'completed', label: 'Completed', value: stats.completed, icon: <CheckCircle size={16} />, bg: '#dcfce7', color: '#10b981' },
           { key: 'noshow', label: 'No Show', value: stats.noshow, icon: <AlertTriangle size={16} />, bg: '#fde8d8', color: '#ea580c' },
-          { key: 'cancelled', label: 'Cancelled', value: stats.cancelled, icon: <XCircle size={16} />, bg: '#fee2e2', color: '#ef4444' },
         ].map(kpi => (
           <div key={kpi.key} className={`list-kpi-card ${statusFilter === kpi.key ? 'active' : ''}`} onClick={() => { setStatusFilter(kpi.key === 'all' ? 'all' : kpi.key); setPage(1); }}>
             <div className="list-kpi-icon" style={{ backgroundColor: kpi.bg, color: kpi.color }}>
@@ -292,7 +295,7 @@ const ConsultationsScreen = () => {
       {/* Table */}
       <div className="list-table-card">
         <div className="list-tabs">
-          {['all', 'live', 'completed', 'noshow', 'cancelled'].map(tab => (
+          {['all', 'live', 'completed', 'noshow'].map(tab => (
             <button key={tab} className={`list-tab ${statusFilter === tab ? 'active' : ''}`} onClick={() => { setStatusFilter(tab); setPage(1); }}>
               {tab === 'all' ? 'All Consultations' : tab === 'noshow' ? 'No Show' : tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
