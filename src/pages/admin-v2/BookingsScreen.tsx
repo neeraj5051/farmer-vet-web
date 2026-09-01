@@ -20,14 +20,37 @@ const STATUS_MAP: Record<string, { bg: string; text: string; label: string }> = 
 };
 
 const PAYMENT_MAP: Record<string, { bg: string; text: string; label: string }> = {
-  // Backend PaymentStatus enum values (COMPLETED, PENDING, FAILED, REFUNDED)
-  completed: { bg: '#dcfce7', text: '#166534', label: 'Paid' },       // PaymentStatus.COMPLETED
-  pending:   { bg: '#fef3c7', text: '#92400e', label: 'Pending' },    // PaymentStatus.PENDING
-  failed:    { bg: '#fee2e2', text: '#991b1b', label: 'Failed' },     // PaymentStatus.FAILED
-  refunded:  { bg: '#f3f4f6', text: '#6b7280', label: 'Refunded' },   // PaymentStatus.REFUNDED
-  // Legacy / booking.payment_status field aliases
-  paid:      { bg: '#dcfce7', text: '#166534', label: 'Paid' },       // booking.payment_status = "PAID"
-  unpaid:    { bg: '#fef3c7', text: '#92400e', label: 'Unpaid' },     // booking.payment_status = "UNPAID"
+  completed: { bg: '#dcfce7', text: '#166534', label: 'Paid' },
+  pending:   { bg: '#fef3c7', text: '#92400e', label: 'Pending' },
+  failed:    { bg: '#fee2e2', text: '#991b1b', label: 'Failed' },
+  refunded:  { bg: '#f3f4f6', text: '#6b7280', label: 'Refunded' },
+  paid:      { bg: '#dcfce7', text: '#166534', label: 'Paid' },
+  unpaid:    { bg: '#fef3c7', text: '#92400e', label: 'Unpaid' },
+};
+
+const getPaymentStatusBadge = (b: any) => {
+  const statusStr = (b.payment_status || '').toLowerCase();
+
+  if (statusStr === 'refunded') {
+    return PAYMENT_MAP.refunded;
+  }
+  if (statusStr === 'paid' || statusStr === 'completed') {
+    return PAYMENT_MAP.completed;
+  }
+  if (statusStr === 'failed') {
+    return PAYMENT_MAP.failed;
+  }
+  // Fallbacks: If booking is COMPLETED or total_paid > 0, it was paid
+  if (b.status === 'COMPLETED' || b.status === 'COMPLETED_NO_PRESCRIPTION') {
+    return PAYMENT_MAP.completed;
+  }
+  if (b.total_paid && Number(b.total_paid) > 0) {
+    return PAYMENT_MAP.completed;
+  }
+  if (statusStr === 'unpaid') {
+    return PAYMENT_MAP.unpaid;
+  }
+  return PAYMENT_MAP.pending;
 };
 
 const getServiceLabel = (type: string, category?: string) => {
@@ -309,7 +332,7 @@ const BookingsScreen = () => {
             <tbody>
               {paginated.map(b => {
                 const s = STATUS_MAP[b.status] || { bg: '#f3f4f6', text: '#6b7280', label: b.status };
-                const p = PAYMENT_MAP[(b.payment_status || 'pending').toLowerCase()] || PAYMENT_MAP.pending;
+                const p = getPaymentStatusBadge(b);
                 return (
                   <tr key={b.id} onClick={() => handleViewBooking(b)}>
                     <td style={{ fontWeight: 600, color: '#0a4f32', fontFamily: 'monospace', fontSize: '0.85rem' }}>{b.public_id || b.id?.slice(0, 13) || '—'}</td>
