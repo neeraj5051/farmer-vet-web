@@ -19,10 +19,14 @@ const STATUS_MAP: Record<string, { bg: string; text: string; label: string }> = 
 };
 
 const PAYMENT_MAP: Record<string, { bg: string; text: string; label: string }> = {
-  paid: { bg: '#dcfce7', text: '#166534', label: 'Paid' },
-  pending: { bg: '#fef3c7', text: '#92400e', label: 'Pending' },
-  refunded: { bg: '#f3f4f6', text: '#6b7280', label: 'Refunded' },
-  failed: { bg: '#fee2e2', text: '#991b1b', label: 'Failed' },
+  // Backend PaymentStatus enum values (COMPLETED, PENDING, FAILED, REFUNDED)
+  completed: { bg: '#dcfce7', text: '#166534', label: 'Paid' },       // PaymentStatus.COMPLETED
+  pending:   { bg: '#fef3c7', text: '#92400e', label: 'Pending' },    // PaymentStatus.PENDING
+  failed:    { bg: '#fee2e2', text: '#991b1b', label: 'Failed' },     // PaymentStatus.FAILED
+  refunded:  { bg: '#f3f4f6', text: '#6b7280', label: 'Refunded' },   // PaymentStatus.REFUNDED
+  // Legacy / booking.payment_status field aliases
+  paid:      { bg: '#dcfce7', text: '#166534', label: 'Paid' },       // booking.payment_status = "PAID"
+  unpaid:    { bg: '#fef3c7', text: '#92400e', label: 'Unpaid' },     // booking.payment_status = "UNPAID"
 };
 
 const getServiceLabel = (type: string, category?: string) => {
