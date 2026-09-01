@@ -153,58 +153,312 @@ const OperationsOverview = () => {
     };
   }, [stats, filteredConsults, farmerCount]);
 
-  // Booking trends chart data
-  const chartData = useMemo(() => {
-    if (!stats) return [];
-    return [
-      { name: 'Today', bookings: filteredConsults.filter(c => {
-          const d = c.date || (c.created_at ? c.created_at.slice(0, 10) : '');
-          return d === new Date().toISOString().slice(0, 10);
-        }).length || stats.consults?.today?.total || 0 },
-      { name: '7 Days', bookings: stats.consults?.last_7d?.total || filteredConsults.length },
-      { name: '30 Days', bookings: stats.consults?.last_30d?.total || filteredConsults.length },
-      { name: 'All Time', bookings: stats.consults?.all_time?.total || consults.length },
-    ];
-  }, [stats, filteredConsults, consults]);
+  // Generate dynamic chronological trends data based on filters
+  const trendsData = useMemo(() => {
+    if (!filteredConsults) return [];
 
-  // Bookings by service donut data
-  const serviceData = useMemo(() => {
-    if (filteredConsults.length === 0) return undefined;
-    const getType = (c: any) => {
+    interface ChartBin {
+      name: string;
+      dateStr: string;
+      bookings: number;
+      completed: number;
+      live: number;
+      cancelled: number;
+      noShow: number;
+      rescheduled: number;
+      online: number;
+      ai: number;
+      vaccination: number;
+      inPerson: number;
+      [key: string]: string | number; // index signature for category accesses
+    }
+
+    let bins: ChartBin[] = [];
+
+    const getLocalDateStr = (rawDateStr: any) => {
+      if (!rawDateStr) return '';
+      const d = new Date(rawDateStr);
+      if (isNaN(d.getTime())) return '';
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
+    // Helper to get status category
+    const getStatusCategory = (status: string) => {
+      const s = (status || '').toUpperCase();
+      if (['COMPLETED', 'COMPLETED_NO_PRESCRIPTION'].includes(s)) return 'completed';
+      if (['AWAITING_PAYMENT', 'PENDING', 'CONFIRMED', 'IN_PROGRESS'].includes(s)) return 'live';
+      if (['CANCELLED', 'REJECTED'].includes(s)) return 'cancelled';
+      if (['NO_SHOW', 'NO_SHOW_VET', 'NO_SHOW_FARMER'].includes(s)) return 'noShow';
+      if (s.includes('RESCHEDULED') || s.includes('RESCHEDULE')) return 'rescheduled';
+      return 'unknown';
+    };
+
+    // Helper to get service key
+    const getServiceKey = (c: any) => {
       const cat = (c.category || '').toLowerCase();
       const t = (c.type || c.consultation_type || '').toLowerCase();
-      if (cat.includes('ai') || cat.includes('artificial')) return 'AI / Insemination';
-      if (cat.includes('vaccin')) return 'Vaccination';
-      if (t.includes('video') || t.includes('phone') || t.includes('online')) return 'Online Consultation';
-      return 'In-person Visit';
+      if (cat.includes('ai') || cat.includes('artificial')) return 'ai';
+      if (cat.includes('vaccin')) return 'vaccination';
+      if (t.includes('video') || t.includes('phone') || t.includes('online')) return 'online';
+      return 'inPerson';
     };
-    const counts: Record<string, number> = {};
-    filteredConsults.forEach(c => { const t = getType(c); counts[t] = (counts[t] || 0) + 1; });
-    const total = filteredConsults.length;
-    const colors: Record<string, string> = {
-      'Online Consultation': '#10b981',
-      'In-person Visit': '#3b82f6',
-      'AI / Insemination': '#8b5cf6',
-      'Vaccination': '#f59e0b',
-    };
-    return Object.entries(counts).map(([name, count]) => ({
-      name,
-      value: Math.round((count / total) * 100),
-      count,
-      color: colors[name] || '#6b7280',
-    }));
-  }, [filteredConsults]);
 
-  // Top cities data
-  const citiesData = useMemo(() => {
-    if (filteredConsults.length === 0) return undefined;
-    const counts: Record<string, number> = {};
-    filteredConsults.forEach(c => {
-      const city = c.city || c.district || c.location || 'Unknown';
-      if (city && city !== 'Unknown') counts[city] = (counts[city] || 0) + 1;
+    const initBin = (name: string, dateStr: string): ChartBin => ({
+      name,
+      dateStr,
+      bookings: 0,
+      completed: 0,
+      live: 0,
+      cancelled: 0,
+      noShow: 0,
+      rescheduled: 0,
+      online: 0,
+      ai: 0,
+      vaccination: 0,
+      inPerson: 0,
     });
+
+    // 1. "Today" or "Yesterday" - Hourly/4-hour intervals
+    if (dateRange === 'Today' || dateRange === 'Yesterday') {
+      const slots = ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00'];
+      bins = slots.map(slot => initBin(slot, slot));
+
+      filteredConsults.forEach(c => {
+        const d = new Date(c.date || c.created_at);
+        const hour = d.getHours();
+        let slot = '20:00';
+        if (hour < 4) slot = '00:00';
+        else if (hour < 8) slot = '04:00';
+        else if (hour < 12) slot = '08:00';
+        else if (hour < 16) slot = '12:00';
+        else if (hour < 20) slot = '16:00';
+
+        const bin = bins.find(b => b.name === slot);
+        if (bin) {
+          bin.bookings += 1;
+          const statusCat = getStatusCategory(c.status);
+          bin[statusCat] = (bin[statusCat] as number || 0) + 1;
+          const serviceKey = getServiceKey(c);
+          bin[serviceKey] = (bin[serviceKey] as number || 0) + 1;
+        }
+      });
+    }
+    // 2. "Last 7 Days" / "This Week" or default All Time / other ranges
+    else if (dateRange === 'Last 7 Days' || dateRange === 'This Week' || dateRange === 'all' || dateRange === 'All Time' || !dateRange) {
+      let useMonthly = false;
+      let rangeDays = 7;
+
+      if (dateRange === 'All Time' || dateRange === 'all') {
+        if (filteredConsults.length > 0) {
+          const dates = filteredConsults.map(c => new Date(c.date || c.created_at).getTime());
+          const minDate = Math.min(...dates);
+          const maxDate = Math.max(...dates);
+          const diffDays = Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24));
+          if (diffDays > 45) {
+            useMonthly = true;
+          } else {
+            rangeDays = Math.max(7, diffDays);
+          }
+        } else {
+          rangeDays = 7;
+        }
+      }
+
+      if (useMonthly) {
+        // Group by month
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth() - 5, 1); // last 6 months
+        const current = new Date(start);
+        while (current <= now) {
+          const monthLabel = current.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+          bins.push(initBin(monthLabel, key));
+          current.setMonth(current.getMonth() + 1);
+        }
+
+        filteredConsults.forEach(c => {
+          const d = new Date(c.date || c.created_at);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const bin = bins.find(b => b.dateStr === key);
+          if (bin) {
+            bin.bookings += 1;
+            const statusCat = getStatusCategory(c.status);
+            bin[statusCat] = (bin[statusCat] as number || 0) + 1;
+            const serviceKey = getServiceKey(c);
+            bin[serviceKey] = (bin[serviceKey] as number || 0) + 1;
+          }
+        });
+      } else {
+        // Daily bins for last N days
+        const daysCount = dateRange === 'Last 7 Days' || dateRange === 'This Week' ? 7 : rangeDays;
+        for (let i = daysCount - 1; i >= 0; i--) {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          const dayLabel = d.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+          bins.push(initBin(dayLabel, getLocalDateStr(d)));
+        }
+
+        filteredConsults.forEach(c => {
+          const cDateStr = getLocalDateStr(c.date || c.created_at);
+          const bin = bins.find(b => b.dateStr === cDateStr);
+          if (bin) {
+            bin.bookings += 1;
+            const statusCat = getStatusCategory(c.status);
+            bin[statusCat] = (bin[statusCat] as number || 0) + 1;
+            const serviceKey = getServiceKey(c);
+            bin[serviceKey] = (bin[serviceKey] as number || 0) + 1;
+          }
+        });
+      }
+    }
+    // 3. "Last 30 Days" / "This Month" / "Last Month"
+    else if (dateRange === 'Last 30 Days' || dateRange === 'This Month' || dateRange === 'Last Month') {
+      let start = new Date();
+      let end = new Date();
+
+      if (dateRange === 'Last Month') {
+        const now = new Date();
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 0);
+      } else {
+        const daysCount = 30;
+        start.setDate(start.getDate() - (daysCount - 1));
+      }
+
+      const current = new Date(start);
+      while (current <= end) {
+        const dayLabel = current.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+        bins.push(initBin(dayLabel, getLocalDateStr(current)));
+        current.setDate(current.getDate() + 1);
+      }
+
+      filteredConsults.forEach(c => {
+        const cDateStr = getLocalDateStr(c.date || c.created_at);
+        const bin = bins.find(b => b.dateStr === cDateStr);
+        if (bin) {
+          bin.bookings += 1;
+          const statusCat = getStatusCategory(c.status);
+          bin[statusCat] = (bin[statusCat] as number || 0) + 1;
+          const serviceKey = getServiceKey(c);
+          bin[serviceKey] = (bin[serviceKey] as number || 0) + 1;
+        }
+      });
+    }
+    // 4. "Custom" date range
+    else if (dateRange === 'Custom') {
+      const start = customStartDate ? new Date(customStartDate) : new Date();
+      const end = customEndDate ? new Date(customEndDate) : new Date();
+
+      const diffTime = Math.abs(end.getTime() - start.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+      if (diffDays <= 60) {
+        const current = new Date(start);
+        while (current <= end) {
+          const dayLabel = current.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+          bins.push(initBin(dayLabel, getLocalDateStr(current)));
+          current.setDate(current.getDate() + 1);
+        }
+
+        filteredConsults.forEach(c => {
+          const cDateStr = getLocalDateStr(c.date || c.created_at);
+          const bin = bins.find(b => b.dateStr === cDateStr);
+          if (bin) {
+            bin.bookings += 1;
+            const statusCat = getStatusCategory(c.status);
+            bin[statusCat] = (bin[statusCat] as number || 0) + 1;
+            const serviceKey = getServiceKey(c);
+            bin[serviceKey] = (bin[serviceKey] as number || 0) + 1;
+          }
+        });
+      } else {
+        const current = new Date(start);
+        while (current <= end) {
+          const monthLabel = current.toLocaleDateString('en-US', { month: 'short', year: '2-digit' });
+          const key = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, '0')}`;
+          if (!bins.some(b => b.dateStr === key)) {
+            bins.push(initBin(monthLabel, key));
+          }
+          current.setMonth(current.getMonth() + 1);
+        }
+
+        filteredConsults.forEach(c => {
+          const d = new Date(c.date || c.created_at);
+          const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const bin = bins.find(b => b.dateStr === key);
+          if (bin) {
+            bin.bookings += 1;
+            const statusCat = getStatusCategory(c.status);
+            bin[statusCat] = (bin[statusCat] as number || 0) + 1;
+            const serviceKey = getServiceKey(c);
+            bin[serviceKey] = (bin[serviceKey] as number || 0) + 1;
+          }
+        });
+      }
+    }
+
+    return bins;
+  }, [filteredConsults, dateRange, customStartDate, customEndDate]);
+
+  // Bookings by service donut data - derived directly from trendsData to guarantee 100% matching totals
+  const serviceData = useMemo(() => {
+    const categories = [
+      { name: 'Online Consultation', key: 'online', color: '#10b981' },
+      { name: 'AI / Insemination', key: 'ai', color: '#8b5cf6' },
+      { name: 'Vaccination', key: 'vaccination', color: '#f59e0b' },
+      { name: 'In-person Visit', key: 'inPerson', color: '#3b82f6' },
+    ];
+
+    const onlineCount = trendsData.reduce((sum, b) => sum + (Number(b.online) || 0), 0);
+    const aiCount = trendsData.reduce((sum, b) => sum + (Number(b.ai) || 0), 0);
+    const vaccinationCount = trendsData.reduce((sum, b) => sum + (Number(b.vaccination) || 0), 0);
+    const inPersonCount = trendsData.reduce((sum, b) => sum + (Number(b.inPerson) || 0), 0);
+
+    const total = onlineCount + aiCount + vaccinationCount + inPersonCount;
+
+    const counts: Record<string, number> = {
+      online: onlineCount,
+      ai: aiCount,
+      vaccination: vaccinationCount,
+      inPerson: inPersonCount,
+    };
+
+    return categories.map(cat => {
+      const count = counts[cat.key] || 0;
+      return {
+        name: cat.name,
+        count,
+        value: total > 0 ? Math.round((count / total) * 100) : 0,
+        color: cat.color,
+      };
+    });
+  }, [trendsData]);
+
+  // Top districts data
+  const districtsData = useMemo(() => {
+    const counts: Record<string, number> = {};
+
+    const extractDistrict = (c: any) => {
+      if (!c) return null;
+      
+      if (c.district && c.district !== 'Unknown' && c.district !== 'null' && c.district !== 'undefined') {
+        return c.district;
+      }
+      return null;
+    };
+
+    filteredConsults.forEach(c => {
+      const dist = extractDistrict(c);
+      if (dist) {
+        counts[dist] = (counts[dist] || 0) + 1;
+      }
+    });
+
     return Object.entries(counts)
-      .map(([city, count]) => ({ city, count }))
+      .map(([dist, count]) => ({ district: dist, count }))
       .sort((a, b) => b.count - a.count)
       .slice(0, 5);
   }, [filteredConsults]);
@@ -269,14 +523,14 @@ const OperationsOverview = () => {
 
       {/* Row 3: Bookings Trend + Bookings by Service */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
-        <BookingTrendsChart data={chartData} />
+        <BookingTrendsChart data={trendsData} />
         <BookingsByServiceChart data={serviceData} />
       </div>
 
-      {/* Row 4: Consultation Status + Top Cities */}
+      {/* Row 4: Consultation Status + Top Districts */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '32px' }}>
-        <ConsultationStatusChart />
-        <TopCitiesList data={citiesData} />
+        <ConsultationStatusChart data={trendsData} />
+        <TopCitiesList data={districtsData} />
       </div>
 
       {/* Row 5: Recent Bookings Table */}
