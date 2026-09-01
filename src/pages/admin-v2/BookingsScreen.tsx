@@ -13,6 +13,7 @@ const STATUS_MAP: Record<string, { bg: string; text: string; label: string }> = 
   PENDING: { bg: '#fef3c7', text: '#92400e', label: 'Pending' },
   CANCELLED: { bg: '#fee2e2', text: '#991b1b', label: 'Cancelled' },
   REJECTED: { bg: '#fee2e2', text: '#991b1b', label: 'Rejected' },
+  ASSIGNMENT_FAILED: { bg: '#fee2e2', text: '#991b1b', label: 'Assignment Failed' },
   NO_SHOW: { bg: '#fde8d8', text: '#7c2d12', label: 'No Show' },
   NO_SHOW_VET: { bg: '#fde8d8', text: '#7c2d12', label: 'No Show (Vet)' },
   NO_SHOW_FARMER: { bg: '#fde8d8', text: '#7c2d12', label: 'No Show (Farmer)' },
